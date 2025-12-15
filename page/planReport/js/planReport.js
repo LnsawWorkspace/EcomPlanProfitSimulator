@@ -190,6 +190,15 @@ class PlanReportManager {
             const roiAdvertisingElement = document.getElementById("totalROI_Advertising");
             roiAdvertisingElement.textContent = "--";
         }
+
+        document.getElementById("totalProfit_Per").textContent = this.#reportData.modelReportExt.利润率.toPercentString(4) || "--";
+        const profitPerElement = document.getElementById("totalProfit_Per");
+        if (this.#reportData.modelReportExt.利润率.value.greaterThan(0)) {
+            profitPerElement.style.color = "green";
+        } else if (this.#reportData.modelReportExt.利润率.value.lessThan(0)) {
+            profitPerElement.style.color = "red";
+        }
+        document.getElementById("totalRefundCost").textContent = this.#reportData.modelReportExt.总退款损失.toLocaleFixed(4) || "--";
     }
     #showEcharts() {
         this.Echarts.showCostStructureChart(this.Echarts.getCostStructureData(this.#reportData));

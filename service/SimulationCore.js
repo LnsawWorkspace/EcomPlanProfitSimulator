@@ -509,11 +509,19 @@ export class SimulationCore {
         总成本 = 总成本.plus(entity_report.modelReportAdvertising.广告费用_有效成本);
         report.总成本 = 总成本;
         report.利润 = entity_report.modelReportSalesRevenue.收入_退款后.minus(总成本, 4);
-        report.利润率 = report.利润.dividedBy(entity_report.modelReportSalesRevenue.收入_退款后, 4);
+        report.利润率 = new Percentage(report.利润.dividedBy(entity_report.modelReportSalesRevenue.收入_退款后, 4).value);
         report.资本回报率 = new Percentage(report.利润.dividedBy(总成本, 4).value);
         if (!entity_report.modelReportAdvertising.广告费用_有效成本.isZero()) {
             report.推广回报率 = new Percentage(report.利润.dividedBy(entity_report.modelReportAdvertising.广告费用_有效成本, 4).value);
         }
+
+        let 总退款损失 = new Money(0, 4);
+        总退款损失 = 总退款损失.plus(entity_report.modelReportGoodsCost.商品成本_总退款损失);
+        总退款损失 = 总退款损失.plus(entity_report.modelReportGiftCost.赠品成本_总退款损失);
+        总退款损失 = 总退款损失.plus(entity_report.modelreportEnpensePerOrder.费用成本_总退款损失);
+        总退款损失 = 总退款损失.plus(entity_report.modelreportEnpenseMNPerOrder.费用成本_总退款损失);
+        总退款损失 = 总退款损失.plus(entity_report.modelReportAdvertising.广告费用_总退款损失);
+        report.总退款损失 = 总退款损失;
     }
 
 
