@@ -1,0 +1,220 @@
+/* 左侧容器 */
+.left-container {
+  max-width: 500px;
+  height: calc(100vh - var(--header-height));
+  display: flex;
+  flex-direction: column;
+}
+
+.group-head {
+  height: 2rem;
+}
+
+.group-search {
+  height: 2rem;
+  display: flex;
+  align-items: center;
+}
+
+.group-pagination {
+  height: 2.5rem - 2px;
+}
+
+.group-content {
+  /* 添加固定高度，减去搜索栏和分页的高度 */
+  height: calc(100vh - var(--header-height) - 3rem - 2rem - 1.5rem - 2rem - 2.5rem + 2px);
+  /* 允许垂直滚动 */
+  overflow-y: hidden;
+  /* 隐藏水平滚动条 */
+  overflow-x: hidden;
+  /* 隐藏滚动条 - Firefox */
+  scrollbar-width: none;
+  /* 隐藏滚动条 - IE/Edge */
+  -ms-overflow-style: none;
+
+  /* 添加动画效果 */
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+  /* 页面加载动画 */
+  animation: fadeInContent 0.6s ease-out;
+}
+
+/* 定义页面加载动画 */
+@keyframes fadeInContent {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 内容变化时的动画触发器 */
+.group-content * {
+  transition: all 0.4s ease;
+}
+
+/* 隐藏滚动条 - Chrome/Safari/Opera */
+.group-content::-webkit-scrollbar {
+  display: none;
+}
+
+/* 隐藏滚动条 - Chrome/Safari/Opera */
+.group-content::-webkit-scrollbar {
+  display: none;
+}
+
+/* 方案组项目 - 高级设计样式 */
+.group-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8125rem;
+  border-radius: var(--radius-md);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  /* 添加微妙阴影 */
+  box-shadow: var(--shadow-sm);
+  /* 添加渐变背景过渡效果 */
+  background-image: linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.02) 100%);
+  height: 4rem;
+  margin-top: 0.8rem;
+}
+
+/* 方案组标题样式 */
+.group-item h5 {
+  margin: 0 0 0rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  /* 添加文字阴影提升可读性 */
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* 方案组元信息样式 */
+.group-item p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.group-meta{
+  min-width: 136px;
+}
+
+.group-content-plan-count {
+  font-size: 0.7rem;
+  color: var(--secondary-color);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: var(--radius-sm);
+}
+
+/* 修改原始的.bg-gradient-to-r样式，添加过渡效果 */
+.bg-gradient-to-r {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(199, 210, 254, 0.15));
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 2rem 0.25rem 2rem 0.25rem;
+  /* 移除阴影 */
+  /* 确保有过渡效果 */
+  transition: all 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 波点装饰效果 */
+.bg-gradient-to-r::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background-image: radial-gradient(circle, rgba(139, 92, 246, 0.2) 10%, transparent 10.5%),
+    radial-gradient(circle, rgba(139, 92, 246, 0.2) 10%, transparent 10.5%);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+  opacity: 0.6;
+  /* 添加过渡效果 */
+  transition: all 0.5s ease;
+}
+
+/* 悬停动画效果 - 保留但移除阴影 */
+.bg-gradient-to-r:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(199, 210, 254, 0.2));
+  /* 移除阴影 */
+  border-color: rgba(139, 92, 246, 0.3);
+  border-radius: 0.5rem 1rem 0.75rem 1.5rem;
+}
+
+/* 修改选中状态的渐变背景样式，使用更靓丽的渐变色 */
+.bg-gradient-to-r.group-active {
+  /* 使用亮丽的渐变颜色，左边鲜艳，右边浅淡 */
+  background: linear-gradient(90deg, rgba(79, 70, 229, 0.25), rgba(147, 197, 253, 0.1));
+
+  /* 保持相同边框宽度但使用渐变开始的主色调 */
+  border: 1px solid rgba(79, 70, 229, 0.3);
+
+  /* 保持特色圆角 */
+  border-radius: 0.25rem 2rem 0.25rem 2rem;
+
+  /* 确保没有阴影效果 */
+  box-shadow: none;
+
+  /* 简化过渡效果，只过渡关键属性 */
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  /* 确保文本颜色与背景有良好对比度 */
+  color: var(--text-primary);
+  /* 确保文本可读性 */
+  z-index: 1;
+}
+
+/* 移除复杂图案，改为简单的左侧装饰条 */
+.bg-gradient-to-r.group-active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  /* 使用纯色条代替复杂图案 */
+  background: linear-gradient(to bottom, rgba(79, 70, 229, 0.7), rgba(129, 140, 248, 0.7));
+  border-radius: 0.75rem 0 0 0.75rem;
+  /* 确保装饰条在底层 */
+  z-index: -1;
+  /* 装饰条也添加过渡效果 */
+  transition: background-color 0.3s ease;
+}
+
+/* 修改悬停效果，使其更加微妙 */
+.bg-gradient-to-r.group-active:hover {
+  background: linear-gradient(90deg, rgba(79, 70, 229, 0.28), rgba(147, 197, 253, 0.12));
+  border-color: rgba(79, 70, 229, 0.35);
+  /* 保持相同的圆角，避免不必要的形状变化 */
+  border-radius: 0.75rem 1.25rem 0.75rem 1.25rem;
+}
+
+/* 确保选中状态没有点击效果 */
+.bg-gradient-to-r.group-active:active {
+  transform: none;
+  box-shadow: none;
+}

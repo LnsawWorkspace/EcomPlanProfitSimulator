@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>业务利润模拟沙盘 - 工作台</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+        crossorigin="anonymous">
+    <!-- 公共样式 -->
+    <link rel="stylesheet" href="../public.css">
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="./css/workbench.css">
+</head>
+
+<body class="bg-gray-50">
+
+    <!-- 头部导航 -->
+    <header class="bg-white">
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center py-3">
+                <h1 class="h4 mb-0 text-primary">业务利润模拟沙盘</h1>
+                <div class="header-actions">
+                    <span class="text-primary me-2" id="current-workspace-name"></span>
+                    <button class="btn btn-outline-primary btn-sm ms-2" id="workspace-show-btn">
+                        <i class="bi bi-folder2-open me-1"></i> 数据空间
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm ms-2" id="help-btn">
+                        <i class="bi bi-question-circle me-1"></i> 帮助
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="workbench-container">
+        <!-- 主内容区 -->
+        <main class="container-fluid">
+            <!--我只能说不理解，为什么row之间写到main上就会莫名其妙的出现奇怪的间距-->
+            <div class="row">
+                <!-- 左侧方案组管理 -->
+                <div class="left-container col-xl-3 p-4">
+                    <div class="group-head d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="h5 mb-0">方案组管理</h2>
+                        <div class="btn-group">
+                            <button class="btn btn-primary btn-sm" id="create-group-btn">
+                                <i class="bi bi-plus me-1"></i> 新建
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="import-group-btn">
+                                <i class="bi bi-upload me-1"></i> 导入
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="export-all-group-btn">
+                                <i class="bi bi-download me-1"></i> 导出
+                            </button>
+                        </div>
+                    </div>
+                    <div class="group-search search-container">
+                        <input type="text" id="group-search" placeholder="搜索方案组..." class="search-input">
+                        <i class="bi bi-search search-icon"></i>
+                    </div>
+                    <div id="group-content" class="group-content">
+                        <div class="group-item bg-gradient-to-r" style="visibility: hidden;">
+                            <h5>占位用</h5>
+                            <div class="group-meta d-flex flex-column align-items-end">
+                                <span class="group-content-plan-count me-3"><i class="bi bi-file-earmark-text"></i>
+                                    <span class="group-content-plan-count-num">0</span>个方案
+                                </span>
+                                <p><i class="bi bi-calendar3"></i>时间</p>
+                            </div>
+                        </div>
+                        <!-- 其他group-item类似结构 -->
+                    </div>
+                    <nav id="group-pagination" class="group-pagination" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <!-- 页码信息 -->
+                            <div class="text-sm text-gray-500" id="group-page-info">
+                                显示 <span id="group-start-item">1</span>-<span id="group-end-item">10</span> 项，共 <span
+                                    id="group-total-items">30</span> 项
+                            </div>
+                            <!-- 分页控件 -->
+                            <ul class="pagination m-0">
+                                <!-- 上一页按钮 -->
+                                <li class="page-item">
+                                    <button class="page-link" id="group-prev-page" aria-label="上一页">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </button>
+                                </li>
+
+
+                                <!-- 下一页按钮 -->
+                                <li class="page-item">
+                                    <button class="page-link" id="group-next-page" aria-label="下一页">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+
+                <!-- 右侧内容区 -->
+                <div class="right-container col-md p-4">
+                    <div id="group-detail" style="display: none;">
+                        <!-- 方案组头部信息卡片 -->
+                        <div class="group-detail-header">
+                            <div class="d-flex mb-4 justify-content-between align-items-start flex-wrap gap-4">
+                                <div class="group-detail-info">
+                                    <div class="d-flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                                        <h2 class="h5 mb-0" id="active-group-name">方案组详情</h2>
+                                    </div>
+                                </div>
+                                <div class="group-detail-header-meta d-flex align-items-center gap-4">
+                                    <div class="d-flex items-center" id="plan-count-container" style="display: none;">
+                                        <i class="bi bi-file-earmark-text me-2 text-primary"></i>
+                                        <span id="active-group-plan-count" class="font-medium">0</span> 个方案
+                                    </div>
+                                    <div class="d-flex items-center">
+                                        <i class="bi bi-calendar3 me-2 text-primary"></i>
+                                        <span id="active-group-updated-at" class="font-medium"></span>
+                                    </div>
+                                    <!-- 添加方案组操作按钮 -->
+                                    <div class="btn-group">
+                                        <button class="btn btn-outline-success btn-sm" id="modify-group-btn">
+                                            <i class="bi bi-pencil me-1"></i> 修改
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" id="remove-group-btn">
+                                            <i class="bi bi-trash me-1"></i> 删除
+                                        </button>
+                                        <button class="btn btn-outline-primary btn-sm" id="import-plan-btn">
+                                            <i class="bi bi-upload me-1"></i> 导入
+                                        </button>
+                                        <button class="btn btn-outline-primary btn-sm" id="export-all-plan-btn">
+                                            <i class="bi bi-download me-1"></i> 导出
+                                        </button>
+                                    </div>
+                                </div>
+
+
+                            </div>
+
+                        </div>
+                        <div id="active-group-description" class="font-medium">
+                            暂无描述
+                        </div>
+                        <!-- 方案组信息卡片 -->
+                        <div class="group-detail-cards">
+                        </div>
+
+                        <div class="group-detail-plans">
+                            <div class="plan-header d-flex align-items-center mb-3">
+                                <h2 class="h5 mb-0">方案列表</h2>
+                                <div class="plat-search search-container flex-grow-1 mx-3">
+                                    <input type="text" id="plan-search" placeholder="搜索方案名称..." class="search-input">
+                                    <i class="bi bi-search search-icon"></i>
+                                </div>
+                                <div class="btn-group ml-auto">
+                                    <button class="btn btn-primary btn-sm" id="create-plan-btn">
+                                        <i class="bi bi-plus me-1"></i> 新建方案
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="plan-content" class="plan-content">
+
+                                <!-- 单个plan-item -->
+                                <div class="plan-item">
+                                    <div class="plan-item-header">
+                                        <h3 class="plan-item-name">方案名称示例</h3>
+                                    </div>
+                                    <div class="plan-item-updatedat">
+                                        更新时间：2023-10-10 10:00:00
+                                    </div>
+                                    <p class="plan-item-description">这是一个更精美的方案描述，展示在卡片中，保持简洁但信息丰富。</p>
+                                    <div class="plan-item-actions">
+                                        <button class="plan-action-btn plan-view-btn" title="查看方案详情">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="plan-action-btn plan-edit-btn" title="编辑方案">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <button class="plan-action-btn plan-modify-btn" title="修改基本信息">
+                                            <i class="bi bi-sliders"></i>
+                                        </button>
+                                        <button class="plan-action-btn plan-delete-btn" title="删除方案">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        <button class="plan-action-btn plan-copy-btn" title="复制方案">
+                                            <i class="bi bi-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="workspace-container" class="container workspace-container position-relative d-none">
+        <div class="workspace-header">
+            <h5 class="mb-0">数据空间</h5>
+            <div>
+                <button class="btn btn-primary workspace-btn" id="back-space-all-btn">
+                    <i class="bi bi-archive me-1"></i>
+                    备份所有</button>
+                <button class="btn btn-primary workspace-btn" id="create-space-btn">
+                    <i class="bi bi-plus me-1"></i>
+                    新建</button>
+            </div>
+        </div>
+        <div class="workspace-search search-container">
+            <input type="text" id="workspace-search" placeholder="搜索..." class="search-input">
+            <i class="bi bi-search search-icon"></i>
+        </div>
+        <div class="workspace-body">
+            <table id="workspace-table" class="table table-hover align-middle mb-0 workspace-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>名称</th>
+                        <th>描述</th>
+                        <th>更新时间</th>
+                        <th>备份时间</th>
+                        <th style="width:200px">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="workspace-table-body">
+                    <tr>
+                        <td>ws_001</td>
+                        <td>默认空间</td>
+                        <td>系统默认</td>
+                        <td>2025-11-25 10:00:00</td>
+                        <td>2025-11-25 10:00:00</td>
+                        <td class="workspace-btn-group">
+                            <button class="btn btn-warning workspace-btn">修改</button>
+                            <button class="btn btn-danger workspace-btn">删除</button>
+                            <button class="btn btn-success workspace-btn">激活</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="workspace-footer">
+            <div class=" workspace-footer-info">
+                <div>当前存储配额：<span id="storage-quota">256GB</span></div>
+                <div>已使用：<span id="storage-used">12MB</span></div>
+                <div>持久化：<span id="persistence">是</span></div>
+                <div class="text-danger">请定期备份数据。</div>
+            </div>
+            <div class="workspace-footer-btn">
+                <button id="workspace-close-btn" class="btn btn-secondary btn-lg">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 方案组模态框 (使用Bootstrap 5 modal) -->
+    <div class="modal fade" id="group-edit-modal" tabindex="-1" aria-labelledby="group-edit-modal-title"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="group-edit-modal-title">新建方案组</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="group-edit-form">
+                        <div class="mb-3">
+                            <label for="group-edit-name-input" class="form-label">方案组名称 <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="group-name-input" placeholder="请输入方案组名称"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="group-description-input" class="form-label">描述</label>
+                            <textarea class="form-control" id="group-description-input" rows="3"
+                                placeholder="请输入方案组描述（可选）"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="save-group-btn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 删除确认模态框 (使用Bootstrap 5 modal) -->
+    <div class="modal fade" id="remove-group-confirm-modal" tabindex="-1" aria-labelledby="remove-confirm-modal-title"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="remove-group-confirm-title">确认删除</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <span id="remove-group-confirm-text">确定要删除选中的项目吗？此操作不可撤销。</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="remove-group-confirm-btn">确认删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 方案模态框 (使用Bootstrap 5 modal) -->
+    <div class="modal fade" id="plan-edit-modal" tabindex="-1" aria-labelledby="plan-edit-modal-title"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="plan-edit-modal-title">新建方案</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="plan-edit-form">
+                        <div class="mb-3">
+                            <label for="plan-name-input" class="form-label">方案名称 <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="plan-name-input" placeholder="请输入方案组名称"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="plan-description-input" class="form-label">描述</label>
+                            <textarea class="form-control" id="plan-description-input" rows="3"
+                                placeholder="请输入方案描述（可选）"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="save-plan-btn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 删除确认模态框 (使用Bootstrap 5 modal) -->
+    <div class="modal fade" id="remove-plan-confirm-modal" tabindex="-1" aria-labelledby="remove-confirm-modal-title"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="remove-plan-confirm-title">确认删除</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <span id="remove-plan-confirm-text">确定要删除选中的项目吗？此操作不可撤销。</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="remove-plan-confirm-btn">确认删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="workspace-edit-modal" tabindex="-1" aria-labelledby="workspace-edit-modal-title"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="workspace-edit-modal-title">新建工作区</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="plan-edit-form">
+                        <div class="mb-3">
+                            <label for="space-name-input" class="form-label">工作区名称 <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="workspace-name-input" placeholder="请输入工作区名称"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="workspace-description-input" class="form-label">描述</label>
+                            <textarea class="form-control" id="workspace-description-input" rows="3"
+                                placeholder="请输入工作区描述（可选）"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="save-workspace-btn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="remove-workspace-confirm-modal" tabindex="-1"
+        aria-labelledby="remove-workspace-confirm-modal-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="remove-workspace-confirm-title">确认删除</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <span id="remove-workspace-confirm-text">确定要删除选中的工作区吗？此操作不可撤销。</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="remove-workspace-confirm-btn">确认删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="remove-workspace-confirm-modal-agin" tabindex="-1"
+        aria-labelledby="remove-workspace-confirm-modal-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="remove-workspace-confirm-title-agin">确认删除</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <span id="remove-workspace-confirm-text-agin">这是一个高微操作，会清除工作区相关的所有数据。不可恢复！请再次确认</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="remove-workspace-confirm-btn-agin">确认删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrp JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+        crossorigin="anonymous"></script>
+    <!-- 自身 JS -->
+    <script type="module" src="./js/workbench.js"></script>
+
+
+</body>
+<!-- Toast 容器 -->
+<div class="toast-container"></div>
+
+</html>

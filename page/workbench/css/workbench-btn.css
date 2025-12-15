@@ -1,0 +1,29 @@
+.btn {
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all var(--transition);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+/* 按钮流光效果定义 */
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+  z-index: -1;
+}
+/* 按钮:hover 流光效果触发 */
+.btn:hover::after {
+  left: 100%;
+}
+/* 按钮:active 点击效果 */
+.btn:active {
+  transform: translateY(1px);
+}

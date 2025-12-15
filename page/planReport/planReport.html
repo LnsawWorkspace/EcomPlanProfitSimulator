@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电商销售数据分析</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+        crossorigin="anonymous">
+    <!-- 公共样式 -->
+    <link rel="stylesheet" href="../public.css">
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="./css/planReport.css">
+
+</head>
+
+<body>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="container header-content">
+            <h1 class="header-title">方案分析报告</h1>
+            <p class="header-subtitle main-title"></p>
+        </div>
+    </header>
+
+    <div class="container report-container py-4">
+        <!-- 快速调整参数-->
+        <div class="params-card">
+            <div class="params-card-header row">
+                <div class="params-card-title col-lg-6">参数快调</div>
+            </div>
+            <div class="params-card-body">
+                <div class="params-card-item">
+                    <div class="mb-3 mt-3">
+                        <div class="mb-3 col-lg-12">
+                            <label for="targetPrice" class="form-label">售价</label>
+                            <div class="input-group">
+                                <span class="input-group-text">¥</span>
+                                <input type="number" class="form-control params-input" min="0" step="1" id="targetPrice"
+                                    placeholder="请输入售价">
+                            </div>
+                        </div>
+                        <div class="mb-3 col-lg-12">
+                            <label for="targetQuantity" class="form-label">目标单量</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control params-input" min="0" step="1"
+                                    id="targetQuantity" placeholder="请输入目标单量">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="params-card-item">
+                    <div class="mb-3 mt-3">
+                        <label class="form-label">退款率</label>
+                        <div class="mb-3 input-group">
+                            <span for="refund-bef-per" class="input-group-text">售前</span>
+                            <input type="number" class="form-control params-input" min="0" step="0.1"
+                                id="refund-bef-per">
+                            <span for="refund-bef-per" class="input-group-text">%</span>
+                        </div>
+                        <div class="mb-3 input-group">
+                            <span for="refund-bef-per" class="input-group-text">售中</span>
+                            <input type="number" class="form-control params-input" min="0" step="0.1"
+                                id="refund-ing-per">
+                            <span for="refund-bef-per" class="input-group-text">%</span>
+                        </div>
+                        <div class="mb-3 input-group">
+                            <span for="refund-bef-per" class="input-group-text">售后</span>
+                            <input type="number" class="form-control params-input" min="0" step="0.1"
+                                id="refund-aft-per">
+                            <span for="refund-bef-per" class="input-group-text">%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="params-card-item" id="advertisingParams">
+
+                </div>
+            </div>
+        </div>
+        <!-- 控制栏 -->
+        <!-- <div class="control-bar">
+            <div class="mode-toggle">
+                <i class="bi bi-moon"></i>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <i class="bi bi-sun"></i>
+            </div>
+            <div class="card-actions">
+                <button class="btn-icon" id="refreshData" title="刷新数据">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+                <button class="btn-icon" id="exportData" title="导出数据">
+                    <i class="bi bi-download"></i>
+                </button>
+            </div>
+        </div> -->
+
+        <!-- 主要指标-->
+        <div class="data-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-speedometer2"></i>
+                    </div>
+                    <h4 class="card-title">主要指标</h4>
+                </div>
+                <div class="card-actions">
+                    <!-- 标题右边的位置，可以添加按钮-->
+                </div>
+            </div>
+
+        </div>
+        <!-- 统计卡片 -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value" id="totalOrderCount">--</div>
+                <div class="stat-label">付款单量</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalValidOrderCount">--</div>
+                <div class="stat-label">有效单量</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalROI_Advertising">--</div>
+                <div class="stat-label">推广回报率</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalROI_Business">--</div>
+                <div class="stat-label">资本回报率</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value" id="totalGMV">--</div>
+                <div class="stat-label">GMV</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalRevenue">--</div>
+                <div class="stat-label">收入</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalCost">--</div>
+                <div class="stat-label">总成本</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalProfit">--</div>
+                <div class="stat-label">利润</div>
+            </div>
+        </div>
+
+        <!-- 成本分析-->
+        <div class="data-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-calculator"></i>
+                    </div>
+                    <h4 class="card-title">成本分析</h4>
+                </div>
+                <div class="card-actions">
+                    <!-- 标题右边的位置，可以添加按钮-->
+                </div>
+            </div>
+            <div class="card-body row">
+                <div class="col-lg-6">
+                    <div id="costStructureChart" class="chart-container"></div>
+                </div>
+                <div class="col-lg-6">
+                    <div id="refundCostStructureChart" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 收入明细 -->
+        <div class="data-card" style="display: none;">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <h4 class="card-title">收入明细</h4>
+                </div>
+                <div class="card-actions">
+                    <!-- 标题右边的位置，可以添加按钮-->
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="text-start">商品名称</th>
+                            <th class="text-end">GMV</th>
+                            <th class="text-end">收入</th>
+                            <th class="text-end">有效成本</th>
+                            <th class="text-end">毛利润</th>
+                            <th class="text-end">毛利率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="Report_Container_Revenue">
+                        <!-- 数据将由JavaScript渲染 -->
+                    </tbody>
+                    <tfoot id="Report_Container_Revenue_Foot">
+                        <!-- 数据将由JavaScript渲染 -->
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- 商品成本明细 -->
+        <div class="data-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <h4 class="card-title">商品成本明细</h4>
+                </div>
+                <div class="card-actions">
+                    <!-- 标题右边的位置，可以添加按钮-->
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="text-start">商品名称</th>
+                            <th class="text-end">有效成本</th>
+                            <th class="text-end">销售成本</th>
+                            <th class="text-end">损失金额</th>
+                            <th class="text-end">售前金额</th>
+                            <th class="text-end">售中金额</th>
+                            <th class="text-end">售后金额</th>
+                            <th class="text-end">损失占比</th>
+                            <th class="text-end">售前占比</th>
+                            <th class="text-end">售中占比</th>
+                            <th class="text-end">售后占比</th>
+                        </tr>
+                    </thead>
+                    <tbody id="Report_Container_Goods">
+                        <!-- 数据将由JavaScript渲染 -->
+                    </tbody>
+                    <tfoot id="Report_Container_Goods_Foot">
+                        <!-- 数据将由JavaScript渲染 -->
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- 赠品成本明细 -->
+        <div class="data-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-gift"></i>
+                    </div>
+                    <h4 class="card-title">赠品成本明细</h4>
+                </div>
+                <div class="card-actions">
+                    <!-- 标题右边的位置，可以添加按钮-->
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="text-start">赠品名称</th>
+                            <th class="text-end">有效成本</th>
+                            <th class="text-end">额外缴税</th>
+                            <th class="text-end">销售成本</th>
+                            <th class="text-end">退款损失</th>
+                            <th class="text-end">售前损失</th>
+                            <th class="text-end">售中损失</th>
+                            <th class="text-end">售后损失</th>
+                            <th class="text-end">退款损失率</th>
+                            <th class="text-end">售前损失率</th>
+                            <th class="text-end">售中损失率</th>
+                            <th class="text-end">售后损失率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="Report_Container_Gift">
+                        <!-- 数据将由JavaScript渲染 -->
+                    </tbody>
+                    <tfoot id="Report_Container_Gift_Foot">
+                        <!-- 数据将由JavaScript渲染 -->
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- 运营成本-支出的各项费用 -->
+        <div class="data-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-wallet"></i>
+                    </div>
+                    <h4 class="card-title">运营成本明细</h4>
+                </div>
+                <div class="card-actions">
+                    <!-- 标题右边的位置，可以添加按钮-->
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="text-start">支出名称</th>
+                            <th class="text-end">有效成本</th>
+                            <th class="text-end">销售成本</th>
+                            <th class="text-end">退款损失</th>
+                            <th class="text-end">售前损失</th>
+                            <th class="text-end">售中损失</th>
+                            <th class="text-end">售后损失</th>
+                            <th class="text-end">退款损失率</th>
+                            <th class="text-end">售前损失率</th>
+                            <th class="text-end">售中损失率</th>
+                            <th class="text-end">售后损失率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="Report_Container_Expense">
+                        <!-- 数据将由JavaScript渲染 -->
+                    </tbody>
+                    <tfoot id="Report_Container_Expense_Foot">
+                        <!-- 数据将由JavaScript渲染 -->
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrp JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+        crossorigin="anonymous"></script>
+    <!-- 自身 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@6.0.0/dist/echarts.min.js" crossorigin="anonymous"></script>
+    <script type="module" src="./js/planReport.js"></script>
+</body>
+
+</html>
