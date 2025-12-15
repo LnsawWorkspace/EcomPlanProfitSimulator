@@ -221,14 +221,18 @@ class PlanParamsManager {
         const planId = urlParams.get('planId');
         const workspaceId = urlParams.get('workspaceId');
         const groupId = urlParams.get('groupId');
-        console.log("%c 开始获取workspace信息,并初始化db：", "color: green; font-weight: bold;", performance.now());
-        if (workspaceId) {
-            this.#repositoryWorkspace = new Repository_Workspace();
-            await this.#repositoryWorkspace.initDatabase();
-            this.#workspace = await this.#repositoryWorkspace.getWorkspaceById(workspaceId);
-            // 可以关闭 repositoryWorkspace了，因为不需要了
-            this.#repositoryWorkspace.close();
-            console.log("当前workspace：", this.#workspace);
+        if (workspaceId === undefined || workspaceId === null || workspaceId === ''
+            || groupId === undefined || groupId === null || groupId === ''
+            || planId === undefined || planId === null || planId === ''
+        ) { this.#hidePage(); return; }
+
+        this.#repositoryWorkspace = new Repository_Workspace();
+        await this.#repositoryWorkspace.initDatabase();
+        this.#workspace = await this.#repositoryWorkspace.getWorkspaceById(workspaceId);
+        // 可以关闭 repositoryWorkspace了，因为不需要了
+        this.#repositoryWorkspace.close();
+        // 当this.#workspace存在时，初始化其他repository,否则不执行任何操作
+        if (this.#workspace) {
             // 注意 repositoryPlanGroup, repositoryPlanMeta 和 repositoryPlanParams 用的是同一个链接，都是 workspaceId 对应的链接。 workspaceId 是库的名称。
             this.#repositoryPlanGroup = new Repository_PlanGroup(workspaceId);
             await this.#repositoryPlanGroup.initDatabase();
@@ -236,34 +240,38 @@ class PlanParamsManager {
             await this.#repositoryPlanMeta.initDatabase();
             this.#repositoryPlanParams = new Repository_PlanParams(workspaceId);
             await this.#repositoryPlanParams.initDatabase();
-        }
-        console.log("%c workspace信息获取完成：", "color: green; font-weight: bold;", performance.now());
-        console.log("%c 开始加载方案参数：", "color: green; font-weight: bold;", performance.now());
-        if (groupId) {
-            this.#planGroup = await this.#repositoryPlanGroup.getPlanGroupById(groupId);
-            console.log("当前方案组：", this.#planGroup);
-        }
-        //如果有planId参数，则加载对应的方案数据
-        if (planId) {
-            this.#planMeta = await this.#repositoryPlanMeta.getPlanMetaById(planId);
-            // 不可以关闭 repositoryPlanMeta ，因为和 repositoryPlanParams用的是同一个链接，可以选择 设置 this.#repositoryPlanMeta = null，但不关闭链接。
-            this.#repositoryPlanMeta = null; // 因为用不上了，所以置为null。
-            console.log("当前方案元数据：", this.#planMeta);
-            //加载方案数据的逻辑
-            await this.#repositoryPlanParams.getPlanParamsById(this.#planMeta.id)
-                .then((planParams) => {
-                    if (planParams) { this.#loadPlanParams(planParams); } else { console.log("未找到对应的方案参数"); }
-                });
-        }
-        // 修改 .main-title 下的H1的内容
-        if (this.#planMeta && this.#planMeta.name) {
-            const titleElement = document.querySelector('.main-title h1 span');
-            if (titleElement) {
-                titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
-            }
-        }
-        console.log("%c 方案参数加载完成：", "color: green; font-weight: bold;", performance.now());
 
+            this.#planGroup = await this.#repositoryPlanGroup.getPlanGroupById(groupId);
+            if (this.#planGroup) {
+                this.#planMeta = await this.#repositoryPlanMeta.getPlanMetaById(planId);
+                if (this.#planMeta) {
+                    //加载方案数据的逻辑
+                    await this.#repositoryPlanParams.getPlanParamsById(this.#planMeta.id)
+                        .then((planParams) => {
+                            if (planParams) {
+                                this.#loadPlanParams(planParams);
+                                // 修改 .main-title 下的H1的内容
+                                const titleElement = document.querySelector('.main-title h1 span');
+                                if (titleElement) {
+                                    titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
+                                }
+                            } else { this.#hidePage(); }
+                        });
+                    console.log("%c 方案参数加载完成：", "color: green; font-weight: bold;", performance.now());
+                } else {
+                    this.#hidePage();
+                }
+            } else {
+                this.#hidePage();
+            }
+        } else {
+            this.#hidePage();
+        }
+    }
+
+    #hidePage() {
+        // 隐藏整个页面，提示该方案不存在。
+        document.body.innerHTML = '<div style="text-align:center; margin-top:50px;"><h2>方案不存在或无法加载，请检查链接或返回上一页。</h2></div>';
     }
 
     #saveParamsData() {
@@ -306,7 +314,6 @@ class PlanParamsManager {
     }
 
     #loadPlanParams(planParams) {
-        console.log("加载方案参数", planParams);
 
         // 填充销售参数
         if (planParams.modelPlanParamsSale) {

@@ -82,14 +82,20 @@ export class Repository_Workspace {
                     await this.#dbHelper.delete(Repository_Workspace.WORKSPACE_STORE, id);
                     resolve(true);
                 };
-                request.onerror = function (event) {
+                request.onerror = async (event) => {
                     // 虽然失败了，但是数据肯定是不在了，因此需要修改WORKSPACE_STORE中对应的数据，标记这个库是需要被删掉的。
                     // 然后每当getall方法时，检查这个标记，如果标记为删除,就再次尝试进行删除。
+                    const item = await this.getWorkspaceById(id);
+                    item.deleteing = true;
+                    await this.saveWorkspace(item);
                     reject(event.target.errorCode);
                 };
-                request.onblocked = (event) => {
+                request.onblocked = async (event) => {
                     // 虽然失败了，但是数据肯定是不在了，因此需要修改WORKSPACE_STORE中对应的数据，标记这个库是需要被删掉的。
                     // 然后每当getall方法时，检查这个标记，如果标记为删除,就再次尝试进行删除。
+                    const item = await this.getWorkspaceById(id);
+                    item.deleteing = true;
+                    await this.saveWorkspace(item);
                     reject('数据库删除被阻塞，请关闭所有连接后重试！');
                 };
             } catch (error) {
@@ -104,7 +110,7 @@ export class Repository_Workspace {
      */
     async getAllWorkspaces() {
         const dataList = await this.#dbHelper.getAllByIndex(Repository_Workspace.WORKSPACE_STORE, 'createdAt', 'desc');
-        return dataList.map(data => new Entity_Workspace({
+        const result = dataList.map(data => new Entity_Workspace({
             id: data.id,
             name: data.name,
             description: data.description,
@@ -112,6 +118,18 @@ export class Repository_Workspace {
             updatedAt: data.updatedAt,
             enabled: data.enabled,
         }));
+
+        // 处理标记为删除的工作区
+        for (const workspace of result) {
+            if (workspace.deleteing) {
+                try {
+                    await this.deleteWorkspace(workspace.id);
+                } catch (error) {
+                    // 忽略错误
+                }
+            }
+            return result;
+        }
     }
 
     /**

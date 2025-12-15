@@ -42,12 +42,7 @@ class PlanReportManager {
         this.#initializeElements();
         this.#initializeEventListeners();
         await this.#initPlanReport();
-
         Decimal.set({ precision: 40 });
-
-        this.#reportData = this.#simulationCore.runSimulation(this.#planParams);
-        console.log("可读性报表：", this.#reportData.toSerializable());
-        this.#showReport();
     }
     /**
      * 初始化提示信息函数
@@ -100,12 +95,16 @@ class PlanReportManager {
         const planId = urlParams.get('planId');
         const workspaceId = urlParams.get('workspaceId');
         const groupId = urlParams.get('groupId');
-        if (workspaceId) {
-            this.#repositoryWorkspace = new Repository_Workspace();
-            await this.#repositoryWorkspace.initDatabase();
-            this.#workspace = await this.#repositoryWorkspace.getWorkspaceById(workspaceId);
-            // 可以关闭 repositoryWorkspace了，因为不需要了
-            this.#repositoryWorkspace.close();
+        if (workspaceId === undefined || workspaceId === null || workspaceId === ''
+            || groupId === undefined || groupId === null || groupId === ''
+            || planId === undefined || planId === null || planId === ''
+        ) { this.#hidePage(); return; }
+        this.#repositoryWorkspace = new Repository_Workspace();
+        await this.#repositoryWorkspace.initDatabase();
+        this.#workspace = await this.#repositoryWorkspace.getWorkspaceById(workspaceId);
+        // 可以关闭 repositoryWorkspace了，因为不需要了
+        this.#repositoryWorkspace.close();
+        if (this.#workspace) {
             // 注意 repositoryPlanGroup, repositoryPlanMeta 和 repositoryPlanParams 用的是同一个链接，都是 workspaceId 对应的链接。 workspaceId 是库的名称。
             this.#repositoryPlanGroup = new Repository_PlanGroup(workspaceId);
             await this.#repositoryPlanGroup.initDatabase();
@@ -113,25 +112,40 @@ class PlanReportManager {
             await this.#repositoryPlanMeta.initDatabase();
             this.#repositoryPlanParams = new Repository_PlanParams(workspaceId);
             await this.#repositoryPlanParams.initDatabase();
-        }
-        if (groupId) {
             this.#planGroup = await this.#repositoryPlanGroup.getPlanGroupById(groupId);
-        }
-        //如果有planId参数，则加载对应的方案数据
-        if (planId) {
-            this.#planMeta = await this.#repositoryPlanMeta.getPlanMetaById(planId);
-            this.#planParams = await this.#repositoryPlanParams.getPlanParamsById(this.#planMeta.id);
-            this.#simulationCore = new SimulationCore();
-        }
-        // 修改 .main-title 下的H1的内容
-        if (this.#planMeta && this.#planMeta.name) {
-            const titleElement = document.querySelector('.main-title');
-            if (titleElement) {
-                titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
+            if (this.#planGroup) {
+                this.#planMeta = await this.#repositoryPlanMeta.getPlanMetaById(planId);
+                if (this.#planMeta) {
+                    this.#planParams = await this.#repositoryPlanParams.getPlanParamsById(this.#planMeta.id);
+                    if (this.#planParams) {
+                        // 修改 .main-title 下的H1的内容
+                        if (this.#planMeta && this.#planMeta.name) {
+                            const titleElement = document.querySelector('.main-title');
+                            if (titleElement) {
+                                titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
+                            }
+                        }
+                        this.#simulationCore = new SimulationCore();
+                        this.#reportData = this.#simulationCore.runSimulation(this.#planParams);
+                        console.log("可读性报表：", this.#reportData.toSerializable());
+                        this.#showReport();
+                    } else {
+                        this.#hidePage();
+                    }
+                } else {
+                    this.#hidePage();
+                }
+            } else {
+                this.#hidePage();
             }
+        } else {
+            this.#hidePage();
         }
     }
-
+    #hidePage() {
+        // 隐藏整个页面，提示该方案不存在。
+        document.body.innerHTML = '<div style="text-align:center; margin-top:50px;"><h2>方案不存在或无法加载，请检查链接或返回上一页。</h2></div>';
+    }
 
     #showReport() {
         if (!this.#reportData) {
