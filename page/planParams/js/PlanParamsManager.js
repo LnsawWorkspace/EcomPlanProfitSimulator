@@ -248,14 +248,15 @@ class PlanParamsManager {
                     //加载方案数据的逻辑
                     await this.#repositoryPlanParams.getPlanParamsById(this.#planMeta.id)
                         .then((planParams) => {
+                            // 修改 .main-title 下的H1的内容
+                            const titleElement = document.querySelector('.main-title h1 span');
+                            if (titleElement) {
+                                titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
+                            }
                             if (planParams) {
                                 this.#loadPlanParams(planParams);
-                                // 修改 .main-title 下的H1的内容
-                                const titleElement = document.querySelector('.main-title h1 span');
-                                if (titleElement) {
-                                    titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
-                                }
-                            } else { this.#hidePage(); }
+
+                            }
                         });
                     console.log("%c 方案参数加载完成：", "color: green; font-weight: bold;", performance.now());
                 } else {
