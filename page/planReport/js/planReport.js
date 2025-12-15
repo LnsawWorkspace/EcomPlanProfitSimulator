@@ -19,6 +19,7 @@ import Decimal from '../../../infrastructure/decimal.mjs';
 import { SimulationCore } from "../../../service/SimulationCore.js";
 
 import Percentage from '../../../infrastructure/Percentage.js';
+import Money from '../../../infrastructure/Money.js';
 
 class PlanReportManager {
     #showToast = {};
@@ -193,6 +194,7 @@ class PlanReportManager {
     #showEcharts() {
         this.Echarts.showCostStructureChart(this.Echarts.getCostStructureData(this.#reportData));
         this.Echarts.showRefundCostStructureChart(this.Echarts.getRefundCostStructureData(this.#reportData));
+        this.D3.showrevenueAndCostWaterfallChart(this.D3.getrevenueAndCostWaterfallData(this.#reportData));
     }
     #showGoodsTable() {
         //清空tbody
@@ -357,9 +359,9 @@ class PlanReportManager {
     Echarts = {
         showCostStructureChart: function (data) {
             // 初始化echarts实例
-            var myChart = echarts.init(document.getElementById('costStructureChart'));
+            const myChart = echarts.init(document.getElementById('costStructureChart'));
             //使用矩形树图
-            var option = {
+            const option = {
                 title: {
                     // text: '成本结构'
                 },
@@ -518,9 +520,9 @@ class PlanReportManager {
         },
         showRefundCostStructureChart: function (data) {
             // 初始化echarts实例
-            var myChart = echarts.init(document.getElementById('refundCostStructureChart'));
+            const myChart = echarts.init(document.getElementById('refundCostStructureChart'));
             //使用矩形树图
-            var option = {
+            const option = {
                 title: {
                     // text: '成本结构'
                 },
@@ -656,6 +658,148 @@ class PlanReportManager {
 
             return root;
         },
+    }
+    D3 = {
+        showrevenueAndCostWaterfallChart: function (data) {
+            // const data = [
+            //     { label: "收入", start: 0, end: 1000, type: "income" },
+            //     { label: "运费", start: 1000, end: 700, type: "freight" },
+            //     { label: "成本", start: 700, end: -100, type: "cost" },
+            //     { label: "利润", start: 0, end: -100, type: "profit" }
+            // ];
+
+            const labels = data.map(d => d.label);
+
+            const svgTest = d3.select("body")
+                .append("svg")
+                .attr("visibility", "hidden")
+                .style("position", "absolute")
+                .style("left", "-9999px");
+
+            // 用与y轴字体一致的font
+            const testText = svgTest.append("g")
+                .attr("class", "y axis")
+
+            let maxWidth = 0;
+            labels.forEach(txt => {
+                const t = testText.append("text").text(txt);
+                const w = t.node().getBBox().width; // 或 getComputedTextLength()
+                if (w > maxWidth) maxWidth = w;
+                t.remove();
+            });
+            svgTest.remove();
+
+            // 关键：画布尺寸以viewBox为主，实际显示百分比宽高，自适应
+            const viewBoxWidth = 800, viewBoxHeight = data.length * 24;
+            const margin = { top: 10, right: 10, bottom: 40, left: maxWidth + 20 };
+            const width = viewBoxWidth - margin.left - margin.right;
+            const height = viewBoxHeight - margin.top - margin.bottom;
+
+            const svg = d3.select("#revenueAndCostWaterfallChart")
+                .attr("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+
+            const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const y = d3.scaleBand()
+                .domain(data.map(d => d.label))
+                .range([0, height])
+                .padding(0);
+
+            const xMin = Math.min(0, d3.min(data, d => Math.min(d.start, d.end)));
+            const xMax = Math.max(0, d3.max(data, d => Math.max(d.start, d.end)));
+            const x = d3.scaleLinear()
+                .domain([xMin - 120, xMax + 120])
+                .range([0, width]);
+
+            const yAxis = chart.append("g")
+                .attr("class", "y axis")
+                .call(d3.axisLeft(y).tickSize(0))
+            yAxis.select(".domain").remove();
+            yAxis.selectAll("text")
+                .attr("text-anchor", "start")
+                .attr("x", -margin.left + 8);
+
+            const xAxis = chart.append("g")
+                .attr("class", "x grid")
+                .attr("transform", `translate(0,0)`)
+                .call(d3.axisBottom(x)
+                    .ticks(10)
+                    .tickSize(height)
+                    .tickFormat(d => d))
+            xAxis.select(".domain").remove();
+
+            chart.selectAll("rect.bar")
+                .data(data)
+                .join("rect")
+                .attr("y", d => y(d.label))
+                .attr("height", y.bandwidth())
+                .attr("x", d => x(Math.min(d.start, d.end)))
+                .attr("width", d => Math.abs(x(d.end) - x(d.start)))
+                .attr("fill", d => d.fill)
+                .attr("class", "bar");
+
+            // 检查是否有负值
+            const hasNegative = data.some(d => d.end < 0 || d.start < 0);
+            // 添加辅助线
+            if (hasNegative) {
+                const firstTickG = xAxis.select("g.tick");
+                firstTickG.select("line").remove();
+                chart.append("line")
+                    .attr("x1", x(0))
+                    .attr("x2", x(0))
+                    .attr("y1", 0)
+                    .attr("y2", height)
+                    .attr("stroke", "red")
+                    .attr("stroke-width", 0.6)
+            }
+        },
+        getrevenueAndCostWaterfallData: function (reportData) {
+            const data = [];
+            // 收入
+            const totalRevenue = reportData.modelReportSalesRevenue.收入_退款后.toNumber();
+            data.push({ label: "收入", start: 0, end: totalRevenue, fill: "#2979FF" });
+
+            // 商品成本
+            reportData.modelReportGoodsCost.明细.forEach(item => {
+                const cost = item.商品成本_有效成本.toNumber();
+                const lastEnd = data[data.length - 1].end;
+                data.push({ label: `商品：${item.商品名称}`, start: lastEnd, end: lastEnd - cost, fill: "#81C784" });
+            });
+            // 赠品成本
+            reportData.modelReportGiftCost.明细.forEach(item => {
+                const cost = item.赠品成本_有效成本.toNumber();
+                const lastEnd = data[data.length - 1].end;
+                data.push({ label: `赠品：${item.赠品名称}`, start: lastEnd, end: lastEnd - cost, fill: "#AED581" });
+            });
+            // 推广费
+            const advertisingCost = reportData.modelReportAdvertising.广告费用_有效成本.toNumber();
+            const lastEnd = data[data.length - 1].end;
+            data.push({ label: `广告：${reportData.modelReportAdvertising.广告名称}`, start: lastEnd, end: lastEnd - advertisingCost, fill: "#64B5F6" });
+            // 每单支出
+            reportData.modelreportEnpensePerOrder.明细.forEach(item => {
+                const cost = item.费用成本_有效成本.toNumber();
+                const lastEnd = data[data.length - 1].end;
+                data.push({ label: `费用：${item.费用名称}`, start: lastEnd, end: lastEnd - cost, fill: "#FFD54F" });
+            });
+            // 比例支出
+            reportData.modelreportEnpenseMNPerOrder.明细.forEach(item => {
+                const cost = item.费用成本_有效成本.toNumber();
+                const lastEnd = data[data.length - 1].end;
+                data.push({ label: `费用：${item.费用名称}`, start: lastEnd, end: lastEnd - cost, fill: "#FFB74D" });
+            });
+            // 固定支出
+            reportData.modelReportEnpenseFixed.明细.forEach(item => {
+                const cost = item.费用成本.toNumber();
+                const lastEnd = data[data.length - 1].end;
+                data.push({ label: `费用：${item.费用名称}`, start: lastEnd, end: lastEnd - cost, fill: "#A1887F" });
+            });
+            // 利润
+            const totalProfit = reportData.modelReportExt.利润.toNumber();
+            data.push({ label: "利润", start: 0, end: totalProfit, fill: "#7C4DFF" });
+
+            return data;
+        }
     }
 }
 // 页面加载完成后初始化
