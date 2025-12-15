@@ -177,7 +177,7 @@ class PlanReportManager {
             roiBusinessElement.style.color = "red";
         }
 
-        if (this.#reportData.modelReportExt.推广回报率.value.greaterThan(0)) {
+        if (!this.#reportData.modelReportExt.推广回报率.value.equals(0)) {
             const roiAdvertisingElement = document.getElementById("totalROI_Advertising");
             roiAdvertisingElement.textContent = this.#reportData.modelReportExt.推广回报率.toPercentString(4) || "--";
             // 如果this.#reportData.modelReportExt.推广回报率大于0，则显示绿色，否则显示红色
