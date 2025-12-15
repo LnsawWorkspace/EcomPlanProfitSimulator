@@ -743,15 +743,20 @@ class PlanReportManager {
             const hasNegative = data.some(d => d.end < 0 || d.start < 0);
             // 添加辅助线
             if (hasNegative) {
-                const firstTickG = xAxis.select("g.tick");
-                firstTickG.select("line").remove();
+                const alltick = xAxis.selectAll("g.tick");
+                alltick.each(function (tick) {
+                    const textValue = d3.select(this).select("text").text();
+                    if (textValue === "0") {
+                        const tickLine = d3.select(this).select("line").remove();
+                    }
+                });
                 chart.append("line")
                     .attr("x1", x(0))
                     .attr("x2", x(0))
                     .attr("y1", 0)
                     .attr("y2", height)
                     .attr("stroke", "red")
-                    .attr("stroke-width", 0.6)
+                    .attr("stroke-width", 0.5)
             }
         },
         getrevenueAndCostWaterfallData: function (reportData) {
