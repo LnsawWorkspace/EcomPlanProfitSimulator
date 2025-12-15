@@ -485,6 +485,7 @@ export class SimulationCore {
 
         // 通过ROI 计算具体的广告费用,按理说应该按照单价*数量比较合适
         const 单广告费用 = entity_params.modelPlanParamsSale.salePrice.dividedBy(entity_params.modelPlanParamsAdvertising.roi, 4);
+        report.广告名称 = entity_params.modelPlanParamsAdvertising.name;
         report.广告费用_退款前 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款前, 4);
         report.广告费用_退款后 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款后, 4);
         report.广告费用_售前损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售前损失, 4);
