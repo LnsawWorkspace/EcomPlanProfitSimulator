@@ -188,9 +188,13 @@ export class Repository_Workspace {
      */
     async isWorkspaceNameExists(name, excludeId = null) {
         const allWorkspaces = await this.getAllWorkspaces();
-        return allWorkspaces.some(Entity_Workspace =>
-            Entity_Workspace.name === name && Entity_Workspace.id !== excludeId
-        );
+        if (allWorkspaces) {
+            return allWorkspaces.some(Entity_Workspace =>
+                Entity_Workspace.name === name && Entity_Workspace.id !== excludeId
+            );
+        } else {
+            return false;
+        }
     }
 
     close() {

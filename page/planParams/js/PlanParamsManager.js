@@ -102,7 +102,7 @@ class PlanParamsManager {
     #initializeElements() {
         const elements_id = {
             savePlanParams: 'savePlanParams',
-            submitBtn: 'submitBtn',
+            goReport: 'goReport',
 
 
             goodsContainer: 'goodsContainer',
@@ -187,7 +187,7 @@ class PlanParamsManager {
         // 使用Map和forEach优化事件监听设置
         const clickListeners = new Map([
             ['savePlanParams', () => this.#saveParamsData()],
-            ['submitBtn', () => this.#saveParamsData()],
+            ['goReport', () => this.#goReport()],
 
             ['addGoodsBtn', () => this.Goods.addRow(this)],
             ['addGiftBtn', () => this.Gift.addRow(this)],
@@ -201,6 +201,17 @@ class PlanParamsManager {
         for (const [elementKey, handler] of clickListeners) {
             this.#elements[elementKey]?.addEventListener('click', handler);
         }
+    }
+    #goReport(){
+        // 先保存
+        this.#saveParamsData();
+        // 然后跳转到报告页面，传递 workspaceId, groupId, planId 参数，用open的方式打开页面
+        const urlParams = new URLSearchParams(window.location.search);
+        const workspaceId = urlParams.get('workspaceId');
+        const groupId = urlParams.get('groupId');
+        const planId = urlParams.get('planId');
+        const reportUrl = `/page/planReport/planReport.html?workspaceId=${encodeURIComponent(workspaceId)}&groupId=${encodeURIComponent(groupId)}&planId=${encodeURIComponent(planId)}`;
+        window.open(reportUrl, '_blank');
     }
 
     money(v) {
