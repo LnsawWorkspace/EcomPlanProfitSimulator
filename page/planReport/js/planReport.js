@@ -198,7 +198,8 @@ class PlanReportManager {
         } else if (this.#reportData.modelReportExt.利润率.value.lessThan(0)) {
             profitPerElement.style.color = "red";
         }
-        document.getElementById("totalRefundCost").textContent = this.#reportData.modelReportExt.总退款损失.toLocaleFixed(4) || "--";
+        document.getElementById("totalRefundCost").textContent = this.#reportData.modelReportExt.因退款造成的成本损失.toLocaleFixed(4) || "--";
+        document.getElementById("totalRefundProfit").textContent = this.#reportData.modelReportExt.因退款造成的利润损失.toLocaleFixed(4) || "--";
 
         document.getElementById("totalAdvertisingMoney").textContent = this.#reportData.modelReportAdvertising.广告费用_有效成本.toLocaleFixed(4) || "--";
     }

@@ -12,6 +12,7 @@ import Decimal from '../infrastructure/decimal.mjs';
 import Percentage from '../infrastructure/Percentage.js';
 import Money from '../infrastructure/Money.js';
 import Integer from '../infrastructure/Integer.js';
+import { Model_PlanParams_Refund } from '../domain/plan/Model_PlanParams_Refund.js';
 
 
 export class SimulationCore {
@@ -32,7 +33,10 @@ export class SimulationCore {
         this.#getEnpenseMNPerOrder(entity, report);
         this.#getEnpenseFixed(entity, report);
         this.#getAdvertisingCost(entity, report);
-        this.#getExtReport(entity, report);
+
+        const refund0Report = this.#run0Refund(entity);
+
+        this.#getExtReport(entity, report, refund0Report);
         console.log('%c  + end Simulation:', "color: green", performance.now());
         return report;
     }
@@ -499,7 +503,7 @@ export class SimulationCore {
      * @param {Entity_PlanParams} entity_params
      * @param {Entity_PlanReport} entity_report
      */
-    #getExtReport(entity_params, entity_report) {
+    #getExtReport(entity_params, entity_report, entity_report_0refund) {
         const report = entity_report.modelReportExt;
         let 总成本 = new Money(0, 4);
         总成本 = 总成本.plus(entity_report.modelReportGoodsCost.商品成本_有效成本);
@@ -522,7 +526,12 @@ export class SimulationCore {
         总退款损失 = 总退款损失.plus(entity_report.modelreportEnpensePerOrder.费用成本_总退款损失);
         总退款损失 = 总退款损失.plus(entity_report.modelreportEnpenseMNPerOrder.费用成本_总退款损失);
         总退款损失 = 总退款损失.plus(entity_report.modelReportAdvertising.广告费用_总退款损失);
-        report.总退款损失 = 总退款损失;
+        report.因退款造成的成本损失 = 总退款损失;
+
+        if (entity_report_0refund) {
+            report.因退款造成的利润损失 = entity_report_0refund.modelReportExt.利润.minus(report.利润, 4);
+        }
+
     }
 
 
@@ -556,5 +565,45 @@ export class SimulationCore {
 
         return result;
     }
+
+    #run0Refund(entity) {
+        entity.modelPlanParamsRefund = new Model_PlanParams_Refund({
+            id: crypto.randomUUID(),
+            refundBefRate: new Percentage(0),
+            refundIngRate: new Percentage(0),
+            refundAftRate: new Percentage(0),
+        });
+        console.log('%c  + start Simulation:', "color: green", performance.now());
+        entity.modelPlanParamsSale.quantityPattern = 'real';
+        const report = new Entity_PlanReport({ id: crypto.randomUUID() });
+        this.#getSalesRevenue(entity, report);
+        this.#getGoodsCost(entity, report);
+        this.#getGiftCost(entity, report);
+        this.#getEnpensePerOrder(entity, report);
+        this.#getEnpenseMNPerOrder(entity, report);
+        this.#getEnpenseFixed(entity, report);
+        this.#getAdvertisingCost(entity, report);
+        this.#getExtReport(entity, report);
+        console.log('%c  + end Simulation:', "color: green", performance.now());
+        return report;
+    }
+
+    /**
+     * 关于退款损失
+     * 
+     * 之前的退款损失是没问题的，现在说的退款损失是另外的一个角度。
+     * 一个订单退款了，其损失并不是损失了一些成本（支付了成本但是没有收入）
+     * 比如说 退款了 损失了包装费2块钱
+     * 实际上 损失的不只是2块钱
+     * 因为如果这个订单没有退款，那么这个订单还会产生收入
+     * 
+     * 那么，怎么计算这个损失呢？
+     * 收入部分好处理，直接算退款的这部分订单的收入是多少就行
+     * 其他的部分怎么处理呢？
+     * 实际上，我应该按照退款率是0的算一次，然后得出来一个结果。这个就是最理想的结果
+     * 然后用这个结果的利润减去实际的利润，就是损失的利润
+     * 
+     * 损失的利润 = 理想利润 - 实际利润 视为退款损失（利润层面的损失）。
+     */
 
 }
