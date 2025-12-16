@@ -302,6 +302,7 @@ export class SimulationCore {
                 } else {
                     应税金额 = costItem.赠品成本_退款后.times(0.1, 4);
                 }
+                costItem.赠品成本_额外收入 = 应税金额;
                 costItem.赠品成本_额外缴税 = 应税金额.times(税率, 4);
             }
 

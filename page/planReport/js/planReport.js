@@ -199,6 +199,8 @@ class PlanReportManager {
             profitPerElement.style.color = "red";
         }
         document.getElementById("totalRefundCost").textContent = this.#reportData.modelReportExt.总退款损失.toLocaleFixed(4) || "--";
+
+        document.getElementById("totalAdvertisingMoney").textContent = this.#reportData.modelReportAdvertising.广告费用_有效成本.toLocaleFixed(4) || "--";
     }
     #showEcharts() {
         this.Echarts.showCostStructureChart(this.Echarts.getCostStructureData(this.#reportData));
@@ -787,9 +789,11 @@ class PlanReportManager {
                 data.push({ label: `赠品：${item.赠品名称}`, start: lastEnd, end: lastEnd - cost, fill: "#AED581" });
             });
             // 推广费
-            const advertisingCost = reportData.modelReportAdvertising.广告费用_有效成本.toNumber();
-            const lastEnd = data[data.length - 1].end;
-            data.push({ label: `广告：${reportData.modelReportAdvertising.广告名称}`, start: lastEnd, end: lastEnd - advertisingCost, fill: "#64B5F6" });
+            if (reportData.modelReportAdvertising) {
+                const advertisingCost = reportData.modelReportAdvertising.广告费用_有效成本.toNumber();
+                const lastEnd = data[data.length - 1].end;
+                data.push({ label: `广告：${reportData.modelReportAdvertising.广告名称}`, start: lastEnd, end: lastEnd - advertisingCost, fill: "#64B5F6" });
+            }
             // 每单支出
             reportData.modelreportEnpensePerOrder.明细.forEach(item => {
                 const cost = item.费用成本_有效成本.toNumber();
