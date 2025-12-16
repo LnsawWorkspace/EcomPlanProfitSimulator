@@ -209,7 +209,6 @@ class WorkspaceManager {
                 <td>${workspace.updatedAt}</td>
                 <td>${workspace.backupAt || '-'}</td>
                     <td class="workspace-btn-group">
-						<button class="btn btn-primary workspace-btn workspace-backup-btn">备份</button>
                         <button class="btn btn-warning workspace-btn workspace-edit-btn">修改</button>
                         <button class="btn btn-danger workspace-btn workspace-remove-btn">删除</button>
                         <button class="btn btn-success workspace-btn workspace-activate-btn">激活</button>
