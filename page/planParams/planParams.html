@@ -21,19 +21,28 @@
     <!-- Toast 容器 -->
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;"></div>
 
-    <main class="container plan-params-container">
-
-        <div class="main-title">
-            <h1><i class="bi bi-collection me-2"></i><span>方案详情</span></h1>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="container params-container header-content">
+            <h1 class="header-title">方案参数</h1>
+            <p class="header-subtitle main-title">默认工作区 -> 拼多多-半边绒睡衣 G689 -> 推广：规格：粉色 加长 加厚</p>
         </div>
+    </header>
+
+    <main class="container params-container">
 
         <!-- 目标参数卡片 -->
-        <div class="card">
+        <div class="params-card">
             <div class="card-header">
-                <h5 class="main-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-bullseye"></i></span>
-                    目标
-                </h5>
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-bullseye"></i>
+                    </div>
+                    <h4 class="card-title">目标</h4>
+                </div>
+                <div class="card-actions">
+                    <!-- 标题右边的位置，可以添加按钮-->
+                </div>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -93,12 +102,17 @@
         </div>
 
         <!-- 推广参数卡片 -->
-        <div class="card">
+        <div class="params-card">
             <div class="card-header">
-                <h5 class="main-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-bullseye"></i></span>
-                    推广
-                </h5>
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-megaphone"></i>
+                    </div>
+                    <h4 class="card-title">推广</h4>
+                </div>
+                <div class="card-actions">
+                    <!-- 标题右边的位置，可以添加按钮-->
+                </div>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -152,199 +166,211 @@
         </div>
 
         <!-- 商品参数卡片 -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="section-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-box-seam"></i></span>
-                    商品信息
-                </h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#paramsModal_Goods">
-                    <i class="bi bi-plus-circle me-1"></i>新增商品
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table text-center table-hover" id="goodsTable">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">商品名称</th>
-                                <th scope="col">商品数量</th>
-                                <th scope="col">采购金额</th>
-                                <th scope="col">采购数量</th>
-                                <th scope="col">含税成本</th>
-                                <th scope="col">不含税成本</th>
-                                <th scope="col">公允价值</th>
-                                <th scope="col">进项税率</th>
-                                <th scope="col">销项税率</th>
-                                <th scope="col">售前回收</th>
-                                <th scope="col">售中回收</th>
-                                <th scope="col">售后回收</th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="goodsContainer">
-
-                        </tbody>
-                    </table>
+        <div class="params-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <h4 class="card-title">商品信息</h4>
                 </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                        data-bs-target="#paramsModal_Goods">
+                        <i class="bi bi-plus-circle me-1"></i>新增商品
+                    </button>
+                </div>
+            </div>
+            <div class="card-body-table">
+                <table class="data-table" id="goodsTable">
+                    <thead>
+                        <tr>
+                            <!-- <th scope="col" class="text-start">#</th> -->
+                            <th scope="col" class="text-start">商品名称</th>
+                            <th scope="col" class="text-end">商品数量</th>
+                            <th scope="col" class="text-end">采购金额</th>
+                            <th scope="col" class="text-end">采购数量</th>
+                            <th scope="col" class="text-end">含税成本</th>
+                            <th scope="col" class="text-end">不含税成本</th>
+                            <th scope="col" class="text-end">公允价值</th>
+                            <th scope="col" class="text-end">进项税率</th>
+                            <th scope="col" class="text-end">销项税率</th>
+                            <th scope="col" class="text-end">售前回收</th>
+                            <th scope="col" class="text-end">售中回收</th>
+                            <th scope="col" class="text-end">售后回收</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="goodsContainer">
+
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- 赠品参数卡片 -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="section-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-gift"></i></span>
-                    赠品信息
-                </h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#paramsModal_Gift">
-                    <i class="bi bi-plus-circle me-1"></i>新增赠品
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table text-center table-hover" id="giftTable">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">赠品名称</th>
-                                <th scope="col">赠品数量</th>
-                                <th scope="col">采购金额</th>
-                                <th scope="col">采购数量</th>
-                                <th scope="col">含税成本</th>
-                                <th scope="col">不含税成本</th>
-                                <th scope="col">公允价值</th>
-                                <th scope="col">进项税率</th>
-                                <th scope="col">退税税率</th>
-                                <th scope="col">售前回收</th>
-                                <th scope="col">售中回收</th>
-                                <th scope="col">售后回收</th>
-                                <th scope="col">费用类型</th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="giftContainer">
-
-                        </tbody>
-                    </table>
+        <div class="params-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-gift"></i>
+                    </div>
+                    <h4 class="card-title">赠品信息</h4>
                 </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                        data-bs-target="#paramsModal_Gift">
+                        <i class="bi bi-plus-circle me-1"></i>新增赠品
+                    </button>
+                </div>
+            </div>
+            <div class="card-body-table">
+                <table class="data-table" id="giftTable">
+                    <thead>
+                        <tr>
+                            <!-- <th scope="col" class="text-start">#</th> -->
+                            <th scope="col" class="text-start">赠品名称</th>
+                            <th scope="col" class="text-end">赠品数量</th>
+                            <th scope="col" class="text-end">采购金额</th>
+                            <th scope="col" class="text-end">采购数量</th>
+                            <th scope="col" class="text-end">含税成本</th>
+                            <th scope="col" class="text-end">不含税成本</th>
+                            <th scope="col" class="text-end">公允价值</th>
+                            <th scope="col" class="text-end">进项税率</th>
+                            <th scope="col" class="text-end">销项税率</th>
+                            <th scope="col" class="text-end">售前回收</th>
+                            <th scope="col" class="text-end">售中回收</th>
+                            <th scope="col" class="text-end">售后回收</th>
+                            <th scope="col" class="text-end">费用类型</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="giftContainer">
+
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- 每单支出参数 -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="section-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-currency-dollar"></i></span>
-                    每单支出
-                </h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#paramsModal_ExpensePerOrder">
-                    <i class="bi bi-plus-circle me-1"></i>新增支出
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table text-center table-hover" id="expensePerOrderTable">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">支出名称</th>
-                                <th scope="col">支出成本</th>
-                                <th scope="col">进项税率</th>
-                                <th scope="col">成本类型</th>
-                                <th scope="col">基于</th>
-                                <th scope="col">基于含税</th>
-                                <th scope="col">售前回收</th>
-                                <th scope="col">售中回收</th>
-                                <th scope="col">售后回收</th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="expensePerOrderContainer">
-
-                        </tbody>
-                    </table>
+        <div class="params-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-currency-dollar"></i>
+                    </div>
+                    <h4 class="card-title">每单支出</h4>
                 </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                        data-bs-target="#paramsModal_ExpensePerOrder">
+                        <i class="bi bi-plus-circle me-1"></i>新增支出
+                    </button>
+                </div>
+            </div>
+            <div class="card-body-table">
+                <table class="data-table" id="expensePerOrderTable">
+                    <thead>
+                        <tr>
+                            <!-- <th scope="col" class="text-start">#</th> -->
+                            <th scope="col" class="text-start">支出名称</th>
+                            <th scope="col" class="text-end">支出成本</th>
+                            <th scope="col" class="text-end">进项税率</th>
+                            <th scope="col" class="text-end">成本类型</th>
+                            <th scope="col" class="text-end">基于</th>
+                            <th scope="col" class="text-end">基于含税</th>
+                            <th scope="col" class="text-end">售前回收</th>
+                            <th scope="col" class="text-end">售中回收</th>
+                            <th scope="col" class="text-end">售后回收</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensePerOrderContainer">
+
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- M单中N单每单支出-->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="section-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-currency-dollar"></i></span>
-                    部分订单支出
-                </h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#paramsModal_ExpenseMNPerOrder">
-                    <i class="bi bi-plus-circle me-1"></i>新增支出
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table text-center table-hover" id="expenseMNPerOrderTable">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">支出名称</th>
-                                <th scope="col">订单比例</th>
-                                <th scope="col">支出成本</th>
-                                <th scope="col">进项税率</th>
-                                <th scope="col">成本类型</th>
-                                <th scope="col">基于</th>
-                                <th scope="col">基于含税</th>
-                                <th scope="col">售前退款</th>
-                                <th scope="col">售中退款</th>
-                                <th scope="col">售后退款</th>
-                                <th scope="col">售前回收</th>
-                                <th scope="col">售中回收</th>
-                                <th scope="col">售后回收</th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="expenseMNPerOrderContainer">
-
-                        </tbody>
-                    </table>
+        <div class="params-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-currency-exchange"></i>
+                    </div>
+                    <h4 class="card-title">部分订单支出</h4>
                 </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                        data-bs-target="#paramsModal_ExpenseMNPerOrder">
+                        <i class="bi bi-plus-circle me-1"></i>新增支出
+                    </button>
+                </div>
+            </div>
+            <div class="card-body-table">
+                <table class="data-table" id="expenseMNPerOrderTable">
+                    <thead>
+                        <tr>
+                            <!-- <th scope="col" class="text-start">#</th> -->
+                            <th scope="col" class="text-start">支出名称</th>
+                            <th scope="col" class="text-end">订单比例</th>
+                            <th scope="col" class="text-end">支出成本</th>
+                            <th scope="col" class="text-end">进项税率</th>
+                            <th scope="col" class="text-end">成本类型</th>
+                            <th scope="col" class="text-end">基于</th>
+                            <th scope="col" class="text-end">基于含税</th>
+                            <th scope="col" class="text-end">售前退款</th>
+                            <th scope="col" class="text-end">售中退款</th>
+                            <th scope="col" class="text-end">售后退款</th>
+                            <th scope="col" class="text-end">售前回收</th>
+                            <th scope="col" class="text-end">售中回收</th>
+                            <th scope="col" class="text-end">售后回收</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseMNPerOrderContainer">
+
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- 固定支出-->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="section-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-currency-dollar"></i></span>
-                    固定支出
-                </h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#paramsModal_ExpenseFixed">
-                    <i class="bi bi-plus-circle me-1"></i>新增支出
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table text-center table-hover" id="expenseFixedTable">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">支出名称</th>
-                                <th scope="col">支出成本</th>
-                                <th scope="col">进项税率</th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="expenseFixedContainer">
-
-                        </tbody>
-                    </table>
+        <div class="params-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-archive"></i>
+                    </div>
+                    <h4 class="card-title">固定支出</h4>
+                </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                        data-bs-target="#paramsModal_ExpenseFixed">
+                        <i class="bi bi-plus-circle me-1"></i>新增支出
+                    </button>
                 </div>
             </div>
+            <div class="card-body-table">
+                <table class="data-table" id="expenseFixedTable">
+                    <thead>
+                        <tr>
+                            <!-- <th scope="col" class="text-start">#</th> -->
+                            <th scope="col" class="text-start">支出名称</th>
+                            <th scope="col" class="text-end">支出成本</th>
+                            <th scope="col" class="text-end">进项税率</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseFixedContainer">
+
+                    </tbody>
+                </table>
+            </div>
         </div>
+
+        <div class="footHelper"></div>
 
         <!-- 提交按钮 -->
         <div class="submit-section fixed-bottom bg-white p-3 border-top">

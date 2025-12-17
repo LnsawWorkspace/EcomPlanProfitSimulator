@@ -77,9 +77,6 @@ class PlanParamsManager {
         return s;
     }
 
-    /**
-   * 初始化工作台
-   */
     async initialize() {
         console.log("%c PlanParamsManager初始化开始 ", "color: green; font-weight: bold;", performance.now());
         this.#initializeElements();
@@ -202,7 +199,7 @@ class PlanParamsManager {
             this.#elements[elementKey]?.addEventListener('click', handler);
         }
     }
-    #goReport(){
+    #goReport() {
         // 先保存
         this.#saveParamsData();
         // 然后跳转到报告页面，传递 workspaceId, groupId, planId 参数，用open的方式打开页面
@@ -300,10 +297,6 @@ class PlanParamsManager {
         } catch (error) {
 
         }
-    }
-
-    #getReport() {
-
     }
 
     #getParams() {
@@ -714,9 +707,9 @@ class PlanParamsManager {
                 this.goodsCounter++;
                 //构建一行tr
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${this.goodsCounter}</th>
                 newRow.innerHTML =
                     `
-                            <th scope="row" class="text-center">${this.goodsCounter}</th>
                             <td class="fw-semibold item-name">${商品名称}</td>
                             <td class="text-end">${商品数量}</td>
                             <td class="text-end">${采购金额}</td>
@@ -724,11 +717,11 @@ class PlanParamsManager {
                             <td class="text-end">${含税成本}</td>
                             <td class="text-end">${不含税成本}</td>
                             <td class="text-end">${公允价值}</td>
-                            <td class="text-center">${进项税率}</td>
-                            <td class="text-center">${销项税率}</td>
-                            <td class="text-center">${售前回收}</td>
-                            <td class="text-center">${售中回收}</td>
-                            <td class="text-center">${售后回收}</td>
+                            <td class="text-end">${进项税率}</td>
+                            <td class="text-end">${销项税率}</td>
+                            <td class="text-end">${售前回收}</td>
+                            <td class="text-end">${售中回收}</td>
+                            <td class="text-end">${售后回收}</td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary modify">
@@ -831,8 +824,8 @@ class PlanParamsManager {
                 const refundAftRec = (item.refundAftRec.toPercentString(2) ?? '');
 
                 const newRow = document.createElement('tr');
+                // <th scope="row" class="text-start">${index + 1}</th>
                 newRow.innerHTML = `
-                    <th scope="row" class="text-center">${index + 1}</th>
                         <td class="fw-semibold item-name">${name}</td>
                         <td class="text-end">${quantity}</td>
                         <td class="text-end">${purchaseAmount}</td>
@@ -840,11 +833,11 @@ class PlanParamsManager {
                         <td class="text-end">${valueIncTax}</td>
                         <td class="text-end">${valueExcTax}</td>
                         <td class="text-end">${fairValue}</td>
-                        <td class="text-center">${inputRate}</td>
-                        <td class="text-center">${outputRate}</td>
-                        <td class="text-center">${refundBefRec}</td>
-                        <td class="text-center">${refundIngRec}</td>
-                        <td class="text-center">${refundAftRec}</td>
+                        <td class="text-end">${inputRate}</td>
+                        <td class="text-end">${outputRate}</td>
+                        <td class="text-end">${refundBefRec}</td>
+                        <td class="text-end">${refundIngRec}</td>
+                        <td class="text-end">${refundAftRec}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-primary modify"><i class="bi bi-pencil"></i></button>
@@ -911,9 +904,9 @@ class PlanParamsManager {
                 this.giftCounter++;
                 //构建一行tr
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${this.giftCounter}</th>
                 newRow.innerHTML =
                     `
-                            <th scope="row" class="text-center">${this.giftCounter}</th>
                             <td class="fw-semibold item-name">${礼品名称}</td>
                             <td class="text-end">${礼品数量}</td>
                             <td class="text-end">${采购金额}</td>
@@ -921,12 +914,12 @@ class PlanParamsManager {
                             <td class="text-end">${含税成本}</td>
                             <td class="text-end">${不含税成本}</td>
                             <td class="text-end">${公允价值}</td>
-                            <td class="text-center">${进项税率}</td>
-                            <td class="text-center">${销项税率}</td>
-                            <td class="text-center">${售前回收}</td>
-                            <td class="text-center">${售中回收}</td>
-                            <td class="text-center">${售后回收}</td>
-                            <td class="text-center fw-semibold ${subjectColor}">${科目类型}</td>
+                            <td class="text-end">${进项税率}</td>
+                            <td class="text-end">${销项税率}</td>
+                            <td class="text-end">${售前回收}</td>
+                            <td class="text-end">${售中回收}</td>
+                            <td class="text-end">${售后回收}</td>
+                            <td class="text-end fw-semibold ${subjectColor}">${科目类型}</td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary modify">
@@ -1038,8 +1031,8 @@ class PlanParamsManager {
                 const subjectColor = subjectType === "视同销售" ? 'text-danger' : 'text-success';
 
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${index + 1}</th>
                 newRow.innerHTML = `
-                    <th scope="row" class="text-center">${index + 1}</th>
                         <td class="fw-semibold item-name">${name}</td>
                         <td class="text-end">${quantity}</td>
                         <td class="text-end">${purchaseAmount}</td>
@@ -1047,12 +1040,12 @@ class PlanParamsManager {
                         <td class="text-end">${valueIncTax}</td>
                         <td class="text-end">${valueExcTax}</td>
                         <td class="text-end">${fairValue}</td>
-                        <td class="text-center">${inputRate}</td>
-                        <td class="text-center">${outputRate}</td>
-                        <td class="text-center">${refundBefRec}</td>
-                        <td class="text-center">${refundIngRec}</td>
-                        <td class="text-center">${refundAftRec}</td>
-                        <td class="text-center fw-semibold ${subjectColor}">${subjectType}</td>
+                        <td class="text-end">${inputRate}</td>
+                        <td class="text-end">${outputRate}</td>
+                        <td class="text-end">${refundBefRec}</td>
+                        <td class="text-end">${refundIngRec}</td>
+                        <td class="text-end">${refundAftRec}</td>
+                        <td class="text-end fw-semibold ${subjectColor}">${subjectType}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-primary modify"><i class="bi bi-pencil"></i></button>
@@ -1137,18 +1130,18 @@ class PlanParamsManager {
                 this.expenseCounter++;
                 //构建一行tr
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${this.expenseCounter}</th>
                 newRow.innerHTML =
                     `
-                            <th scope="row" class="text-center">${this.expenseCounter}</th>
                             <td class="fw-semibold item-name">${费用名称}</td>
                             <td class="text-end">${费用金额}</td>
-                            <td class="text-center">${进项税率}</td>
-                            <td class="text-center">${计费类型 === "num" ? "固定金额" : "指定比例"}</td>
+                            <td class="text-end">${进项税率}</td>
+                            <td class="text-end">${计费类型 === "num" ? "固定金额" : "指定比例"}</td>
                             <td class="text-end">${计费基数}</td>
-                            <td class="text-center">${计费类型 === "num" ? "-" : 计费基数含税 ? "含税" : "不含税"}</td>
-                            <td class="text-center">${售前回收}</td>
-                            <td class="text-center">${售中回收}</td>
-                            <td class="text-center">${售后回收}</td>
+                            <td class="text-end">${计费类型 === "num" ? "-" : 计费基数含税 ? "含税" : "不含税"}</td>
+                            <td class="text-end">${售前回收}</td>
+                            <td class="text-end">${售中回收}</td>
+                            <td class="text-end">${售后回收}</td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary modify">
@@ -1236,17 +1229,17 @@ class PlanParamsManager {
                 const refundIngRec = (item.refundIngRec.toPercentString(2) ?? '');
                 const refundAftRec = (item.refundAftRec.toPercentString(2) ?? '');
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${index + 1}</th>
                 newRow.innerHTML = `
-                    <th scope="row" class="text-center">${index + 1}</th>
                         <td class="fw-semibold item-name">${name}</td>
                         <td class="text-end">${value}</td>
-                        <td class="text-center">${inputRate}</td>
-                        <td class="text-center">${valueType === 'num' ? '固定金额' : '指定比例'}</td>
+                        <td class="text-end">${inputRate}</td>
+                        <td class="text-end">${valueType === 'num' ? '固定金额' : '指定比例'}</td>
                         <td class="text-end">${base}</td>
-                        <td class="text-center">${valueType === "num" ? "-" : baseHaveTax ? '含税' : '不含税'}</td>
-                        <td class="text-center">${refundBefRec}</td>
-                        <td class="text-center">${refundIngRec}</td>
-                        <td class="text-center">${refundAftRec}</td>
+                        <td class="text-end">${valueType === "num" ? "-" : baseHaveTax ? '含税' : '不含税'}</td>
+                        <td class="text-end">${refundBefRec}</td>
+                        <td class="text-end">${refundIngRec}</td>
+                        <td class="text-end">${refundAftRec}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-primary modify"><i class="bi bi-pencil"></i></button>
@@ -1341,14 +1334,14 @@ class PlanParamsManager {
                 this.expenseCounter++;
                 //构建一行tr
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${this.expenseCounter}</th>
                 newRow.innerHTML =
                     `
-                            <th scope="row" class="text-center">${this.expenseCounter}</th>
                             <td class="fw-semibold item-name">${费用名称}</td>
                             <td class="text-end">${每单费用比例}</td>
                             <td class="text-end">${费用金额}</td>
-                            <td class="text-center">${进项税率}</td>
-                            <td class="text-center">${计费类型 === "num" ? "固定金额" : "指定比例"}</td>
+                            <td class="text-end">${进项税率}</td>
+                            <td class="text-end">${计费类型 === "num" ? "固定金额" : "指定比例"}</td>
                             <td class="text-end">${计费基数}</td>
                             <td class="text-end">${计费类型 === "num" ? "-" : 计费基数含税 ? "含税" : "不含税"}</td>
                             <td class="text-end">${售前退款}</td>
@@ -1456,13 +1449,13 @@ class PlanParamsManager {
                 const refundIngPer = (item.refundIngPer.toPercentString(2) ?? '');
                 const refundAftPer = (item.refundAftPer.toPercentString(2) ?? '');
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${index + 1}</th>
                 newRow.innerHTML = `
-                    <th scope="row" class="text-center">${index + 1}</th>
                         <td class="fw-semibold item-name">${name}</td>
                         <td class="text-end">${orderPer}</td>
                         <td class="text-end">${value}</td>
-                        <td class="text-center">${inputRate}</td>
-                        <td class="text-center">${valueType === 'num' ? '固定金额' : '指定比例'}</td>
+                        <td class="text-end">${inputRate}</td>
+                        <td class="text-end">${valueType === 'num' ? '固定金额' : '指定比例'}</td>
                         <td class="text-end">${base}</td>
                         <td class="text-end">${valueType === "num" ? "-" : baseHaveTax ? '含税' : '不含税'}</td>
                         <td class="text-end">${refundBefPer}</td>
@@ -1509,12 +1502,12 @@ class PlanParamsManager {
                 this.expenseCounter++;
                 //构建一行tr    
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${this.expenseCounter}</th>
                 newRow.innerHTML =
                     `
-                            <th scope="row" class="text-center">${this.expenseCounter}</th>
                             <td class="fw-semibold item-name">${费用名称}</td>
-                            <td class="text-center">${费用金额}</td>
-                            <td class="text-center">${进项税率}</td>
+                            <td class="text-end">${费用金额}</td>
+                            <td class="text-end">${进项税率}</td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary modify">
@@ -1582,11 +1575,11 @@ class PlanParamsManager {
                 const value = (item.value.options.prefix + item.value.toLocaleFixed() ?? 0);
                 const inputRate = (item.inputRate.toPercentString(2) ?? '');
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${index + 1}</th>
                 newRow.innerHTML = `
-                    <th scope="row" class="text-center">${index + 1}</th>
                         <td class="fw-semibold item-name">${name}</td>
-                        <td class="text-center">${value}</td>
-                        <td class="text-center">${inputRate}</td>
+                        <td class="text-end">${value}</td>
+                        <td class="text-end">${inputRate}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-primary modify"><i class="bi bi-pencil"></i></button>
