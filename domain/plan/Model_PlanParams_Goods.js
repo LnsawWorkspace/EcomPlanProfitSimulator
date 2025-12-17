@@ -89,7 +89,7 @@ export class Model_PlanParams_Goods {
     // 私有方法：计算商品成本（核心逻辑）
     #calculateCost() {
         // 优先级1：通过采购金额/数量计算
-        if (!this.#purchaseAmount.isZero() && this.#purchaseQuantity > 0) {
+        if (this.#purchaseAmount.greaterThan(Money.ZERO) && this.#purchaseQuantity.greaterThan(Integer.ZERO)) {
             this.#valueIncTax = this.#purchaseAmount.dividedBy(this.#purchaseQuantity);
             this.#valueExcTax = this.#valueIncTax.dividedBy(this.#inputRate.plus(Percentage.ONE_HUNDRED_PERCENT, {}));
         }

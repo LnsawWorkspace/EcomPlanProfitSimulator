@@ -16,6 +16,10 @@ import { Repository_PlanMeta } from '../../../repository/Repository_PlanMeta.js'
 import { Repository_PlanParams } from '../../../repository/Repository_PlanParams.js';
 import LnsawTool from '../../../infrastructure/utils/LnsawTool.js';
 import Decimal from '../../../infrastructure/decimal.mjs';
+import Money from '../../../infrastructure/Money.js';
+import Integer from '../../../infrastructure/Integer.js';
+import Percentage from '../../../infrastructure/Percentage.js';
+
 class PlanParamsManager {
 
     #showToast = {};
@@ -442,18 +446,18 @@ class PlanParamsManager {
                 if (!name) return; // 跳过空名称的行
 
                 const numRaw = that.#sanitizeNumberString(text(1));
-                const purchaseAmountRaw = that.#sanitizeNumberString(text(2));
-                const purchaseQuantityRaw = that.#sanitizeNumberString(text(3));
-                const valueIncTaxRaw = that.#sanitizeNumberString(text(4));
-                const valueExcTaxRaw = that.#sanitizeNumberString(text(5));
-                const fairValueRaw = that.#sanitizeNumberString(text(6));
+                const purchaseAmountRaw = 0;
+                const purchaseQuantityRaw = 0;
+                const valueIncTaxRaw = that.#sanitizeNumberString(text(2));
+                const valueExcTaxRaw = that.#sanitizeNumberString(text(3));
+                const fairValueRaw = that.#sanitizeNumberString(text(4));
 
-                const inputRateRaw = that.#sanitizeNumberString(text(7));
-                const outputRateRaw = that.#sanitizeNumberString(text(8));
+                const inputRateRaw = that.#sanitizeNumberString(text(5));
+                const outputRateRaw = that.#sanitizeNumberString(text(6));
 
-                const refundBefRaw = that.#sanitizeNumberString(text(9));
-                const refundIngRaw = that.#sanitizeNumberString(text(10));
-                const refundAftRaw = that.#sanitizeNumberString(text(11));
+                const refundBefRaw = that.#sanitizeNumberString(text(7));
+                const refundIngRaw = that.#sanitizeNumberString(text(8));
+                const refundAftRaw = that.#sanitizeNumberString(text(9));
 
                 // 构建 DTO，保留原始字符串或解析为 Decimal（Model 会使用 ValidateUtils.decimal/decimalRange 进行最终校验）
                 const dto = {
@@ -495,20 +499,20 @@ class PlanParamsManager {
                 if (!name) return; // 跳过空名称的行
 
                 const numRaw = that.#sanitizeNumberString(text(1));
-                const purchaseAmountRaw = that.#sanitizeNumberString(text(2));
-                const purchaseQuantityRaw = that.#sanitizeNumberString(text(3));
-                const valueIncTaxRaw = that.#sanitizeNumberString(text(4));
-                const valueExcTaxRaw = that.#sanitizeNumberString(text(5));
-                const fairValueRaw = that.#sanitizeNumberString(text(6));
+                const purchaseAmountRaw = 0;
+                const purchaseQuantityRaw = 0;
+                const valueIncTaxRaw = that.#sanitizeNumberString(text(2));
+                const valueExcTaxRaw = that.#sanitizeNumberString(text(3));
+                const fairValueRaw = that.#sanitizeNumberString(text(4));
 
-                const inputRateRaw = that.#sanitizeNumberString(text(7));
-                const outputRateRaw = that.#sanitizeNumberString(text(8));
+                const inputRateRaw = that.#sanitizeNumberString(text(5));
+                const outputRateRaw = that.#sanitizeNumberString(text(6));
 
-                const refundBefRaw = that.#sanitizeNumberString(text(9));
-                const refundIngRaw = that.#sanitizeNumberString(text(10));
-                const refundAftRaw = that.#sanitizeNumberString(text(11));
+                const refundBefRaw = that.#sanitizeNumberString(text(7));
+                const refundIngRaw = that.#sanitizeNumberString(text(8));
+                const refundAftRaw = that.#sanitizeNumberString(text(9));
 
-                const subjectTypeRaw = text(12);
+                const subjectTypeRaw = text(10);
 
                 // 构建 DTO，保留原始字符串或解析为 Decimal（Model 会使用 ValidateUtils.decimal/decimalRange 进行最终校验）
                 const dto = {
@@ -691,17 +695,26 @@ class PlanParamsManager {
 
             // 格式化后的展示值
             let 商品数量 = that.numFmt(rawNum);
-            let 采购金额 = that.money(rawPurchaseAmount);
-            // 采购数量为数量类，应为纯数值而非货币
-            let 采购数量 = that.numFmt(rawPurchaseQuantity);
-            let 含税成本 = that.money(rawCostWithTax);
-            let 不含税成本 = that.money(rawCostNoTax);
+
+            let 含税成本 = new Money(rawCostWithTax || 0, 4);
+            let 不含税成本 = new Money(rawCostNoTax || 0, 4);
             let 进项税率 = that.pctFmt(rawInputRate);
             let 销项税率 = that.pctFmt((rawOutputRate === undefined || rawOutputRate === null || rawOutputRate === '') ? rawInputRate : rawOutputRate);
-            let 公允价值 = that.money(rawFairValue);
+            let 公允价值 = new Money(rawFairValue || 0, 4);
             let 售前回收 = that.pctFmt(rawRefundBef);
             let 售中回收 = that.pctFmt(rawRefundIng);
             let 售后回收 = that.pctFmt(rawRefundAft);
+
+            let 采购金额 = new Money(rawPurchaseAmount || 0, 4);
+            let 采购数量 = new Integer(rawPurchaseQuantity || 0, 4);
+            if (采购金额.greaterThan(Money.ZERO) && 采购数量.greaterThan(Integer.ZERO)) {
+                含税成本 = 采购金额.dividedBy(采购数量);
+                不含税成本 = 含税成本.dividedBy(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            } else if (含税成本.greaterThan(Money.ZERO)) {
+                不含税成本 = 含税成本.dividedBy(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            } else {
+                含税成本 = 不含税成本.times(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            }
 
             if (this.editingRow === null) {
                 this.goodsCounter++;
@@ -711,12 +724,10 @@ class PlanParamsManager {
                 newRow.innerHTML =
                     `
                             <td class="fw-semibold item-name">${商品名称}</td>
-                            <td class="text-end">${商品数量}</td>
-                            <td class="text-end">${采购金额}</td>
-                            <td class="text-end">${采购数量}</td>                            
-                            <td class="text-end">${含税成本}</td>
-                            <td class="text-end">${不含税成本}</td>
-                            <td class="text-end">${公允价值}</td>
+                            <td class="text-end">${商品数量}</td>                      
+                            <td class="text-end">${含税成本.options.prefix + 含税成本.toLocaleFixed(4)}</td>
+                            <td class="text-end">${不含税成本.options.prefix + 不含税成本.toLocaleFixed(4)}</td>
+                            <td class="text-end">${公允价值.options.prefix + 公允价值.toLocaleFixed(4)}</td>
                             <td class="text-end">${进项税率}</td>
                             <td class="text-end">${销项税率}</td>
                             <td class="text-end">${售前回收}</td>
@@ -748,16 +759,14 @@ class PlanParamsManager {
                 const cells = this.editingRow.querySelectorAll('td');
                 cells[0].textContent = 商品名称;
                 cells[1].textContent = 商品数量;
-                cells[2].textContent = 采购金额;
-                cells[3].textContent = 采购数量;
-                cells[4].textContent = 含税成本;
-                cells[5].textContent = 不含税成本;
-                cells[6].textContent = 公允价值;
-                cells[7].textContent = 进项税率;
-                cells[8].textContent = 销项税率;
-                cells[9].textContent = 售前回收;
-                cells[10].textContent = 售中回收;
-                cells[11].textContent = 售后回收;
+                cells[2].textContent = 含税成本.options.prefix + 含税成本.toLocaleFixed(4);
+                cells[3].textContent = 不含税成本.options.prefix + 不含税成本.toLocaleFixed(4);
+                cells[4].textContent = 公允价值.options.prefix + 公允价值.toLocaleFixed(4);
+                cells[5].textContent = 进项税率;
+                cells[6].textContent = 销项税率;
+                cells[7].textContent = 售前回收;
+                cells[8].textContent = 售中回收;
+                cells[9].textContent = 售后回收;
             }
 
             //关闭模态窗
@@ -768,16 +777,16 @@ class PlanParamsManager {
             const tds = e.target.closest('tr').querySelectorAll('td');;
             document.getElementById("goods-name").value = tds[0].textContent;
             document.getElementById("goods-num").value = tds[1].textContent;
-            document.getElementById("goods-purchase_amount").value = that.#sanitizeNumberString(tds[2].textContent);
-            document.getElementById("goods-purchase_quantity").value = that.#sanitizeNumberString(tds[3].textContent);
-            document.getElementById("goods-cost_withtax").value = that.#sanitizeNumberString(tds[4].textContent);
-            document.getElementById("goods-cost_notax").value = that.#sanitizeNumberString(tds[5].textContent);
-            document.getElementById("goods-fair_value").value = that.#sanitizeNumberString(tds[6].textContent);
-            document.getElementById("goods-input_rate").value = that.#sanitizeNumberString(tds[7].textContent);
-            document.getElementById("goods-output_rate").value = that.#sanitizeNumberString(tds[8].textContent);
-            document.getElementById("goods-refund_bef_rec").value = that.#sanitizeNumberString(tds[9].textContent);
-            document.getElementById("goods-refund_ing_rec").value = that.#sanitizeNumberString(tds[10].textContent);
-            document.getElementById("goods-refund_aft_rec").value = that.#sanitizeNumberString(tds[11].textContent);
+            document.getElementById("goods-purchase_amount").value = 0;
+            document.getElementById("goods-purchase_quantity").value = 0;
+            document.getElementById("goods-cost_withtax").value = that.#sanitizeNumberString(tds[2].textContent);
+            document.getElementById("goods-cost_notax").value = that.#sanitizeNumberString(tds[3].textContent);
+            document.getElementById("goods-fair_value").value = that.#sanitizeNumberString(tds[4].textContent);
+            document.getElementById("goods-input_rate").value = that.#sanitizeNumberString(tds[5].textContent);
+            document.getElementById("goods-output_rate").value = that.#sanitizeNumberString(tds[6].textContent);
+            document.getElementById("goods-refund_bef_rec").value = that.#sanitizeNumberString(tds[7].textContent);
+            document.getElementById("goods-refund_ing_rec").value = that.#sanitizeNumberString(tds[8].textContent);
+            document.getElementById("goods-refund_aft_rec").value = that.#sanitizeNumberString(tds[9].textContent);
 
             that.#modals["paramsModal_Goods"].show();
         },
@@ -828,8 +837,6 @@ class PlanParamsManager {
                 newRow.innerHTML = `
                         <td class="fw-semibold item-name">${name}</td>
                         <td class="text-end">${quantity}</td>
-                        <td class="text-end">${purchaseAmount}</td>
-                        <td class="text-end">${purchaseQuantity}</td>
                         <td class="text-end">${valueIncTax}</td>
                         <td class="text-end">${valueExcTax}</td>
                         <td class="text-end">${fairValue}</td>
@@ -885,20 +892,28 @@ class PlanParamsManager {
 
             // 格式化后的展示值
             let 礼品数量 = that.numFmt(rawNum);
-            let 采购金额 = that.money(rawPurchaseAmount);
-            // 采购数量为数量类，应为纯数值而非货币
-            let 采购数量 = that.numFmt(rawPurchaseQuantity);
-            let 含税成本 = that.money(rawCostWithTax);
-            let 不含税成本 = that.money(rawCostNoTax);
+            let 含税成本 = new Money(rawCostWithTax || 0, 4);
+            let 不含税成本 = new Money(rawCostNoTax || 0, 4);
             let 进项税率 = that.pctFmt(rawInputRate);
             let 销项税率 = that.pctFmt((rawOutputRate === undefined || rawOutputRate === null || rawOutputRate === '') ? rawInputRate : rawOutputRate);
-            let 公允价值 = that.money(rawFairValue);
+            let 公允价值 = new Money(rawFairValue || 0, 4);
             let 售前回收 = that.pctFmt(rawRefundBef);
             let 售中回收 = that.pctFmt(rawRefundIng);
             let 售后回收 = that.pctFmt(rawRefundAft);
             let 科目类型 = rawSubjectType;
 
             const subjectColor = 科目类型 === "视同销售" ? 'text-danger' : 'text-success';
+
+            let 采购金额 = new Money(rawPurchaseAmount || 0, 4);
+            let 采购数量 = new Integer(rawPurchaseQuantity || 0, 4);
+            if (采购金额.greaterThan(Money.ZERO) && 采购数量.greaterThan(Integer.ZERO)) {
+                含税成本 = 采购金额.dividedBy(采购数量);
+                不含税成本 = 含税成本.dividedBy(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            } else if (含税成本.greaterThan(Money.ZERO)) {
+                不含税成本 = 含税成本.dividedBy(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            } else {
+                含税成本 = 不含税成本.times(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            }
 
             if (this.editingRow === null) {
                 this.giftCounter++;
@@ -908,12 +923,10 @@ class PlanParamsManager {
                 newRow.innerHTML =
                     `
                             <td class="fw-semibold item-name">${礼品名称}</td>
-                            <td class="text-end">${礼品数量}</td>
-                            <td class="text-end">${采购金额}</td>
-                            <td class="text-end">${采购数量}</td>                            
-                            <td class="text-end">${含税成本}</td>
-                            <td class="text-end">${不含税成本}</td>
-                            <td class="text-end">${公允价值}</td>
+                            <td class="text-end">${礼品数量}</td>                         
+                            <td class="text-end">${含税成本.options.prefix + 含税成本.toLocaleFixed(4)}</td>
+                            <td class="text-end">${不含税成本.options.prefix + 不含税成本.toLocaleFixed(4)}</td>
+                            <td class="text-end">${公允价值.options.prefix + 公允价值.toLocaleFixed(4)}</td>
                             <td class="text-end">${进项税率}</td>
                             <td class="text-end">${销项税率}</td>
                             <td class="text-end">${售前回收}</td>
@@ -946,23 +959,21 @@ class PlanParamsManager {
                 const cells = this.editingRow.querySelectorAll('td');
                 cells[0].textContent = 礼品名称;
                 cells[1].textContent = 礼品数量;
-                cells[2].textContent = 采购金额;
-                cells[3].textContent = 采购数量;
-                cells[4].textContent = 含税成本;
-                cells[5].textContent = 不含税成本;
-                cells[6].textContent = 公允价值;
-                cells[7].textContent = 进项税率;
-                cells[8].textContent = 销项税率;
-                cells[9].textContent = 售前回收;
-                cells[10].textContent = 售中回收;
-                cells[11].textContent = 售后回收;
-                cells[12].textContent = 科目类型;
+                cells[2].textContent = 含税成本.options.prefix + 含税成本.toLocaleFixed(4);
+                cells[3].textContent = 不含税成本.options.prefix + 不含税成本.toLocaleFixed(4);
+                cells[4].textContent = 公允价值.options.prefix + 公允价值.toLocaleFixed(4);
+                cells[5].textContent = 进项税率;
+                cells[6].textContent = 销项税率;
+                cells[7].textContent = 售前回收;
+                cells[8].textContent = 售中回收;
+                cells[9].textContent = 售后回收;
+                cells[10].textContent = 科目类型;
                 if (科目类型 === "视同销售") {
-                    cells[12].classList.remove('text-success');
-                    cells[12].classList.add('text-danger');
+                    cells[10].classList.remove('text-success');
+                    cells[10].classList.add('text-danger');
                 } else {
-                    cells[12].classList.remove('text-danger');
-                    cells[12].classList.add('text-success');
+                    cells[10].classList.remove('text-danger');
+                    cells[10].classList.add('text-success');
                 }
             }
 
@@ -974,17 +985,17 @@ class PlanParamsManager {
             const tds = e.target.closest('tr').querySelectorAll('td');;
             document.getElementById("gift-name").value = tds[0].textContent;
             document.getElementById("gift-num").value = tds[1].textContent;
-            document.getElementById("gift-purchase_amount").value = that.#sanitizeNumberString(tds[2].textContent);
-            document.getElementById("gift-purchase_quantity").value = that.#sanitizeNumberString(tds[3].textContent);
-            document.getElementById("gift-cost_withtax").value = that.#sanitizeNumberString(tds[4].textContent);
-            document.getElementById("gift-cost_notax").value = that.#sanitizeNumberString(tds[5].textContent);
-            document.getElementById("gift-fair_value").value = that.#sanitizeNumberString(tds[6].textContent);
-            document.getElementById("gift-input_rate").value = that.#sanitizeNumberString(tds[7].textContent);
-            document.getElementById("gift-output_rate").value = that.#sanitizeNumberString(tds[8].textContent);
-            document.getElementById("gift-refund_bef_rec").value = that.#sanitizeNumberString(tds[9].textContent);
-            document.getElementById("gift-refund_ing_rec").value = that.#sanitizeNumberString(tds[10].textContent);
-            document.getElementById("gift-refund_aft_rec").value = that.#sanitizeNumberString(tds[11].textContent);
-            document.getElementById("gift-deemedSale").checked = (tds[12].textContent === "视同销售");
+            document.getElementById("gift-purchase_amount").value = 0;
+            document.getElementById("gift-purchase_quantity").value = 0;
+            document.getElementById("gift-cost_withtax").value = that.#sanitizeNumberString(tds[2].textContent);
+            document.getElementById("gift-cost_notax").value = that.#sanitizeNumberString(tds[3].textContent);
+            document.getElementById("gift-fair_value").value = that.#sanitizeNumberString(tds[4].textContent);
+            document.getElementById("gift-input_rate").value = that.#sanitizeNumberString(tds[5].textContent);
+            document.getElementById("gift-output_rate").value = that.#sanitizeNumberString(tds[6].textContent);
+            document.getElementById("gift-refund_bef_rec").value = that.#sanitizeNumberString(tds[7].textContent);
+            document.getElementById("gift-refund_ing_rec").value = that.#sanitizeNumberString(tds[8].textContent);
+            document.getElementById("gift-refund_aft_rec").value = that.#sanitizeNumberString(tds[9].textContent);
+            document.getElementById("gift-deemedSale").checked = (tds[10].textContent === "视同销售");
             that.#modals["paramsModal_Gift"].show();
         },
         removeRow: function (e, that) {
@@ -1035,8 +1046,6 @@ class PlanParamsManager {
                 newRow.innerHTML = `
                         <td class="fw-semibold item-name">${name}</td>
                         <td class="text-end">${quantity}</td>
-                        <td class="text-end">${purchaseAmount}</td>
-                        <td class="text-end">${purchaseQuantity}</td>
                         <td class="text-end">${valueIncTax}</td>
                         <td class="text-end">${valueExcTax}</td>
                         <td class="text-end">${fairValue}</td>

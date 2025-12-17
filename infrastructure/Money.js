@@ -144,6 +144,9 @@ export default class Money {
     // - 目前，构造函数必须提供 precision 参数。而 plus、minus、times、dividedBy 方法的 precision 参数是可选的，默认沿用当前实例的 precision。
     static DEFAULT_PRECISION = new Integer(4);
 
+    // - 静态零值实例，方便使用。
+    static ZERO = new Money(0, Money.DEFAULT_PRECISION);
+
     /** @type {Decimal} - 金额数值 */
     #value;
     /** @type {Integer} - 小数位数 */
