@@ -92,6 +92,8 @@ class PlanParamsManager {
         await this.#initPlanParams();
         console.log("%c PlanParamsManager初始化完成 ", "color: green; font-weight: bold;", performance.now());
 
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el))
+
         const navigationEntry = performance.getEntriesByType('navigation')[0];
         console.log('导航开始时间:', navigationEntry.startTime);
         console.log('DOMContentLoaded 事件触发时间:', navigationEntry.domContentLoadedEventStart);

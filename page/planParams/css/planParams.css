@@ -85,6 +85,12 @@ body {
     margin-bottom: 1.5rem;
 }
 
+.card-body .row p{
+    margin-bottom: 0.5rem;
+    color: #4361ee;
+    font-size: 0.75rem;
+}
+
 .card-body-table {
     overflow-x: auto;
 }
@@ -107,7 +113,11 @@ body {
 .data-table th {
     font-weight: 600;
     color: #000000;
-    font-size: 0.9rem;
+    font-size: 0.90rem;
+}
+.data-table td {
+    color: #000000;
+    font-size: 0.90rem;
 }
 
 .data-table tbody tr:hover {
