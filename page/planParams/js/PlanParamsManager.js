@@ -286,7 +286,7 @@ class PlanParamsManager {
 
     #hidePage() {
         // 隐藏整个页面，提示该方案不存在。
-        document.body.innerHTML = '<div style="text-align:center; margin-top:50px;"><h2>方案不存在或无法加载，请检查链接或返回上一页。</h2></div>';
+        document.body.innerHTML = '<div style="text-align:center; margin-top:50px;"><h2>方案不存在，或已被移除。</h2></div>';
     }
 
     #saveParamsData() {
