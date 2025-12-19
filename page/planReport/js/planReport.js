@@ -170,34 +170,19 @@ class PlanReportManager {
 
         document.getElementById("totalROI_Business").textContent = this.#reportData.modelReportExt.资本回报率.toPercentString(4) || "--";
         // 如果this.#reportData.modelReportExt.资本回报率大于0，则显示绿色，否则显示红色
-        const roiBusinessElement = document.getElementById("totalROI_Business");
-        if (this.#reportData.modelReportExt.资本回报率.value.greaterThan(0)) {
-            roiBusinessElement.style.color = "green";
-        } else if (this.#reportData.modelReportExt.资本回报率.value.lessThan(0)) {
-            roiBusinessElement.style.color = "red";
-        }
+        this.#cardLeftStytle(this.#reportData.modelReportExt.资本回报率.value, document.getElementById("totalROI_Business"));
 
         if (!this.#reportData.modelReportExt.推广回报率.value.equals(0)) {
             const roiAdvertisingElement = document.getElementById("totalROI_Advertising");
             roiAdvertisingElement.textContent = this.#reportData.modelReportExt.推广回报率.toPercentString(4) || "--";
-            // 如果this.#reportData.modelReportExt.推广回报率大于0，则显示绿色，否则显示红色
-            if (this.#reportData.modelReportExt.推广回报率.value.greaterThan(0)) {
-                roiAdvertisingElement.style.color = "green";
-            } else if (this.#reportData.modelReportExt.推广回报率.value.lessThan(0)) {
-                roiAdvertisingElement.style.color = "red";
-            }
+            this.#cardLeftStytle(this.#reportData.modelReportExt.推广回报率.value, roiAdvertisingElement);
         } else {
             const roiAdvertisingElement = document.getElementById("totalROI_Advertising");
             roiAdvertisingElement.textContent = "--";
         }
 
         document.getElementById("totalProfit_Per").textContent = this.#reportData.modelReportExt.利润率.toPercentString(4) || "--";
-        const profitPerElement = document.getElementById("totalProfit_Per");
-        if (this.#reportData.modelReportExt.利润率.value.greaterThan(0)) {
-            profitPerElement.style.color = "green";
-        } else if (this.#reportData.modelReportExt.利润率.value.lessThan(0)) {
-            profitPerElement.style.color = "red";
-        }
+        this.#cardLeftStytle(this.#reportData.modelReportExt.利润率.value, document.getElementById("totalProfit_Per"));
         document.getElementById("totalRefundCost").textContent = this.#reportData.modelReportExt.因退款造成的成本损失.toLocaleFixed(4) || "--";
         document.getElementById("totalRefundProfit").textContent = this.#reportData.modelReportExt.因退款造成的利润损失.toLocaleFixed(4) || "--";
 
@@ -368,6 +353,20 @@ class PlanReportManager {
 
     }
 
+    #cardLeftStytle(value, element) {
+        if (value.greaterThan(0)) {
+            element.parentNode.classList.remove("negative", "primary");
+            element.parentNode.classList.add("positive");
+            element.classList.remove("negative", "primary");
+            element.classList.add("positive");
+        } else if (value.lessThan(0)) {
+            element.parentNode.classList.remove("positive", "primary");
+            element.parentNode.classList.add("negative");
+            element.classList.remove("positive", "primary");
+            element.classList.add("negative");
+        }
+    }
+
     Echarts = {
         showCostStructureChart: function (data) {
             // 初始化echarts实例
@@ -375,7 +374,7 @@ class PlanReportManager {
             //使用矩形树图
             const option = {
                 title: {
-                    // text: '成本结构'
+                    text: '成本结构'
                 },
                 tooltip: {
                     trigger: 'item'
@@ -536,7 +535,7 @@ class PlanReportManager {
             //使用矩形树图
             const option = {
                 title: {
-                    // text: '成本结构'
+                    text: '退款损失',
                 },
                 tooltip: {
                     trigger: 'item'

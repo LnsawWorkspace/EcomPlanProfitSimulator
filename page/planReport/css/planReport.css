@@ -1,42 +1,3 @@
-:root {
-    --primary: #4361ee;
-    --secondary: #3f37c9;
-    --success: #4cc9f0;
-    --danger: #f72585;
-    --warning: #ffd60a;
-    --info: #4cc9f0;
-    --light: #f8f9fa;
-    --dark: #212529;
-    --background: #f5f7fa;
-    --card-bg: #ffffff;
-    --text-primary: #000000;
-    --text-secondary: #000000;
-    --border-color: #e9ecef;
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
-}
-
-.dark-mode {
-    --primary: #4cc9f0;
-    --secondary: #3f37c9;
-    --success: #4895ef;
-    --danger: #f72585;
-    --warning: #ffd60a;
-    --info: #4cc9f0;
-    --light: #1e1e1e;
-    --dark: #f8f9fa;
-    --background: #121212;
-    --card-bg: #1e1e1e;
-    --text-primary: #fff;
-    --text-secondary: #fff;
-    --border-color: #343a40;
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-}
-
 * {
     box-sizing: border-box;
     margin: 0;
@@ -44,41 +5,22 @@
 }
 
 body {
-    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: var(--background);
-    color: var(--text-primary);
-    line-height: 1.6;
-    transition: var(--transition);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    background-color: #f5f7fa;
+    color: #000000;
     min-height: 100vh;
 }
 
-
+.report-container {
+    max-width: 1600px;
+}
 
 /* 头部样式 */
 .header {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: linear-gradient(135deg, #4361ee, #3f37c9);
     color: white;
     padding: 2rem 0;
     margin-bottom: 2rem;
-    box-shadow: var(--shadow-md);
-    position: relative;
-    overflow: hidden;
-}
-
-.header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIiBkPSJNMzYgMzRjMC0yLjIxLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNCA0LTEuNzkgNC00eiIvPjxwYXRoIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIgZD0iTTAgMGg2MHY2MEgweiIvPjwvZz48L3N2Zz4=');
-    opacity: 0.3;
-}
-
-.header-content {
-    position: relative;
-    z-index: 1;
 }
 
 .header-title {
@@ -94,86 +36,103 @@ body {
     font-weight: 300;
 }
 
-/* 控制栏样式 */
-.control-bar {
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    padding: 1rem 1.5rem;
+/* 统计卡片 */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
     margin-bottom: 2rem;
-    box-shadow: var(--shadow-sm);
-    display: flex;
-    justify-content: space-between;
+}
+
+.stat-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    ;
+}
+
+.stat-card.left-border.primary {
+    border-left: 4px solid #4361ee;
+}
+
+.stat-card.left-border.positive {
+    border-left: 4px solid #198754;
+}
+
+.stat-card.left-border.negative {
+    border-left: 4px solid #dc3545;
+}
+
+.stat-card p {
+    font-size: 0.75rem;
+    color: #4361ee;
+    margin-bottom: 0rem;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+.stat-value {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #000000;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value.primary {
+    color: #000000;
+}
+
+.stat-value.positive {
+    color: #198754;
+}
+
+.stat-value.negative {
+    color: #dc3545;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #000000;
+    font-weight: 500;
+}
+
+
+/* 这3个 其实是个 Badge 用来做对比的，比如同比、环比、或者直接就是新的和旧的对比等 */
+.stat-change {
+    display: inline-flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
 }
 
-.mode-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.stat-change.positive {
+    background-color: #e0f7ff;
+    color: var(--bs-success-text);
 }
 
-.toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 24px;
+.stat-change.negative {
+    background-color: #ffe0f0;
+    color: var(--bs-danger-text);
 }
 
-.toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: var(--transition);
-    border-radius: 24px;
-}
-
-.toggle-slider:before {
-    position: absolute;
-    content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: var(--transition);
-    border-radius: 50%;
-}
-
-input:checked+.toggle-slider {
-    background-color: var(--primary);
-}
-
-input:checked+.toggle-slider:before {
-    transform: translateX(26px);
-}
-
-/* 卡片样式 */
 .data-card {
-    background-color: var(--card-bg);
+    background-color: #ffffff;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     margin-bottom: 2rem;
 }
 
-
 .card-header {
-    padding: 1.5rem 1.5rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    position: relative;
+    padding: 1.25rem 1rem 1.25rem 1rem;
+    border-bottom: 1px solid #e9ecef;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -187,21 +146,16 @@ input:checked+.toggle-slider:before {
 
 .card-icon {
     font-size: 1.5rem;
-    color: var(--primary);
-    width: 40px;
-    height: 40px;
+    color: #4361ee;
+    width: 2.5rem;
+    height: 2.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(67, 97, 238, 0.1);
-    border-radius: 50%;
 }
 
 .card-title {
     font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0;
 }
 
 .card-actions {
@@ -209,38 +163,27 @@ input:checked+.toggle-slider:before {
     gap: 0.5rem;
 }
 
-.btn-icon {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 6px;
-    transition: var(--transition);
+.card-body {
+    padding: 2rem;
 }
 
-.btn-icon:hover {
-    background-color: var(--border-color);
-    color: var(--text-primary);
+.card-body .row {
+    margin-bottom: 1.5rem;
 }
 
-/* 图表容器 */
-.chart-container {
-    height: 600px;
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-color);
+.card-body .row p {
+    margin-bottom: 0.5rem;
+    color: #4361ee;
+    font-size: 0.75rem;
 }
 
-/* 表格样式 */
-.table-container {
+.card-body-table {
     overflow-x: auto;
 }
 
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
-    background-color: var(--card-bg);
 }
 
 .data-table thead {
@@ -250,25 +193,18 @@ input:checked+.toggle-slider:before {
 .data-table th,
 .data-table td {
     padding: 1rem 1.5rem;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-    transition: var(--transition);
+    border-bottom: 1px solid #e9ecef;
 }
 
 .data-table th {
     font-weight: 600;
-    color: var(--text-primary);
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.5px;
+    color: #000000;
+    font-size: 0.90rem;
 }
 
 .data-table td {
-    color: var(--text-secondary);
-}
-
-.data-table tbody tr:last-child td {
-    border-bottom: none;
+    color: #000000;
+    font-size: 0.90rem;
 }
 
 .data-table tbody tr:hover {
@@ -281,249 +217,27 @@ input:checked+.toggle-slider:before {
 
 .data-table tfoot td {
     font-weight: 600;
-    color: var(--text-primary);
 }
 
-/* 统计卡片 */
-.stats-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+/* 最后一列按内容最小化，不换行 */
+.data-table th:last-child,
+.data-table td:last-child {
+    white-space: nowrap;
+    width: 1px;
+    padding: 0.5rem 1rem 0.5rem 1rem;
 }
 
-.stat-card {
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition);
-    border-left: 4px solid var(--primary);
-}
-
-.stat-card p {
-    font-size: 0.75rem;
-    color: var(--primary);
-    margin-bottom: 0rem;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
-.stat-value {
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
-}
-
-.stat-label {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.stat-change {
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.75rem;
-    margin-top: 0.5rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-}
-
-.stat-change.positive {
-    background-color: rgba(76, 201, 240, 0.1);
-    color: var(--success);
-}
-
-.stat-change.negative {
-    background-color: rgba(247, 37, 133, 0.1);
-    color: var(--danger);
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .header-title {
-        font-size: 2rem;
-    }
-
-    .header-subtitle {
-        font-size: 1rem;
-    }
-
-    .control-bar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .stats-container {
-        grid-template-columns: 1fr;
-    }
-
-    .data-table th,
-    .data-table td {
-        padding: 0.75rem 1rem;
-        font-size: 0.75rem;
-    }
-
-    .card-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-
-    .card-title-wrapper {
-        width: 100%;
-    }
-
-    .card-actions {
-        width: 100%;
-        justify-content: flex-end;
-    }
-}
-
-/* 加载动画 */
-.loader {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* 空状态 */
-.empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    color: var(--text-secondary);
-}
-
-.empty-state-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-}
-
-.empty-state-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: var(--text-primary);
-}
-
-.empty-state-description {
-    font-size: 0.875rem;
-    max-width: 500px;
-    margin: 0 auto;
-}
-
-/* 折叠/展开动画 */
-.collapsible-content {
-    transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
-    overflow: hidden;
-    max-height: 1000px;
-    opacity: 1;
-}
-
-.collapsible-content.collapsed {
-    max-height: 0;
-    opacity: 0;
-    padding-top: 0;
-    padding-bottom: 0;
+.footHelper {
+    height: 80px;
 }
 
 
-/* 快速调整参数浮动样式 */
-.report-container {
-    max-width: 1600px !important;
-    position: relative;
+/*  Echarts容器的 */
+.chart-container {
+    height: 600px;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
 }
-
-.params-card {
-    position: absolute;
-    top: 20px;
-    right: -320px;
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    box-shadow: var(--shadow-md);
-    z-index: 1000;
-    width: 320px;
-    border: 1px solid var(--border-color);
-    transition: box-shadow var(--transition);
-    overflow: hidden;
-}
-
-.params-card:hover {
-    box-shadow: var(--shadow-lg);
-}
-
-/* 卡片头部 - 拖动区域 */
-.params-card-header {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    color: white;
-    padding: 1rem 1.5rem;
-    cursor: move;
-    user-select: none;
-    position: relative;
-}
-
-.params-card-header:hover {
-    background: linear-gradient(135deg, var(--secondary), var(--primary));
-}
-
-.params-card-title {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-/* 卡片内容区域 */
-.params-card-body {
-    padding: 1.5rem;
-}
-
-.params-card-item {
-    margin-bottom: 1rem;
-}
-
-.params-card-item:last-child {
-    margin-bottom: 0;
-}
-
-/* 确保输入框样式统一 */
-.params-card .form-control {
-    border-radius: 6px;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-color);
-    background-color: var(--card-bg);
-    color: var(--text-primary);
-    transition: var(--transition);
-}
-
-.params-card .form-control:focus {
-    box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
-    border-color: var(--primary);
-    outline: none;
-}
-
-.params-card .form-label {
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    color: var(--text-primary);
-}
-
-
 
 /* 给D3用的 */
 .y.axis text {
@@ -534,10 +248,12 @@ input:checked+.toggle-slider:before {
 .x.axis text {
     font-size: 0.5rem;
 }
+
 .x.grid line {
-  stroke: #7C4DFF;
-  stroke-width: 0.5;
+    stroke: #7C4DFF;
+    stroke-width: 0.5;
 }
+
 .x.grid path {
-  display: none;
+    display: none;
 }
