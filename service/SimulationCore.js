@@ -493,6 +493,11 @@ export class SimulationCore {
         }
 
         // 通过ROI 计算具体的广告费用,按理说应该按照单价*数量比较合适
+        // 啊 好像不太合适。广告费。。。。
+        // 假如是CPC，比如 平均 100个点击 一个成交
+        // 广告费本质上和成交。。除非收费方式是CPS，否则广告费和成交数量没有直接关系
+        // 但这里我们为了方便，统一用ROI这种指标来代替ALL的广告方式。方便计算。本质上不会有问题。
+        // 主要是 道道是 按照平均一单的广告费*订单数量 还是按照总价/ROI 来计算广告费更合适一些呢？好纠结啊。
         const 单广告费用 = entity_params.modelPlanParamsSale.salePrice.dividedBy(entity_params.modelPlanParamsAdvertising.roi, 4);
         report.广告名称 = entity_params.modelPlanParamsAdvertising.name;
         report.广告费用_退款前 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款前, 4);
@@ -518,10 +523,10 @@ export class SimulationCore {
         总成本 = 总成本.plus(entity_report.modelReportAdvertising.广告费用_有效成本);
         report.总成本 = 总成本;
         report.利润 = entity_report.modelReportSalesRevenue.收入_退款后.minus(总成本, 4);
-        report.利润率 = new Percentage(report.利润.dividedBy(entity_report.modelReportSalesRevenue.收入_退款后, 4).value);
-        report.资本回报率 = new Percentage(report.利润.dividedBy(总成本, 4).value);
+        report.利润率 = new Percentage(report.利润.dividedBy(entity_report.modelReportSalesRevenue.收入_退款后, 8).value);
+        report.资本回报率 = new Percentage(report.利润.dividedBy(总成本, 8).value);
         if (!entity_report.modelReportAdvertising.广告费用_有效成本.isZero()) {
-            report.推广回报率 = new Percentage(report.利润.dividedBy(entity_report.modelReportAdvertising.广告费用_有效成本, 4).value);
+            report.推广回报率 = new Percentage(report.利润.dividedBy(entity_report.modelReportAdvertising.广告费用_有效成本, 8).value);
         }
 
         let 总退款损失 = new Money(0, 4);

@@ -43,6 +43,7 @@ class PlanReportManager {
         this.#initializeElements();
         this.#initializeEventListeners();
         await this.#initPlanReport();
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el))
         Decimal.set({ precision: 40 });
     }
     /**

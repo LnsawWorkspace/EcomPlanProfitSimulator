@@ -115,41 +115,48 @@
             </div>
             <div class="stat-card left-border primary">
                 <div class="stat-value primary" id="totalRevenue">--</div>
-                <div class="stat-label">收入</div>
+                <div class="stat-label">收入<i class="bi bi-info-circle" data-bs-toggle="tooltip"
+                        data-bs-title="收入指主营业务收入，收入是不含税的。"></i></div>
             </div>
             <div class="stat-card left-border primary">
                 <div class="stat-value primary" id="totalAdvertisingMoney">--</div>
-                <div class="stat-label">广告费</div>
+                <div class="stat-label">广告费<i class="bi bi-info-circle" data-bs-toggle="tooltip"
+                        data-bs-title="广告费的计算方式是每单广告费*订单数量，而不是以总GMV/ROI计算得出，根据单量的多少，可能存在几角或几元的差额。"></i></div>
             </div>
             <div class="stat-card left-border primary">
                 <div class="stat-value primary" id="totalCost">--</div>
-                <div class="stat-label">总成本</div>
+                <div class="stat-label">总成本<i class="bi bi-info-circle" data-bs-toggle="tooltip"
+                        data-bs-title="通常，该成本应当是业务相关的直接成本、直接费用，不应包含工资、管理费用等非业务成本。具体情况需要根据输入的参数确定。"></i></div>
             </div>
             <div class="stat-card left-border primary">
                 <div class="stat-value primary" id="totalProfit">--</div>
-                <div class="stat-label">利润</div>
+                <div class="stat-label">利润<i class="bi bi-info-circle" data-bs-toggle="tooltip"
+                        data-bs-title="该利润近似OP，即营业利润，但只是近似。它更偏向业务，是业务本身的利润，即该项业务带来的利润。"></i></div>
             </div>
             <div class="stat-card left-border primary">
                 <div class="stat-value primary" id="totalROI_Advertising">--</div>
-                <div class="stat-label">推广回报率</div>
+                <div class="stat-label">推广回报率<i class="bi bi-info-circle" data-bs-toggle="tooltip"
+                        data-bs-title="利润/广告费"></i></div>
             </div>
             <div class="stat-card left-border primary">
                 <div class="stat-value primary" id="totalROI_Business">--</div>
-                <div class="stat-label">资本回报率</div>
+                <div class="stat-label">资本回报率<i class="bi bi-info-circle" data-bs-toggle="tooltip"
+                        data-bs-title="利润/总成本"></i></div>
             </div>
             <div class="stat-card left-border primary">
                 <div class="stat-value primary" id="totalProfit_Per">--</div>
-                <div class="stat-label">净利率</div>
+                <div class="stat-label">利润率<i class="bi bi-info-circle" data-bs-toggle="tooltip"
+                        data-bs-title="利润/收入"></i></div>
             </div>
             <div class="stat-card left-border primary">
                 <div class="stat-value primary" id="totalRefundCost">--</div>
-                <div class="stat-label">成本损失</div>
-                <p>订单即便退款也会支出一部分成本</p>
+                <div class="stat-label">成本损失<i class="bi bi-info-circle" data-bs-toggle="tooltip"
+                        data-bs-title="订单即便退款也会支出一部分成本"></i></div>
             </div>
             <div class="stat-card left-border primary">
                 <div class="stat-value primary" id="totalRefundProfit">--</div>
-                <div class="stat-label">利润损失</div>
-                <p>与0退款率相比，损失的利润。</p>
+                <div class="stat-label">利润损失<i class="bi bi-info-circle" data-bs-toggle="tooltip"
+                        data-bs-title="与0退款率相比，损失的利润。"></i></div>
             </div>
         </div>
 
@@ -354,7 +361,7 @@
     </main>
 
     <!-- Bootstrp JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <!-- 自身 JS -->

@@ -53,6 +53,12 @@ body {
     ;
 }
 
+.stat-card i{
+    margin-left: 0.25rem;
+    color: #dc3545;
+    cursor: pointer;
+}
+
 .stat-card.left-border.primary {
     border-left: 4px solid #4361ee;
 }
