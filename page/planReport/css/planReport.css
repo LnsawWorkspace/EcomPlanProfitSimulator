@@ -219,18 +219,23 @@ body {
     font-weight: 600;
 }
 
-/* 最后一列按内容最小化，不换行 */
-.data-table th:last-child,
-.data-table td:last-child {
-    white-space: nowrap;
-    width: 1px;
-    padding: 0.5rem 1rem 0.5rem 1rem;
-}
-
 .footHelper {
     height: 80px;
 }
 
+@media (max-width: 1920px) {
+
+    .data-table th {
+        font-weight: 600;
+        color: #000000;
+        font-size: 0.75rem;
+    }
+
+    .data-table td {
+        color: #000000;
+        font-size: 0.75rem;
+    }
+}
 
 /*  Echarts容器的 */
 .chart-container {
