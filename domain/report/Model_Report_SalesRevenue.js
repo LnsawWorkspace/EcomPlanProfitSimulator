@@ -11,6 +11,7 @@ export class Model_Report_SalesRevenue {
     #订单数量_售后损失;
     #订单数量_原始差额;
 
+    #GMV_单;
     #GMV_退款前;
     #GMV_退款后;
     #GMV_售前损失;
@@ -18,6 +19,7 @@ export class Model_Report_SalesRevenue {
     #GMV_售后损失;
     #GMV_原始差额;
 
+    #收入_单;
     #收入_退款前;
     #收入_退款后;
     #收入_售前损失;
@@ -28,6 +30,8 @@ export class Model_Report_SalesRevenue {
     #明细;
 
     constructor() {
+        this.#GMV_单 = new Money(0, 10);
+        this.#收入_单 = new Money(0, 10);
         this.#订单数量_退款前 = new Integer(0);
         this.#订单数量_退款后 = new Integer(0);
         this.#订单数量_售前损失 = new Integer(0);
@@ -45,6 +49,8 @@ export class Model_Report_SalesRevenue {
         this.#收入_售后损失 = new Money(0, 10);
         this.#明细 = [];
     }
+    get GMV_单() { return this.#GMV_单; }
+    get 收入_单() { return this.#收入_单; }
     get 订单数量_退款前() { return this.#订单数量_退款前; }
     get 订单数量_退款后() { return this.#订单数量_退款后; }
     get 订单数量_售前损失() { return this.#订单数量_售前损失; }
@@ -74,6 +80,8 @@ export class Model_Report_SalesRevenue {
 
     get 明细() { return this.#明细; }
 
+    set GMV_单(value) { this.#GMV_单 = value; }
+    set 收入_单(value) { this.#收入_单 = value; }
     set 订单数量_退款前(value) { this.#订单数量_退款前 = value }
     set 订单数量_退款后(value) { this.#订单数量_退款后 = value }
     set 订单数量_售前损失(value) { this.#订单数量_售前损失 = value }
@@ -145,19 +153,19 @@ export class Model_Report_SalesRevenue {
             console.log('明细商品税率不一致，无法进行整体税率校验');
         }
 
-        if(!this.订单数量_退款校验) {
+        if (!this.订单数量_退款校验) {
             errors.push(`订单数量退款校验失败`);
         } else {
             errors.push(`订单数量退款校验通过`);
         }
 
-        if(!this.GMV_退款校验) {
+        if (!this.GMV_退款校验) {
             errors.push(`GMV退款校验失败`);
         } else {
             errors.push(`GMV退款校验通过`);
         }
 
-        if(!this.收入_退款校验) {
+        if (!this.收入_退款校验) {
             errors.push(`收入退款校验失败`);
         } else {
             errors.push(`收入退款校验通过`);

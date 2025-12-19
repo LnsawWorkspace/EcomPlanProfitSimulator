@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="https://ecomplanprofitsimulator.lnsaw.com/page/workbench/workbench.html">
+    <meta name="description" content="电商商品利润计算器，帮助您快速计算商品利润，优化电商业务。">
+    <title>电商商品利润计算器-方案报告</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+        crossorigin="anonymous">
+    <!-- 公共样式 -->
+    <link rel="stylesheet" href="../public.css">
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="./css/planReportContrast.css">
+
+</head>
+
+<body>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="container report-container header-content">
+            <h1 class="header-title">方案报告</h1>
+            <p class="header-subtitle main-title"></p>
+        </div>
+    </header>
+
+    <main class="container report-container py-4">
+        
+        <!-- 统计卡片 -->
+        <div class="stats-container">
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalOrderCount">--</div>
+                <div class="stat-label">付款单量</div>
+            </div>
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalValidOrderCount">--</div>
+                <div class="stat-label">有效单量</div>
+            </div>
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalGMV">--</div>
+                <div class="stat-label">GMV</div>
+            </div>
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalRevenue">--</div>
+                <div class="stat-label">收入</div>
+            </div>
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalAdvertisingMoney">--</div>
+                <div class="stat-label">广告费</div>
+            </div>
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalCost">--</div>
+                <div class="stat-label">总成本</div>
+            </div>
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalProfit">--</div>
+                <div class="stat-label">利润</div>
+            </div>
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalROI_Advertising">--</div>
+                <div class="stat-label">推广回报率</div>
+            </div>
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalROI_Business">--</div>
+                <div class="stat-label">资本回报率</div>
+            </div>
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalProfit_Per">--</div>
+                <div class="stat-label">净利率</div>
+            </div>
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalRefundCost">--</div>
+                <div class="stat-label">成本损失</div>
+                <p>订单即便退款也会支出一部分成本</p>
+            </div>
+            <div class="stat-card left-border primary">
+                <div class="stat-value primary" id="totalRefundProfit">--</div>
+                <div class="stat-label">利润损失</div>
+                <p>与0退款率相比，损失的利润。</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bootstrp JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <!-- 自身 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@6.0.0/dist/echarts.min.js" crossorigin="anonymous"></script>
+    <script type="module" src="./js/planReportContrast.js"></script>
+</body>
+
+</html>

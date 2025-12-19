@@ -1095,7 +1095,8 @@ class PlanParamsManager {
                 const txt = nameCell ? String(nameCell.textContent || '').trim() : '';
                 if (txt) goodsNamesSet.add('商品：' + txt);
             }
-            options = ["-", "售价", ...goodsNamesSet];
+            // options = ["-", "售价", ...goodsNamesSet];
+            options = ["-", "售价"]; // 暂时只支持售价
             // 清空现有选项
             selectElement.innerHTML = '';
             // 添加新选项
@@ -1289,7 +1290,8 @@ class PlanParamsManager {
                 const txt = nameCell ? String(nameCell.textContent || '').trim() : '';
                 if (txt) goodsNamesSet.add('商品：' + txt);
             }
-            options = ["-", "售价", ...goodsNamesSet];
+            // options = ["-", "售价", ...goodsNamesSet];
+            options = ["-", "售价"];//暂时只支持售价
             // 清空现有选项
             selectElement.innerHTML = '';
             // 添加新选项

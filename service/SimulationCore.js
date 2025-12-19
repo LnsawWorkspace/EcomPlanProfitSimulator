@@ -106,6 +106,7 @@ export class SimulationCore {
 
         if (商品税率一致) {
             const 商品单售价 = entity_params.modelPlanParamsSale.salePrice;
+            report.GMV_单 = 商品单售价;
             report.GMV_退款前 = 商品单售价.times(report.订单数量_退款前, 4);
             report.GMV_退款后 = 商品单售价.times(report.订单数量_退款后, 4);
             report.GMV_售前损失 = 商品单售价.times(report.订单数量_售前损失, 4);
@@ -115,6 +116,7 @@ export class SimulationCore {
             report.GMV_退款后 = report.GMV_退款后.plus(report.GMV_原始差额);
 
             const 商品单收入 = 商品单售价.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(firstOutputRate), 4);
+            report.收入_单 = 商品单收入;
             report.收入_退款前 = 商品单收入.times(report.订单数量_退款前, 4);
             report.收入_退款后 = 商品单收入.times(report.订单数量_退款后, 4);
             report.收入_售前损失 = 商品单收入.times(report.订单数量_售前损失, 4);
@@ -165,6 +167,8 @@ export class SimulationCore {
                 // - 生气！自己写都写不明白。算了 反正用8位精度数据没出错就行了。
                 const 当前商品单售价 = goodsItem.当前商品单售价
                 const 当前商品单收入 = goodsItem.当前商品单售价.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(goodsItem.销项税率), 8);
+                report.GMV_单 = report.GMV_单.plus(当前商品单售价);
+                report.收入_单 = report.收入_单.plus(当前商品单收入);
 
                 const revenueItem = new Model_Report_SalesRevenue_Item();
                 revenueItem.商品名称 = goodsItem.商品名称;
@@ -335,17 +339,17 @@ export class SimulationCore {
 
             let value = goodsItem.valueMoney;
             if (goodsItem.valueType !== 'num') {
-                switch (goodsItem.base) {
-                    case "售价":
-                        if (goodsItem.baseHaveTax) {
-                            //基于含税
-                            value = entity_params.modelPlanParamsSale.salePrice.times(goodsItem.valuePercentage, 4);
-                        }
-                        break;
-
-                    default:
-                        break;
+                if (goodsItem.base === "售价") {
+                    if (goodsItem.baseHaveTax) {
+                        //基于含税
+                        value = entity_report.modelReportSalesRevenue.GMV_单.times(goodsItem.valuePercentage, 4);
+                    } else {
+                        //基于不含税
+                        value = entity_report.modelReportSalesRevenue.收入_单.times(goodsItem.valuePercentage, 4);
+                    }
                 }
+                // 除了售价会有基于其他的情况么？基于商品成本？基于赠品成本？
+                // 实际上 就算是就算是售价，也可用直接要求输入金额。只是用百分比会方便一些，不用调整售价还需要调整这里的百分比而已。
             }
 
             costItem.费用成本_含税 = value;
@@ -425,17 +429,17 @@ export class SimulationCore {
 
             let value = goodsItem.valueMoney;
             if (goodsItem.valueType !== 'num') {
-                switch (goodsItem.base) {
-                    case "售价":
-                        if (goodsItem.baseHaveTax) {
-                            //基于含税
-                            value = entity_params.modelPlanParamsSale.salePrice.times(goodsItem.valuePercentage, 4);
-                        }
-                        break;
-
-                    default:
-                        break;
+                if (goodsItem.base === "售价") {
+                    if (goodsItem.baseHaveTax) {
+                        //基于含税
+                        value = entity_report.modelReportSalesRevenue.GMV_单.times(goodsItem.valuePercentage, 4);
+                    } else {
+                        //基于不含税
+                        value = entity_report.modelReportSalesRevenue.收入_单.times(goodsItem.valuePercentage, 4);
+                    }
                 }
+                // 除了售价会有基于其他的情况么？基于商品成本？基于赠品成本？
+                // 实际上 就算是就算是售价，也可用直接要求输入金额。只是用百分比会方便一些，不用调整售价还需要调整这里的百分比而已。
             }
 
             costItem.费用成本_含税 = value;
