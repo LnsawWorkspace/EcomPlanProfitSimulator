@@ -34,11 +34,11 @@ export class SimulationCore {
         this.#getEnpenseFixed(entity, report);
         this.#getAdvertisingCost(entity, report);
         const refund0Report = this.#run0Refund(entity);
-        this.#getExtReport(entity, report, refund0Report);
+        this.#getExtReport(entity, report);
         // 基于利润的必须在最后计算
         this.#getEnpenseFixed_fromProfit(entity, report);
         //并且重新计算最终的利润
-        this.#getExtReport(entity, report);
+        this.#getExtReport(entity, report, refund0Report);
         console.log('%c  + end Simulation:', "color: green", performance.now());
         return report;
     }
@@ -539,7 +539,7 @@ export class SimulationCore {
                 // - 根据定义，付款金额是退款前的金额,本身就是含税的金额
                 if (goodsItem.base === "利润") {
                     value = entity_report.modelReportExt.利润.times(goodsItem.valuePercentage, 4);
-                    if(value.isNegative()){
+                    if (value.isNegative()) {
                         value = value.times(-1);
                     }
                 }
@@ -672,7 +672,6 @@ export class SimulationCore {
         this.#getEnpenseFixed(entity, report);
         this.#getAdvertisingCost(entity, report);
         this.#getExtReport(entity, report);
-
         // 基于利润的必须在最后计算
         this.#getEnpenseFixed_fromProfit(entity, report);
         //并且重新计算最终的利润
