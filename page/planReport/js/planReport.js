@@ -63,6 +63,7 @@ class PlanReportManager {
      */
     #initializeElements() {
         const elements_id = {
+            viewRoiGraphButton: 'viewRoiGraphButton',
 
         };
         const element_class = {
@@ -82,6 +83,7 @@ class PlanReportManager {
     #initializeEventListeners() {
         // 使用Map和forEach优化事件监听设置
         const clickListeners = new Map([
+            ['viewRoiGraphButton', () => window.open(`planReportRoiGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank')],
         ]);
 
         for (const [elementKey, handler] of clickListeners) {
@@ -835,11 +837,11 @@ class PlanReportManager {
 window.addEventListener('DOMContentLoaded', async () => {
     try {
         // 创建并初始化
-        const planParams = new PlanReportManager();
-        await planParams.initialize();
+        const planReport = new PlanReportManager();
+        await planReport.initialize();
 
-        // 将实例暴露到全局，方便调试
-        window.planParams = planParams;
+        // // 将实例暴露到全局，方便调试
+        // window.planReport = planReport;
     } catch (error) {
         console.error('Failed to initialize planParams:', error);
         alert('方案报告页面初始化失败，请刷新页面重试-2');
