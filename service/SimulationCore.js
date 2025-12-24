@@ -655,6 +655,8 @@ export class SimulationCore {
     }
 
     #run0Refund(entity) {
+        // 这里不能用原始的entity，必须深拷贝一个新的出来
+        entity = Entity_PlanParams.parse(entity.toSerializable());
         entity.modelPlanParamsRefund = new Model_PlanParams_Refund({
             id: crypto.randomUUID(),
             refundBefRate: new Percentage(0),
@@ -663,7 +665,7 @@ export class SimulationCore {
         });
         // console.log('%c  + start Simulation:', "color: green", performance.now());
         entity.modelPlanParamsSale.quantityPattern = 'real';
-        const report = new Entity_PlanReport({ id: crypto.randomUUID(),planParams: entity });
+        const report = new Entity_PlanReport({ id: crypto.randomUUID(), planParams: entity });
         this.#getSalesRevenue(entity, report);
         this.#getGoodsCost(entity, report);
         this.#getGiftCost(entity, report);
