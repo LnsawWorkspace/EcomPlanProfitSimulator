@@ -106,6 +106,7 @@ export class SimulationCore {
 
         if (商品税率一致) {
             const 商品单售价 = entity_params.modelPlanParamsSale.salePrice;
+            // GMV暂时保留，也许之后会重新定义然后使用。
             report.GMV_单 = 商品单售价;
             report.GMV_退款前 = 商品单售价.times(report.订单数量_退款前, 4);
             report.GMV_退款后 = 商品单售价.times(report.订单数量_退款后, 4);
@@ -114,6 +115,15 @@ export class SimulationCore {
             report.GMV_售后损失 = 商品单售价.times(report.订单数量_售后损失, 4);
             report.GMV_原始差额 = report.GMV_退款前.minus(report.GMV_退款后).minus(report.GMV_售前损失.plus(report.GMV_售中损失).plus(report.GMV_售后损失), 4);
             report.GMV_退款后 = report.GMV_退款后.plus(report.GMV_原始差额);
+
+            report.销售金额_单 = 商品单售价;
+            report.销售金额_退款前 = 商品单售价.times(report.订单数量_退款前, 4);
+            report.销售金额_退款后 = 商品单售价.times(report.订单数量_退款后, 4);
+            report.销售金额_售前损失 = 商品单售价.times(report.订单数量_售前损失, 4);
+            report.销售金额_售中损失 = 商品单售价.times(report.订单数量_售中损失, 4);
+            report.销售金额_售后损失 = 商品单售价.times(report.订单数量_售后损失, 4);
+            report.销售金额_原始差额 = report.销售金额_退款前.minus(report.销售金额_退款后).minus(report.销售金额_售前损失.plus(report.销售金额_售中损失).plus(report.销售金额_售后损失), 4);
+            report.销售金额_退款后 = report.销售金额_退款后.plus(report.销售金额_原始差额);
 
             const 商品单收入 = 商品单售价.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(firstOutputRate), 4);
             report.收入_单 = 商品单收入;
@@ -217,6 +227,7 @@ export class SimulationCore {
                 report.收入_售后损失 = report.收入_售后损失.plus(当前商品单收入.times(report.订单数量_售后损失));
             });
 
+            // - GMV暂时保留，也许之后会重新定义然后使用。
             report.GMV_退款前 = new Money(report.GMV_退款前.value, 4);
             report.GMV_退款后 = new Money(report.GMV_退款后.value, 4);
             report.GMV_售前损失 = new Money(report.GMV_售前损失.value, 4);
@@ -224,6 +235,14 @@ export class SimulationCore {
             report.GMV_售后损失 = new Money(report.GMV_售后损失.value, 4);
             report.GMV_原始差额 = report.GMV_退款前.minus(report.GMV_退款后).minus(report.GMV_售前损失.plus(report.GMV_售中损失).plus(report.GMV_售后损失), 4);
             report.GMV_退款后 = report.GMV_退款后.plus(report.GMV_原始差额);
+
+            report.销售金额_退款前 = new Money(report.GMV_退款前.value, 4);
+            report.销售金额_退款后 = new Money(report.GMV_退款后.value, 4);
+            report.销售金额_售前损失 = new Money(report.GMV_售前损失.value, 4);
+            report.销售金额_售中损失 = new Money(report.GMV_售中损失.value, 4);
+            report.销售金额_售后损失 = new Money(report.GMV_售后损失.value, 4);
+            report.销售金额_原始差额 = report.销售金额_退款前.minus(report.销售金额_退款后).minus(report.销售金额_售前损失.plus(report.销售金额_售中损失).plus(report.销售金额_售后损失), 4);
+            report.销售金额_退款后 = report.销售金额_退款后.plus(report.销售金额_原始差额);
 
             report.收入_退款前 = new Money(report.收入_退款前.value, 4);
             report.收入_退款后 = new Money(report.收入_退款后.value, 4);
@@ -338,11 +357,12 @@ export class SimulationCore {
             costItem.进项税率 = goodsItem.inputRate;
 
             let value = goodsItem.valueMoney;
+            // - 应该独立一个方法用来获取费用的单价的，不过暂时先不改。
             if (goodsItem.valueType !== 'num') {
                 if (goodsItem.base === "售价") {
                     if (goodsItem.baseHaveTax) {
                         //基于含税
-                        value = entity_report.modelReportSalesRevenue.GMV_单.times(goodsItem.valuePercentage, 4);
+                        value = entity_report.modelReportSalesRevenue.销售金额_单.times(goodsItem.valuePercentage, 4);
                     } else {
                         //基于不含税
                         value = entity_report.modelReportSalesRevenue.收入_单.times(goodsItem.valuePercentage, 4);

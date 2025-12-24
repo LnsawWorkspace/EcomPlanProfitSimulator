@@ -165,6 +165,7 @@ class PlanReportManager {
         document.getElementById("totalValidOrderCount").textContent = this.#reportData.modelReportSalesRevenue.订单数量_退款后.toString() || "--";
 
         document.getElementById("totalGMV").textContent = this.#reportData.modelReportSalesRevenue.GMV_退款前.toLocaleFixed(4) || "--";
+        document.getElementById("totalSaleAmount").textContent = this.#reportData.modelReportSalesRevenue.销售金额_退款后.toLocaleFixed(4) || "--";
         document.getElementById("totalRevenue").textContent = this.#reportData.modelReportSalesRevenue.收入_退款后.toLocaleFixed(4) || "--";
         document.getElementById("totalCost").textContent = this.#reportData.modelReportExt.总成本.toLocaleFixed(4) || "--";
         document.getElementById("totalProfit").textContent = this.#reportData.modelReportExt.利润.toLocaleFixed(4) || "--";

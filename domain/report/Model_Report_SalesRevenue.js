@@ -19,6 +19,14 @@ export class Model_Report_SalesRevenue {
     #GMV_售后损失;
     #GMV_原始差额;
 
+    #销售金额_单;
+    #销售金额_退款前;
+    #销售金额_退款后;
+    #销售金额_售前损失;
+    #销售金额_售中损失;
+    #销售金额_售后损失;
+    #销售金额_原始差额;
+
     #收入_单;
     #收入_退款前;
     #收入_退款后;
@@ -30,23 +38,36 @@ export class Model_Report_SalesRevenue {
     #明细;
 
     constructor() {
-        this.#GMV_单 = new Money(0, 10);
-        this.#收入_单 = new Money(0, 10);
         this.#订单数量_退款前 = new Integer(0);
         this.#订单数量_退款后 = new Integer(0);
         this.#订单数量_售前损失 = new Integer(0);
         this.#订单数量_售中损失 = new Integer(0);
         this.#订单数量_售后损失 = new Integer(0);
+        this.#订单数量_原始差额 = new Integer(0);
+
+        this.#GMV_单 = new Money(0, 10);
         this.#GMV_退款前 = new Money(0, 10);
         this.#GMV_退款后 = new Money(0, 10);
         this.#GMV_售前损失 = new Money(0, 10);
         this.#GMV_售中损失 = new Money(0, 10);
         this.#GMV_售后损失 = new Money(0, 10);
+        this.#GMV_原始差额 = new Money(0, 10);
+
+        this.#销售金额_单 = new Money(0, 10);
+        this.#销售金额_退款前 = new Money(0, 10);
+        this.#销售金额_退款后 = new Money(0, 10);
+        this.#销售金额_售前损失 = new Money(0, 10);
+        this.#销售金额_售中损失 = new Money(0, 10);
+        this.#销售金额_售后损失 = new Money(0, 10);
+        this.#销售金额_原始差额 = new Money(0, 10);
+
+        this.#收入_单 = new Money(0, 10);
         this.#收入_退款前 = new Money(0, 10);
         this.#收入_退款后 = new Money(0, 10);
         this.#收入_售前损失 = new Money(0, 10);
         this.#收入_售中损失 = new Money(0, 10);
         this.#收入_售后损失 = new Money(0, 10);
+        this.#收入_原始差额 = new Money(0, 10);
         this.#明细 = [];
     }
     get GMV_单() { return this.#GMV_单; }
@@ -68,6 +89,16 @@ export class Model_Report_SalesRevenue {
     get GMV_原始差额() { return this.#GMV_原始差额; }
     get GMV_总退款损失() { return this.#GMV_售前损失.plus(this.#GMV_售中损失).plus(this.#GMV_售后损失); }
     get GMV_退款校验() { return this.GMV_总退款损失.equals(this.#GMV_退款前.minus(this.#GMV_退款后)); }
+
+    get 销售金额_单() { return this.#销售金额_单; }
+    get 销售金额_退款前() { return this.#销售金额_退款前; }
+    get 销售金额_退款后() { return this.#销售金额_退款后; }
+    get 销售金额_售前损失() { return this.#销售金额_售前损失; }
+    get 销售金额_售中损失() { return this.#销售金额_售中损失; }
+    get 销售金额_售后损失() { return this.#销售金额_售后损失; }
+    get 销售金额_原始差额() { return this.#销售金额_原始差额; }
+    get 销售金额_总退款损失() { return this.#销售金额_售前损失.plus(this.#销售金额_售中损失).plus(this.#销售金额_售后损失); }
+    get 销售金额_退款校验() { return this.销售金额_总退款损失.equals(this.#销售金额_退款前.minus(this.#销售金额_退款后)); }
 
     get 收入_退款前() { return this.#收入_退款前; }
     get 收入_退款后() { return this.#收入_退款后; }
@@ -95,6 +126,14 @@ export class Model_Report_SalesRevenue {
     set GMV_售中损失(value) { this.#GMV_售中损失 = value }
     set GMV_售后损失(value) { this.#GMV_售后损失 = value }
     set GMV_原始差额(value) { this.#GMV_原始差额 = value }
+
+    set 销售金额_单(value) { this.#销售金额_单 = value; }
+    set 销售金额_退款前(value) { this.#销售金额_退款前 = value }
+    set 销售金额_退款后(value) { this.#销售金额_退款后 = value }
+    set 销售金额_售前损失(value) { this.#销售金额_售前损失 = value }
+    set 销售金额_售中损失(value) { this.#销售金额_售中损失 = value }
+    set 销售金额_售后损失(value) { this.#销售金额_售后损失 = value }
+    set 销售金额_原始差额(value) { this.#销售金额_原始差额 = value }
 
     set 收入_退款前(value) { this.#收入_退款前 = value }
     set 收入_退款后(value) { this.#收入_退款后 = value }
@@ -187,6 +226,13 @@ export class Model_Report_SalesRevenue_Item {
     #GMV_售后损失;
     #GMV_原始差额;
 
+    #销售金额_退款前;
+    #销售金额_退款后;
+    #销售金额_售前损失;
+    #销售金额_售中损失;
+    #销售金额_售后损失;
+    #销售金额_原始差额;
+
     #收入_退款前;
     #收入_退款后;
     #收入_售前损失;
@@ -198,16 +244,27 @@ export class Model_Report_SalesRevenue_Item {
         this.#商品名称 = '';
         this.#进项税率 = new Percentage(0);
         this.#销项税率 = new Percentage(0);
+
         this.#GMV_退款前 = new Money(0, 10);
         this.#GMV_退款后 = new Money(0, 10);
         this.#GMV_售前损失 = new Money(0, 10);
         this.#GMV_售中损失 = new Money(0, 10);
         this.#GMV_售后损失 = new Money(0, 10);
+        this.#GMV_原始差额 = new Money(0, 10);
+        
+        this.#销售金额_退款前 = new Money(0, 10);
+        this.#销售金额_退款后 = new Money(0, 10);
+        this.#销售金额_售前损失 = new Money(0, 10);
+        this.#销售金额_售中损失 = new Money(0, 10);
+        this.#销售金额_售后损失 = new Money(0, 10);
+        this.#销售金额_原始差额 = new Money(0, 10);
+
         this.#收入_退款前 = new Money(0, 10);
         this.#收入_退款后 = new Money(0, 10);
         this.#收入_售前损失 = new Money(0, 10);
         this.#收入_售中损失 = new Money(0, 10);
         this.#收入_售后损失 = new Money(0, 10);
+        this.#收入_原始差额 = new Money(0, 10);
     }
 
     get 商品名称() { return this.#商品名称; }
@@ -222,6 +279,15 @@ export class Model_Report_SalesRevenue_Item {
     get GMV_原始差额() { return this.#GMV_原始差额; }
     get GMV_总退款损失() { return this.#GMV_售前损失.plus(this.#GMV_售中损失).plus(this.#GMV_售后损失); }
     get GMV_退款校验() { return this.GMV_总退款损失.equals(this.#GMV_退款前.minus(this.#GMV_退款后)); }
+
+    get 销售金额_退款前() { return this.#销售金额_退款前; }
+    get 销售金额_退款后() { return this.#销售金额_退款后; }
+    get 销售金额_售前损失() { return this.#销售金额_售前损失; }
+    get 销售金额_售中损失() { return this.#销售金额_售中损失; }
+    get 销售金额_售后损失() { return this.#销售金额_售后损失; }
+    get 销售金额_原始差额() { return this.#销售金额_原始差额; }
+    get 销售金额_总退款损失() { return this.#销售金额_售前损失.plus(this.#销售金额_售中损失).plus(this.#销售金额_售后损失); }
+    get 销售金额_退款校验() { return this.销售金额_总退款损失.equals(this.#销售金额_退款前.minus(this.#销售金额_退款后)); }
 
     get 收入_退款前() { return this.#收入_退款前; }
     get 收入_退款后() { return this.#收入_退款后; }
@@ -242,6 +308,13 @@ export class Model_Report_SalesRevenue_Item {
     set GMV_售中损失(value) { this.#GMV_售中损失 = value }
     set GMV_售后损失(value) { this.#GMV_售后损失 = value }
     set GMV_原始差额(value) { this.#GMV_原始差额 = value }
+
+    set 销售金额_退款前(value) { this.#销售金额_退款前 = value }
+    set 销售金额_退款后(value) { this.#销售金额_退款后 = value }
+    set 销售金额_售前损失(value) { this.#销售金额_售前损失 = value }
+    set 销售金额_售中损失(value) { this.#销售金额_售中损失 = value }
+    set 销售金额_售后损失(value) { this.#销售金额_售后损失 = value }
+    set 销售金额_原始差额(value) { this.#销售金额_原始差额 = value }
 
     set 收入_退款前(value) { this.#收入_退款前 = value }
     set 收入_退款后(value) { this.#收入_退款后 = value }
