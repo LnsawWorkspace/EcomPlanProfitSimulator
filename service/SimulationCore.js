@@ -500,11 +500,11 @@ export class SimulationCore {
         // 主要是 道道是 按照平均一单的广告费*订单数量 还是按照总价/ROI 来计算广告费更合适一些呢？好纠结啊。
         const 单广告费用 = entity_params.modelPlanParamsSale.salePrice.dividedBy(entity_params.modelPlanParamsAdvertising.roi, 4);
         report.广告名称 = entity_params.modelPlanParamsAdvertising.name;
-        report.广告费用_退款前 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款前, 4);
-        report.广告费用_退款后 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款后, 4);
-        report.广告费用_售前损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售前损失, 4);
-        report.广告费用_售中损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售中损失, 4);
-        report.广告费用_售后损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售后损失, 4);
+        report.广告费用_退款前 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款前, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
+        report.广告费用_退款后 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款后, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
+        report.广告费用_售前损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售前损失, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
+        report.广告费用_售中损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售中损失, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
+        report.广告费用_售后损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售后损失, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
         report.广告费用_原始差额 = report.广告费用_退款前.minus(report.广告费用_退款后).minus(report.广告费用_售前损失.plus(report.广告费用_售中损失).plus(report.广告费用_售后损失), 4);
         report.广告费用_退款后 = report.广告费用_退款后.plus(report.广告费用_原始差额);
     }
