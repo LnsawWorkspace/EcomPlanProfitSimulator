@@ -164,13 +164,13 @@ class PlanReportRoiGraphManager {
         document.getElementById('roi-graph-start').value = roiStart.toString();
         // roiStep,最小0.01
         let roiStep = new Decimal(document.getElementById('roi-graph-step').value);
-        if (roiStep.lessThanOrEqualTo(0.01)) {
-            roiStep = new Decimal(0.01).toDecimalPlaces(2, Decimal.ROUND_DOWN);
+        if (roiStep.lt(0.0001)) {
+            roiStep = new Decimal(0.0001).toDecimalPlaces(4, Decimal.ROUND_DOWN);
             document.getElementById('roi-graph-step').value = roiStep.toString();
-            this.#showToast.error('ROI 步长必须大于等于0.01');
+            this.#showToast.error('ROI 步长必须大于等于0.0001'); 
             return;
         }
-        roiStep = roiStep.toDecimalPlaces(2, Decimal.ROUND_DOWN);
+        roiStep = roiStep.toDecimalPlaces(3, Decimal.ROUND_DOWN);
         document.getElementById('roi-graph-step').value = roiStep.toString();
         // roiEnd,必须大于roiStart，
         let roiEnd = new Decimal(document.getElementById('roi-graph-end').value);
@@ -193,12 +193,34 @@ class PlanReportRoiGraphManager {
                 const planReport = Entity_PlanReport.parse(resultData);
                 results.push(planReport);
             }
-            console.log('%c  + Results Parsed:', "color: green", results);
             this.Echarts.init(results);
         };
     }
 
     Echarts = {
+        legend: {
+            type: "plain",
+            width: "100%",
+            top: "0%",
+            data: [
+                '利润',
+                '利润率',
+                '资本回报率',
+            ],
+            selected: {
+                '利润': true,
+                '利润率': false,
+                '资本回报率': false,
+            }
+        },
+        legendAdd: function (data) {
+            // 如果广告名称不在 legend.data 中，则添加
+            const adName = "广告：" + data[0].modelReportAdvertising.广告名称;
+            if (!this.legend.data.includes(adName)) {
+                this.legend.data.push(adName);
+                this.legend.selected[adName] = false;
+            }
+        },
         series: function (data) {
             const s = [
                 {
@@ -208,7 +230,44 @@ class PlanReportRoiGraphManager {
                     data: data.map(item => item.modelReportExt.利润.toNumber()),
                     tooltip: { // 单独配置该系列的tooltip
                         valueFormatter: function (value) {
-                            return value + ' 元';
+                            const v = new Money(value, 4);
+                            v.options.suffix = ' 元';
+                            return v.toLocaleFixed(2) + v.options.suffix;
+                        },
+                    },
+                },
+                {
+                    name: "广告：" + data[0].modelReportAdvertising.广告名称,
+                    type: 'line',
+                    smooth: true,
+                    data: data.map(item => item.modelReportAdvertising.广告费用_有效成本.toNumber()),
+                    tooltip: { // 单独配置该系列的tooltip
+                        valueFormatter: function (value) {
+                            const v = new Money(value, 4);
+                            v.options.suffix = ' 元';
+                            return v.toLocaleFixed(2) + v.options.suffix;
+                        },
+                    },
+                },
+                {
+                    name: '利润率',
+                    type: 'line',
+                    smooth: true,
+                    data: data.map(item => item.modelReportExt.利润率.toNumber()),
+                    tooltip: { // 单独配置该系列的tooltip
+                        valueFormatter: function (value) {
+                            return new Percentage(value).toPercentString(2);
+                        },
+                    },
+                },
+                {
+                    name: '资本回报率',
+                    type: 'line',
+                    smooth: true,
+                    data: data.map(item => item.modelReportExt.资本回报率.toNumber()),
+                    tooltip: { // 单独配置该系列的tooltip
+                        valueFormatter: function (value) {
+                            return new Percentage(value).toPercentString(2);
                         },
                     },
                 },
@@ -217,8 +276,9 @@ class PlanReportRoiGraphManager {
         },
         init: function (data) {
             // 基于准备好的dom，初始化echarts实例
+            const that = this;
             let myChart = echarts.init(document.getElementById('roi-graph-container'));
-
+            this.legendAdd(data);
             // 指定图表的配置项和数据
             let option = {
                 title: {
@@ -250,11 +310,7 @@ class PlanReportRoiGraphManager {
                     left: '2%',
                     right: '2%',
                 },
-                legend: {
-                    type: "plain",
-                    width: "100%",
-                    top: "0%",
-                },
+                legend: this.legend,
                 dataZoom: [
                     {
                         id: 'dataZoomX',
@@ -267,14 +323,18 @@ class PlanReportRoiGraphManager {
                 ],
                 xAxis: {
                     type: 'category',
-                    data: data.map(item => item.planParams.modelPlanParamsAdvertising.roi.toFixed(2)),
+                    data: data.map(item => item.planParams.modelPlanParamsAdvertising.roi.toFixed(4)),
                 },
                 yAxis: {
                     type: 'value',
+                    scale: true,
                 },
                 series: this.series(data),
             };
 
+            myChart.on('legendselectchanged', function (params) {
+                that.legend.selected = params.selected;
+            });
             // 使用刚指定的配置项和数据显示图表。
             myChart.setOption(option);
         },

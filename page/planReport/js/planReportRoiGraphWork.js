@@ -11,13 +11,12 @@ self.onmessage = function (e) {
     }
     // roiStep,最小0.01
     let roiStep = new Decimal(e.data.roiStep);
-    if (roiStep.lte(0.01)) {
-        roiStep = new Decimal(0.01);
+    if (roiStep.lt(0.0001)) {
+        roiStep = new Decimal(0.0001);
     }
     // roiEnd,必须大于roiStart，
     const roiEnd = new Decimal(e.data.roiEnd);
 
-    console.log(roiStart.toString(), roiEnd.toString(), roiStep.toString());
     const results = [];
     const sc = new SimulationCore();
     console.log('%c  + start Simulation:', "color: green", performance.now());
