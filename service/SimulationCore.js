@@ -33,10 +33,12 @@ export class SimulationCore {
         this.#getEnpenseMNPerOrder(entity, report);
         this.#getEnpenseFixed(entity, report);
         this.#getAdvertisingCost(entity, report);
-
         const refund0Report = this.#run0Refund(entity);
-
         this.#getExtReport(entity, report, refund0Report);
+        // 基于利润的必须在最后计算
+        this.#getEnpenseFixed_fromProfit(entity, report);
+        //并且重新计算最终的利润
+        this.#getExtReport(entity, report);
         console.log('%c  + end Simulation:', "color: green", performance.now());
         return report;
     }
@@ -489,11 +491,68 @@ export class SimulationCore {
             const costItem = new Model_Report_Enpense_Fixed_Item();
             costItem.费用名称 = goodsItem.name;
             costItem.进项税率 = goodsItem.inputRate;
-            costItem.费用成本 = goodsItem.value.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(goodsItem.inputRate), 4);
 
-            report.明细.push(costItem);
+            let value = goodsItem.valueMoney;
+            // - 应该独立一个方法用来获取费用的单价的，不过暂时先不改。
+            // 注意！固定支出的，不区分是否含税，因为基于的字段本身就已经有含税和不含税的区别了。
+            if (goodsItem.valueType !== 'num') {
+                // - 根据定义，付款金额是退款前的金额,本身就是含税的金额
+                if (goodsItem.base === "付款金额") {
+                    value = entity_report.modelReportSalesRevenue.销售金额_退款前.times(goodsItem.valuePercentage, 4);
+                }
+                // - 根据定义，销售金额是退款后的金额，对应的是含税的收入
+                if (goodsItem.base === "销售金额") {
+                    value = entity_report.modelReportSalesRevenue.销售金额_退款后.times(goodsItem.valuePercentage, 4);
+                }
+                // - 退款后的收入才是真收入，并且收入是不含税的
+                if (goodsItem.base === "收入") {
+                    value = entity_report.modelReportSalesRevenue.收入_退款后.times(goodsItem.valuePercentage, 4);
+                }
+            }
 
-            report.费用成本 = report.费用成本.plus(costItem.费用成本);
+            // - 如果是利润的跳过
+            if (goodsItem.base !== '利润') {
+                costItem.费用成本 = value.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(goodsItem.inputRate), 4);
+
+                report.明细.push(costItem);
+
+                report.费用成本 = report.费用成本.plus(costItem.费用成本);
+            }
+
+        });
+    }
+    /**
+     * 仅计算基于利润的固定费用
+     * @param {Entity_PlanParams} entity_params
+     * @param {Entity_PlanReport} entity_report
+     */
+    #getEnpenseFixed_fromProfit(entity_params, entity_report) {
+        const report = entity_report.modelReportEnpenseFixed;
+        entity_params.modelPlanParamsExpenseFixed?.forEach((goodsItem) => {
+            const costItem = new Model_Report_Enpense_Fixed_Item();
+            costItem.费用名称 = goodsItem.name;
+            costItem.进项税率 = goodsItem.inputRate;
+            let value = goodsItem.valueMoney;
+            // - 应该独立一个方法用来获取费用的单价的，不过暂时先不改。
+            // 注意！固定支出的，不区分是否含税，因为基于的字段本身就已经有含税和不含税的区别了。
+            if (goodsItem.valueType !== 'num') {
+                // - 根据定义，付款金额是退款前的金额,本身就是含税的金额
+                if (goodsItem.base === "利润") {
+                    value = entity_report.modelReportExt.利润.times(goodsItem.valuePercentage, 4);
+                    if(value.isNegative()){
+                        value = value.times(-1);
+                    }
+                }
+            }
+
+            // - 如果是利润则计算
+            if (goodsItem.base === '利润') {
+                costItem.费用成本 = value.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(goodsItem.inputRate), 4);
+
+                report.明细.push(costItem);
+
+                report.费用成本 = report.费用成本.plus(costItem.费用成本);
+            }
         });
     }
     /**
@@ -612,6 +671,11 @@ export class SimulationCore {
         this.#getEnpenseMNPerOrder(entity, report);
         this.#getEnpenseFixed(entity, report);
         this.#getAdvertisingCost(entity, report);
+        this.#getExtReport(entity, report);
+
+        // 基于利润的必须在最后计算
+        this.#getEnpenseFixed_fromProfit(entity, report);
+        //并且重新计算最终的利润
         this.#getExtReport(entity, report);
         console.log('%c  + end Simulation:', "color: green", performance.now());
         return report;
