@@ -359,6 +359,8 @@
                             <th scope="col" class="text-start">支出名称</th>
                             <th scope="col" class="text-end">支出成本</th>
                             <th scope="col" class="text-end">进项税率</th>
+                            <th scope="col" class="text-end">成本类型</th>
+                            <th scope="col" class="text-end">基于</th>
                             <th scope="col"></th>
                         </tr>
                     </thead>
@@ -1079,7 +1081,7 @@
 
         <!-- 添加固定支出模态窗 -->
         <div class="modal fade" id="paramsModal_ExpenseFixed" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-dialog modal-dialog-centered modal-xl">
                 <div class="modal-content">
                     <div class="modal-header bg-light">
                         <h5 class="modal-title fw-bold"><i class="bi bi-expensePerOrder me-2"></i>添加固定支出</h5>
@@ -1088,33 +1090,68 @@
 
                     <div class="modal-body p-4">
                         <form id="expenseFixedForm">
-                            <div class="col-md-12">
-                                <div class="d-flex align-items-center mb-2">
-                                    <label class="form-label fw-semibold mb-0 me-2">支出名称</label>
-                                    <p class="small text-primary mb-0">必须填写</p>
+                            <!-- 支出基本信息 -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0 me-2">支出名称</label>
+                                        <p class="small text-primary mb-0">必须填写</p>
+                                    </div>
+                                    <input type="text" class="form-control" id="expenseFixed-name" placeholder="输入支出名称">
                                 </div>
-                                <input type="text" class="form-control" id="expenseFixed-name" placeholder="输入支出名称">
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0 me-2">支出成本</label>
+                                        <p class="small text-primary mb-0"></p>
+                                    </div>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">¥</span>
+                                        <input type="number" class="form-control" id="expenseFixed-value" value=""
+                                            min="0" onkeypress="return event.keyCode !== 45" placeholder="输入支出金额">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0 me-2">进项税率</label>
+                                        <p class="small text-primary mb-0"></p>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="expenseFixed-input_rate" value="6"
+                                            min="0" max="100" step="0.01" onkeypress="return event.keyCode !== 45">
+                                        <span class="input-group-text bg-light">%</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-12">
-                                <div class="d-flex align-items-center mb-2">
-                                    <label class="form-label fw-semibold mb-0 me-2">支出成本</label>
-                                    <p class="small text-primary mb-0"></p>
+
+                            <!-- 价格信息 -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0 me-2">成本类型</label>
+                                        <p class="small text-primary mb-0"></p>
+                                    </div>
+                                    <div class="d-grid">
+                                        <div class="btn-group w-100">
+                                            <input type="radio" class="btn-check" name="expenseFixedCostType"
+                                                id="expenseFixed-cost_type_money" autocomplete="off" checked>
+                                            <label class="btn btn-outline-primary"
+                                                for="expenseFixed-cost_type_money">固定金额</label>
+                                            <input type="radio" class="btn-check" name="expenseFixedCostType"
+                                                id="expenseFixed-cost_type_percent" autocomplete="off">
+                                            <label class="btn btn-outline-primary"
+                                                for="expenseFixed-cost_type_percent">百分比</label>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light">¥</span>
-                                    <input type="number" class="form-control" id="expenseFixed-value" value="" min="0"
-                                        onkeypress="return event.keyCode !== 45" placeholder="输入支出金额">
-                                </div>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="d-flex align-items-center mb-2">
-                                    <label class="form-label fw-semibold mb-0 me-2">进项税率</label>
-                                    <p class="small text-primary mb-0"></p>
-                                </div>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="expenseFixed-input_rate" value="6"
-                                        min="0" max="100" step="0.01" onkeypress="return event.keyCode !== 45">
-                                    <span class="input-group-text bg-light">%</span>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0 me-2">来源字段</label>
+                                        <p class="small text-primary mb-0">当类型是"百分比"时，必须选择。</p>
+                                    </div>
+                                    <div class="input-group">
+                                        <select class="form-select" id="expenseFixed-base">
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </form>

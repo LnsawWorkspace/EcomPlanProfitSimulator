@@ -156,6 +156,8 @@ class PlanParamsManager {
                     this.Goods.editingRow = null;
                     this.Gift.editingRow = null;
                     this.Expense_PerOrder.editingRow = null;
+                    this.Expense_MNPerOrder.editingRow = null;
+                    this.Expense_Fixed.editingRow = null;
                 });
 
                 element.addEventListener('hidden.bs.modal', () => {
@@ -178,6 +180,10 @@ class PlanParamsManager {
                     //如果element是paramsModal_ExpenseMNPerOrder,调用this.Expense_MNPerOrder.initSelectOptions()
                     if (id === 'paramsModal_ExpenseMNPerOrder') {
                         this.Expense_MNPerOrder.initSelectOptions(this);
+                    }
+
+                    if (id === 'paramsModal_ExpenseFixed') {
+                        this.Expense_Fixed.initSelectOptions(this);
                     }
                 });
             }
@@ -652,16 +658,27 @@ class PlanParamsManager {
                 // 若行不包含有效单元格则跳过（例如表头或空行）
                 if (!cells || cells.length < 2) return;
                 const text = (i) => (cells[i] && cells[i].textContent) ? cells[i].textContent.trim() : '';
+
                 const name = text(0);
-                if (!name) return;
+                if (!name) return; // 跳过空名称的行
                 const amountRaw = that.#sanitizeNumberString(text(1));
                 const inputRateRaw = that.#sanitizeNumberString(text(2));
+                const typeText = text(3);
+                const baseRaw = text(4);
+                const baseHaveTaxText = text(5);
+
+                // 解析计费类型：显示文本到内部值 ('num'|'per')
+                const valueType = (typeText === '固定金额') ? 'num' : 'per';
 
                 // 构建 DTO，按 Model_PlanParams_Expense_Fixed 的字段要求传递
                 const dto = {
                     name: name,
-                    value: amountRaw || 0,
+                    // value: 金额原值或百分比（如果是百分比则传 0-1 的 Decimal）
+                    valueMoney: (valueType === 'num') ? (amountRaw || 0) : 0,
+                    valuePercentage: (valueType === 'per') ? (amountRaw ? (new Decimal(amountRaw)).div(100) : 0) : 0,
+                    valueType: valueType,
                     inputRate: inputRateRaw ? (new Decimal(inputRateRaw)).div(100) : undefined,
+                    base: baseRaw,
                 };
                 try {
                     const rowData = new Model_PlanParams_Expense_Fixed(dto);
@@ -1501,6 +1518,29 @@ class PlanParamsManager {
     Expense_Fixed = {
         editingRow: null,
         expenseCounter: 0,
+        setSelectValue: null,
+        initSelectOptions: function (that) {
+            const selectElement = document.getElementById("expenseFixed-base");
+            let options = [];
+            // options = ["-", "售价", ...goodsNamesSet];
+            options = ["-", "付款金额", "销售金额", "收入", "利润"]; // 暂时只支持售价
+            // 清空现有选项
+            selectElement.innerHTML = '';
+            // 添加新选项
+            options.forEach(optionText => {
+                const option = document.createElement('option');
+                option.value = optionText;
+                option.textContent = optionText;
+                selectElement.appendChild(option);
+            });
+            // 设置默认选中值为 "-"
+            selectElement.value = "-";
+            // 如果this.setSelectValue不为null，则设置为该值
+            if (this.setSelectValue !== null) {
+                selectElement.value = this.setSelectValue;
+                this.setSelectValue = null; // 重置为null，避免影响下次调用
+            }
+        },
         addRow: function (that) {
             //获取数据
             let 费用名称 = document.getElementById("expenseFixed-name").value;
@@ -1508,12 +1548,18 @@ class PlanParamsManager {
             // 原始输入
             const rawCost = document.getElementById("expenseFixed-value").value;
             const rawInputRate = document.getElementById("expenseFixed-input_rate").value;
+            const rawCostType = document.getElementById("expenseFixed-cost_type_money").checked;
+            const rawBase = document.getElementById("expenseFixed-base").value;
+
             // 格式化后的展示值
-            let 费用金额 = that.money(rawCost);
+            let 费用金额 = rawCostType ? that.money(rawCost) : that.pctFmt(rawCost);
             let 进项税率 = that.pctFmt(rawInputRate);
+            let 计费类型 = rawCostType ? "num" : "per";
+            let 计费基数 = 计费类型 === "num" ? "-" : rawBase; // 固定金额时强制为 "-"
+
             if (this.editingRow === null) {
                 this.expenseCounter++;
-                //构建一行tr    
+                //构建一行tr
                 const newRow = document.createElement('tr');
                 //<th scope="row" class="text-start">${this.expenseCounter}</th>
                 newRow.innerHTML =
@@ -1521,6 +1567,8 @@ class PlanParamsManager {
                             <td class="fw-semibold item-name">${费用名称}</td>
                             <td class="text-end">${费用金额}</td>
                             <td class="text-end">${进项税率}</td>
+                            <td class="text-end">${计费类型 === "num" ? "固定金额" : "指定比例"}</td>
+                            <td class="text-end">${计费基数}</td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary modify">
@@ -1530,7 +1578,7 @@ class PlanParamsManager {
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
-                            </td>
+                            </td>              
                         `
                 const tbody = document.getElementById('expenseFixedContainer');
                 //添加事件监听（传入页面管理实例 that）
@@ -1539,8 +1587,7 @@ class PlanParamsManager {
                 });
                 newRow.querySelector('.remove').addEventListener('click', (e) => {
                     this.removeRow(e, that);
-                }
-                );
+                });
 
                 tbody.appendChild(newRow);
             } else {
@@ -1548,6 +1595,8 @@ class PlanParamsManager {
                 cells[0].textContent = 费用名称;
                 cells[1].textContent = 费用金额;
                 cells[2].textContent = 进项税率;
+                cells[3].textContent = 计费类型 === "num" ? "固定金额" : "指定比例";
+                cells[4].textContent = 计费基数;
             }
             //关闭模态窗
             that.#modals["paramsModal_ExpenseFixed"].hide();
@@ -1558,6 +1607,10 @@ class PlanParamsManager {
             document.getElementById("expenseFixed-name").value = tds[0].textContent;
             document.getElementById("expenseFixed-value").value = that.#sanitizeNumberString(tds[1].textContent);
             document.getElementById("expenseFixed-input_rate").value = that.#sanitizeNumberString(tds[2].textContent);
+            document.getElementById("expenseFixed-cost_type_money").checked = (tds[3].textContent === "固定金额");
+            document.getElementById("expenseFixed-cost_type_percent").checked = (tds[3].textContent === "指定比例");
+            document.getElementById("expenseFixed-base").value = that.#sanitizeNumberString(tds[4].textContent);
+            this.setSelectValue = tds[4].textContent;
             that.#modals["paramsModal_ExpenseFixed"].show();
         },
         removeRow: function (e, that) {
@@ -1581,18 +1634,22 @@ class PlanParamsManager {
             tbody.innerHTML = '';
             if (!Array.isArray(data)) return;
             for (const [index, item] of data.entries()) {
-                if (!item) continue;
+                                if (!item) continue;
                 const name = item.name || '';
                 if (!name || String(name).trim() === '') continue;
                 // 直接读取属性并格式化
-                const value = (item.value.options.prefix + item.value.toLocaleFixed() ?? 0);
+                const value = item.valueType === 'num' ? (item.valueMoney.options.prefix + item.valueMoney.toLocaleFixed() ?? 0) : (item.valuePercentage.toPercentString(2) ?? '');
                 const inputRate = (item.inputRate.toPercentString(2) ?? '');
+                const valueType = item.valueType || 'num';
+                const base = item.base || '-';
                 const newRow = document.createElement('tr');
                 //<th scope="row" class="text-start">${index + 1}</th>
                 newRow.innerHTML = `
                         <td class="fw-semibold item-name">${name}</td>
                         <td class="text-end">${value}</td>
                         <td class="text-end">${inputRate}</td>
+                        <td class="text-end">${valueType === 'num' ? '固定金额' : '指定比例'}</td>
+                        <td class="text-end">${base}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-primary modify"><i class="bi bi-pencil"></i></button>
