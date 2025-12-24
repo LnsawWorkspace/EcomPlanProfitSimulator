@@ -267,6 +267,10 @@ class PlanReportManager {
 
         // 声明tr，用create
         const tr = document.createElement('tr');
+        const 赠品成本_总退款损失 = new Percentage(this.#reportData.modelReportGiftCost.赠品成本_总退款损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value);
+        const 赠品成本_售前损失 = new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售前损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value);
+        const 赠品成本_售中损失 = new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售中损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value);
+        const 赠品成本_售后损失 = new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售后损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value);
         tr.innerHTML = `
                     <td class="fw-bold product-col">总计</td>
                     <td class="text-end">${this.#reportData.modelReportGiftCost.赠品成本_有效成本.toLocaleFixed(4)}</td>
@@ -276,10 +280,10 @@ class PlanReportManager {
                     <td class="text-end">${this.#reportData.modelReportGiftCost.赠品成本_售前损失.toLocaleFixed(4)}</td>
                     <td class="text-end">${this.#reportData.modelReportGiftCost.赠品成本_售中损失.toLocaleFixed(4)}</td>
                     <td class="text-end">${this.#reportData.modelReportGiftCost.赠品成本_售后损失.toLocaleFixed(4)}</td>
-                    <td class="text-end">${new Percentage(this.#reportData.modelReportGiftCost.赠品成本_总退款损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value).toPercentString(4)}</td>
-                    <td class="text-end">${new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售前损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value).toPercentString(4)}</td>
-                    <td class="text-end">${new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售中损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value).toPercentString(4)}</td>
-                    <td class="text-end">${new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售后损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value).toPercentString(4)}</td>
+                    <td class="text-end">${赠品成本_总退款损失.isNaN() ? '-' : 赠品成本_总退款损失.toPercentString(4)}</td>
+                    <td class="text-end">${赠品成本_售前损失.isNaN() ? '-' : 赠品成本_售前损失.toPercentString(4)}</td>
+                    <td class="text-end">${赠品成本_售中损失.isNaN() ? '-' : 赠品成本_售中损失.toPercentString(4)}</td>
+                    <td class="text-end">${赠品成本_售后损失.isNaN() ? '-' : 赠品成本_售后损失.toPercentString(4)}</td>
                     `;
         //先清空
         document.getElementById('Report_Container_Gift_Foot').innerHTML = '';
