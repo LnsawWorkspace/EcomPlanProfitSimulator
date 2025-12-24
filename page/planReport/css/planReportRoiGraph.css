@@ -1,0 +1,270 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    background-color: #f5f7fa;
+    color: #000000;
+    min-height: 100vh;
+}
+
+.report-container {
+    max-width: 1600px;
+}
+
+/* 头部样式 */
+.header {
+    background: linear-gradient(135deg, #4361ee, #3f37c9);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.header-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.5px;
+}
+
+.header-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+/* 统计卡片 */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    ;
+}
+
+.stat-card i{
+    margin-left: 0.25rem;
+    color: #dc3545;
+    cursor: pointer;
+}
+
+.stat-card.left-border.primary {
+    border-left: 4px solid #4361ee;
+}
+
+.stat-card.left-border.positive {
+    border-left: 4px solid #198754;
+}
+
+.stat-card.left-border.negative {
+    border-left: 4px solid #dc3545;
+}
+
+.stat-card p {
+    font-size: 0.75rem;
+    color: #4361ee;
+    margin-bottom: 0rem;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+.stat-value {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #000000;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value.primary {
+    color: #000000;
+}
+
+.stat-value.positive {
+    color: #198754;
+}
+
+.stat-value.negative {
+    color: #dc3545;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #000000;
+    font-weight: 500;
+}
+
+
+/* 这3个 其实是个 Badge 用来做对比的，比如同比、环比、或者直接就是新的和旧的对比等 */
+.stat-change {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.stat-change.positive {
+    background-color: #e0f7ff;
+    color: var(--bs-success-text);
+}
+
+.stat-change.negative {
+    background-color: #ffe0f0;
+    color: var(--bs-danger-text);
+}
+
+.data-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+}
+
+.card-header {
+    padding: 1.25rem 1rem 1.25rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.card-icon {
+    font-size: 1.5rem;
+    color: #4361ee;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-title {
+    font-size: 1.25rem;
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.card-body .row {
+    margin-bottom: 1.5rem;
+}
+
+.card-body .row p {
+    margin-bottom: 0.5rem;
+    color: #4361ee;
+    font-size: 0.75rem;
+}
+
+.card-body-table {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table thead {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.data-table th,
+.data-table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.data-table th {
+    font-weight: 600;
+    color: #000000;
+    font-size: 0.90rem;
+}
+
+.data-table td {
+    color: #000000;
+    font-size: 0.90rem;
+}
+
+.data-table tbody tr:hover {
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+.data-table tfoot {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.data-table tfoot td {
+    font-weight: 600;
+}
+
+.footHelper {
+    height: 80px;
+}
+
+@media (max-width: 1920px) {
+
+    .data-table th {
+        font-weight: 600;
+        color: #000000;
+        font-size: 0.75rem;
+    }
+
+    .data-table td {
+        color: #000000;
+        font-size: 0.75rem;
+    }
+}
+
+/*  Echarts容器的 */
+.chart-container {
+    height: 600px;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* 给D3用的 */
+.y.axis text {
+    font-size: 0.5rem;
+    text-anchor: start !important;
+}
+
+.x.axis text {
+    font-size: 0.5rem;
+}
+
+.x.grid line {
+    stroke: #7C4DFF;
+    stroke-width: 0.5;
+}
+
+.x.grid path {
+    display: none;
+}

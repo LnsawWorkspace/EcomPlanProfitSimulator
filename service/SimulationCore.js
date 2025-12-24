@@ -23,9 +23,9 @@ export class SimulationCore {
      * @returns {any}
      */
     runSimulation(entity) {
-        console.log('%c  + start Simulation:', "color: green", performance.now());
+        // console.log('%c  + start Simulation:', "color: green", performance.now());
         entity.modelPlanParamsSale.quantityPattern = 'real';
-        const report = new Entity_PlanReport({ id: crypto.randomUUID() });
+        const report = new Entity_PlanReport({ id: crypto.randomUUID(), planParams: entity });
         this.#getSalesRevenue(entity, report);
         this.#getGoodsCost(entity, report);
         this.#getGiftCost(entity, report);
@@ -39,7 +39,7 @@ export class SimulationCore {
         this.#getEnpenseFixed_fromProfit(entity, report);
         //并且重新计算最终的利润
         this.#getExtReport(entity, report, refund0Report);
-        console.log('%c  + end Simulation:', "color: green", performance.now());
+        // console.log('%c  + end Simulation:', "color: green", performance.now());
         return report;
     }
 
@@ -661,9 +661,9 @@ export class SimulationCore {
             refundIngRate: new Percentage(0),
             refundAftRate: new Percentage(0),
         });
-        console.log('%c  + start Simulation:', "color: green", performance.now());
+        // console.log('%c  + start Simulation:', "color: green", performance.now());
         entity.modelPlanParamsSale.quantityPattern = 'real';
-        const report = new Entity_PlanReport({ id: crypto.randomUUID() });
+        const report = new Entity_PlanReport({ id: crypto.randomUUID(),planParams: entity });
         this.#getSalesRevenue(entity, report);
         this.#getGoodsCost(entity, report);
         this.#getGiftCost(entity, report);
@@ -676,7 +676,7 @@ export class SimulationCore {
         this.#getEnpenseFixed_fromProfit(entity, report);
         //并且重新计算最终的利润
         this.#getExtReport(entity, report);
-        console.log('%c  + end Simulation:', "color: green", performance.now());
+        // console.log('%c  + end Simulation:', "color: green", performance.now());
         return report;
     }
 

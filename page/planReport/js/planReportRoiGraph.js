@@ -9,6 +9,8 @@ import { Model_PlanParams_Expense_Fixed } from '../../../domain/plan/Model_PlanP
 
 import { Model_PlanParams_Advertising } from '../../../domain/plan/Model_PlanParams_Advertising.js';
 
+import { Entity_PlanReport } from '../../../domain/report/Entity_PlanReport.js';
+
 import { Entity_PlanParams } from '../../../domain/plan/Entity_PlanParams.js';
 import { Repository_Workspace } from '../../../repository/Repository_Workspace.js';
 import { Repository_PlanGroup } from '../../../repository/Repository_PlanGroup.js';
@@ -51,10 +53,10 @@ class PlanReportRoiGraphManager {
      */
     #initializeShowToast() {
         this.#showToast = {
-            success: (message, delay = 2000) => LnsawTool.showToast(message, 'success', delay),
-            warning: (message, delay = 2000) => LnsawTool.showToast(message, 'warning', delay),
-            error: (message, delay = 2000) => LnsawTool.showToast(message, 'danger', delay),
-            info: (message, delay = 2000) => LnsawTool.showToast(message, 'info', delay),
+            success: async (message, delay = 2000) => LnsawTool.showToast(message, 'success', delay),
+            warning: async (message, delay = 2000) => LnsawTool.showToast(message, 'warning', delay),
+            error: async (message, delay = 2000) => LnsawTool.showToast(message, 'danger', delay),
+            info: async (message, delay = 2000) => LnsawTool.showToast(message, 'info', delay),
         };
     }
 
@@ -63,6 +65,7 @@ class PlanReportRoiGraphManager {
      */
     #initializeElements() {
         const elements_id = {
+            'roi-graph-generate-btn': 'roi-graph-generate-btn',
 
         };
         const element_class = {
@@ -82,6 +85,9 @@ class PlanReportRoiGraphManager {
     #initializeEventListeners() {
         // 使用Map和forEach优化事件监听设置
         const clickListeners = new Map([
+            // 没用showReport 而是用的 initPlanReport 是为了避免方案参数发生变化，因此需要重新获取方案参数
+            // 不过这里需要用到url，如果url被编辑，会导致无法获取方案参数
+            ["roi-graph-generate-btn", () => { this.#initPlanReport(); }],
         ]);
 
         for (const [elementKey, handler] of clickListeners) {
@@ -128,8 +134,6 @@ class PlanReportRoiGraphManager {
                             }
                         }
                         this.#simulationCore = new SimulationCore();
-                        this.#reportData = this.#simulationCore.runSimulation(this.#planParams);
-                        console.log("可读性报表：", this.#reportData.toSerializable());
                         this.#showReport();
                     } else {
                         this.#hidePage();
@@ -150,21 +154,130 @@ class PlanReportRoiGraphManager {
     }
 
     #showReport() {
-        const roiStart = document.getElementById('roi-graph-start');
-        const roiMiddle = document.getElementById('roi-graph-middle');
-        const roiEnd = document.getElementById('roi-graph-end');
-
-        const results = [];
-
-        for (let roigraphPoints = roiStart; roigraphPoints <= roiEnd; roigraphPoints += roiMiddle) {
-            this.#planParams.modelPlanParamsAdvertising.roi = roigraphPoints;
-            results.push();
+        // roiStart,必须大于0，最小0.01，
+        let roiStart = new Decimal(document.getElementById('roi-graph-start').value);
+        if (roiStart.lte(0)) {
+            document.getElementById('roi-graph-start').value = 0;
+            roiStart = new Decimal(0);
         }
+        roiStart = roiStart.toDecimalPlaces(2, Decimal.ROUND_DOWN);
+        document.getElementById('roi-graph-start').value = roiStart.toString();
+        // roiStep,最小0.01
+        let roiStep = new Decimal(document.getElementById('roi-graph-step').value);
+        if (roiStep.lessThanOrEqualTo(0.01)) {
+            roiStep = new Decimal(0.01).toDecimalPlaces(2, Decimal.ROUND_DOWN);
+            document.getElementById('roi-graph-step').value = roiStep.toString();
+            this.#showToast.error('ROI 步长必须大于等于0.01');
+            return;
+        }
+        roiStep = roiStep.toDecimalPlaces(2, Decimal.ROUND_DOWN);
+        document.getElementById('roi-graph-step').value = roiStep.toString();
+        // roiEnd,必须大于roiStart，
+        let roiEnd = new Decimal(document.getElementById('roi-graph-end').value);
+        if (roiEnd.lte(roiStart)) {
+            document.getElementById('roi-graph-end').value = roiStart.plus(roiStep).toString();
+            this.#showToast.error('ROI 结束值必须大于开始值');
+            return;
+        }
+        roiEnd = roiEnd.toDecimalPlaces(2, Decimal.ROUND_DOWN);
+        document.getElementById('roi-graph-end').value = roiEnd.toString();
 
+        const worker = new Worker('js/planReportRoiGraphWork.js', { type: 'module' });
+        worker.postMessage({ roiStart: roiStart.toString(), roiEnd: roiEnd.toString(), roiStep: roiStep.toString(), planParams: this.#planParams.toSerializable() });
+        worker.onmessage = (e) => {
+            // 计算完成
+            worker.terminate();
+            console.log('%c  + Simulation Completed:', "color: green", e.data);
+            const results = [];
+            for (const resultData of e.data) {
+                const planReport = Entity_PlanReport.parse(resultData);
+                results.push(planReport);
+            }
+            console.log('%c  + Results Parsed:', "color: green", results);
+            this.Echarts.init(results);
+        };
     }
 
     Echarts = {
+        series: function (data) {
+            const s = [
+                {
+                    name: '利润',
+                    type: 'line',
+                    smooth: true,
+                    data: data.map(item => item.modelReportExt.利润.toNumber()),
+                    tooltip: { // 单独配置该系列的tooltip
+                        valueFormatter: function (value) {
+                            return value + ' 元';
+                        },
+                    },
+                },
+            ];
+            return s;
+        },
+        init: function (data) {
+            // 基于准备好的dom，初始化echarts实例
+            let myChart = echarts.init(document.getElementById('roi-graph-container'));
 
+            // 指定图表的配置项和数据
+            let option = {
+                title: {
+                },
+                tooltip: {
+                    trigger: 'axis',  // 关键！显示同一X轴的所有Y值
+                    axisPointer: {
+                        type: 'line'  // 显示垂直参考线
+                    }
+                },
+                toolbox: {
+                    show: true,
+                    feature: {
+                        magicType: {
+                            title: {
+                                line: '折线图',
+                                bar: '柱状图'
+                            },
+                            type: ['line', 'bar']
+                        },
+                    },
+                    top: '0%',
+                },
+                dataset: {
+
+                },
+                grid: {
+                    top: '10%',
+                    left: '2%',
+                    right: '2%',
+                },
+                legend: {
+                    type: "plain",
+                    width: "100%",
+                    top: "0%",
+                },
+                dataZoom: [
+                    {
+                        id: 'dataZoomX',
+                        type: 'slider',
+                        xAxisIndex: [0],
+                        filterMode: 'filter',
+                        start: 0,
+                        end: 100,
+                    },
+                ],
+                xAxis: {
+                    type: 'category',
+                    data: data.map(item => item.planParams.modelPlanParamsAdvertising.roi.toFixed(2)),
+                },
+                yAxis: {
+                    type: 'value',
+                },
+                series: this.series(data),
+            };
+
+            // 使用刚指定的配置项和数据显示图表。
+            myChart.setOption(option);
+        },
     }
 }
 // 页面加载完成后初始化
