@@ -22,6 +22,17 @@ export class Model_Report_GoodsCost {
         this.#明细 = [];
     }
 
+    static parse(dto) {
+        const model = new Model_Report_GoodsCost();
+        model.商品成本_退款前 = new Money(dto.商品成本_退款前.value, new Integer(dto.商品成本_退款前.precision.value, dto.商品成本_退款前.precision.options), dto.商品成本_退款前.options);
+        model.商品成本_退款后 = new Money(dto.商品成本_退款后.value, new Integer(dto.商品成本_退款后.precision.value, dto.商品成本_退款后.precision.options), dto.商品成本_退款后.options);
+        model.商品成本_售前损失 = new Money(dto.商品成本_售前损失.value, new Integer(dto.商品成本_售前损失.precision.value, dto.商品成本_售前损失.precision.options), dto.商品成本_售前损失.options);
+        model.商品成本_售中损失 = new Money(dto.商品成本_售中损失.value, new Integer(dto.商品成本_售中损失.precision.value, dto.商品成本_售中损失.precision.options), dto.商品成本_售中损失.options);
+        model.商品成本_售后损失 = new Money(dto.商品成本_售后损失.value, new Integer(dto.商品成本_售后损失.precision.value, dto.商品成本_售后损失.precision.options), dto.商品成本_售后损失.options);
+        model.明细 = dto.明细.map(itemDto => Model_Report_GoodsCost_Item.parse(itemDto));
+        return model;
+    }
+
     get 商品成本_退款前() { return this.#商品成本_退款前; }
     get 商品成本_退款后() { return this.#商品成本_退款后; }
     get 商品成本_售前损失() { return this.#商品成本_售前损失; }
@@ -30,7 +41,6 @@ export class Model_Report_GoodsCost {
     get 商品成本_总退款损失() { return this.#商品成本_售前损失.plus(this.#商品成本_售中损失).plus(this.#商品成本_售后损失); }
     // get 商品成本_退款校验() { return this.商品成本_总退款损失.equals(this.#商品成本_退款前.minus(this.#商品成本_退款后)); }
     get 商品成本_有效成本() { return this.#商品成本_退款后.plus(this.商品成本_总退款损失); }
-
     get 明细() { return this.#明细; }
 
     set 商品成本_退款前(value) { this.#商品成本_退款前 = value; }
@@ -38,6 +48,8 @@ export class Model_Report_GoodsCost {
     set 商品成本_售前损失(value) { this.#商品成本_售前损失 = value; }
     set 商品成本_售中损失(value) { this.#商品成本_售中损失 = value; }
     set 商品成本_售后损失(value) { this.#商品成本_售后损失 = value; }
+
+    set 明细(value) { this.#明细 = value; }
 
     checkAll() {
         const errors = [];
@@ -130,4 +142,22 @@ export class Model_Report_GoodsCost_Item {
     set 商品成本_售中损失(value) { this.#商品成本_售中损失 = value; }
     set 商品成本_售后损失(value) { this.#商品成本_售后损失 = value; }
 
+    static parse(dto) {
+        const item = new Model_Report_GoodsCost_Item();
+        item.商品名称 = dto.商品名称;
+        item.商品成本_含税 = new Money(dto.商品成本_含税.value, new Integer(dto.商品成本_含税.precision.value, dto.商品成本_含税.precision.options), dto.商品成本_含税.options);
+        item.商品成本_不含税 = new Money(dto.商品成本_不含税.value, new Integer(dto.商品成本_不含税.precision.value, dto.商品成本_不含税.precision.options), dto.商品成本_不含税.options);
+        item.进项税率 = new Percentage(dto.进项税率.value, dto.进项税率.options);
+        item.商品数量_退款前 = new Integer(dto.商品数量_退款前.value, dto.商品数量_退款前.options);
+        item.商品数量_退款后 = new Integer(dto.商品数量_退款后.value, dto.商品数量_退款后.options);
+        item.商品数量_售前损失 = new Integer(dto.商品数量_售前损失.value, dto.商品数量_售前损失.options);
+        item.商品数量_售中损失 = new Integer(dto.商品数量_售中损失.value, dto.商品数量_售中损失.options);
+        item.商品数量_售后损失 = new Integer(dto.商品数量_售后损失.value, dto.商品数量_售后损失.options);
+        item.商品成本_退款前 = new Money(dto.商品成本_退款前.value, new Integer(dto.商品成本_退款前.precision.value, dto.商品成本_退款前.precision.options), dto.商品成本_退款前.options);
+        item.商品成本_退款后 = new Money(dto.商品成本_退款后.value, new Integer(dto.商品成本_退款后.precision.value, dto.商品成本_退款后.precision.options), dto.商品成本_退款后.options);
+        item.商品成本_售前损失 = new Money(dto.商品成本_售前损失.value, new Integer(dto.商品成本_售前损失.precision.value, dto.商品成本_售前损失.precision.options), dto.商品成本_售前损失.options);
+        item.商品成本_售中损失 = new Money(dto.商品成本_售中损失.value, new Integer(dto.商品成本_售中损失.precision.value, dto.商品成本_售中损失.precision.options), dto.商品成本_售中损失.options);
+        item.商品成本_售后损失 = new Money(dto.商品成本_售后损失.value, new Integer(dto.商品成本_售后损失.precision.value, dto.商品成本_售后损失.precision.options), dto.商品成本_售后损失.options);
+        return item;
+    }
 }

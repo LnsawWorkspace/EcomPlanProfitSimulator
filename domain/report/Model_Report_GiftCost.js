@@ -49,6 +49,19 @@ export class Model_Report_GiftCost {
     set 赠品成本_额外缴税(value) { this.#赠品成本_额外缴税 = value; }
     set 赠品成本_额外收入(value) { this.#赠品成本_额外收入 = value; }
 
+    static parse(dto) {
+        const model = new Model_Report_GiftCost();
+        model.赠品成本_退款前 = new Money(dto.赠品成本_退款前.value, new Integer(dto.赠品成本_退款前.precision.value, dto.赠品成本_退款前.precision.options), dto.赠品成本_退款前.options);
+        model.赠品成本_退款后 = new Money(dto.赠品成本_退款后.value, new Integer(dto.赠品成本_退款后.precision.value, dto.赠品成本_退款后.precision.options), dto.赠品成本_退款后.options);
+        model.赠品成本_售前损失 = new Money(dto.赠品成本_售前损失.value, new Integer(dto.赠品成本_售前损失.precision.value, dto.赠品成本_售前损失.precision.options), dto.赠品成本_售前损失.options);
+        model.赠品成本_售中损失 = new Money(dto.赠品成本_售中损失.value, new Integer(dto.赠品成本_售中损失.precision.value, dto.赠品成本_售中损失.precision.options), dto.赠品成本_售中损失.options);
+        model.赠品成本_售后损失 = new Money(dto.赠品成本_售后损失.value, new Integer(dto.赠品成本_售后损失.precision.value, dto.赠品成本_售后损失.precision.options), dto.赠品成本_售后损失.options);
+        model.赠品成本_额外缴税 = new Money(dto.赠品成本_额外缴税.value, new Integer(dto.赠品成本_额外缴税.precision.value, dto.赠品成本_额外缴税.precision.options), dto.赠品成本_额外缴税.options);
+        model.赠品成本_额外收入 = new Money(dto.赠品成本_额外收入.value, new Integer(dto.赠品成本_额外收入.precision.value, dto.赠品成本_额外收入.precision.options), dto.赠品成本_额外收入.options);
+        model.#明细 = (dto.明细 || []).map(itemDto => Model_Report_GiftCost_Item.parse(itemDto));
+        return model;
+    }
+
     checkAll() {
         const errors = [];
         let 明细成本累计 = new Money(0, 10);
@@ -147,4 +160,24 @@ export class Model_Report_GiftCost_Item {
     set 赠品成本_额外缴税(value) { this.#赠品成本_额外缴税 = value; }
     set 赠品成本_额外收入(value) { this.#赠品成本_额外收入 = value; }
 
+    static parse(dto) {
+        const item = new Model_Report_GiftCost_Item();
+        item.赠品名称 = dto.赠品名称;
+        item.赠品成本_含税 = new Money(dto.赠品成本_含税.value, new Integer(dto.赠品成本_含税.precision.value, dto.赠品成本_含税.precision.options), dto.赠品成本_含税.options);
+        item.赠品成本_不含税 = new Money(dto.赠品成本_不含税.value, new Integer(dto.赠品成本_不含税.precision.value, dto.赠品成本_不含税.precision.options), dto.赠品成本_不含税.options);
+        item.进项税率 = new Percentage(dto.进项税率.value, dto.进项税率.options);
+        item.赠品数量_退款前 = new Integer(dto.赠品数量_退款前.value, dto.赠品数量_退款前.options);
+        item.赠品数量_退款后 = new Integer(dto.赠品数量_退款后.value, dto.赠品数量_退款后.options);
+        item.赠品数量_售前损失 = new Integer(dto.赠品数量_售前损失.value, dto.赠品数量_售前损失.options);
+        item.赠品数量_售中损失 = new Integer(dto.赠品数量_售中损失.value, dto.赠品数量_售中损失.options);
+        item.赠品数量_售后损失 = new Integer(dto.赠品数量_售后损失.value, dto.赠品数量_售后损失.options);
+        item.赠品成本_退款前 = new Money(dto.赠品成本_退款前.value, new Integer(dto.赠品成本_退款前.precision.value, dto.赠品成本_退款前.precision.options), dto.赠品成本_退款前.options);
+        item.赠品成本_退款后 = new Money(dto.赠品成本_退款后.value, new Integer(dto.赠品成本_退款后.precision.value, dto.赠品成本_退款后.precision.options), dto.赠品成本_退款后.options);
+        item.赠品成本_售前损失 = new Money(dto.赠品成本_售前损失.value, new Integer(dto.赠品成本_售前损失.precision.value, dto.赠品成本_售前损失.precision.options), dto.赠品成本_售前损失.options);
+        item.赠品成本_售中损失 = new Money(dto.赠品成本_售中损失.value, new Integer(dto.赠品成本_售中损失.precision.value, dto.赠品成本_售中损失.precision.options), dto.赠品成本_售中损失.options);
+        item.赠品成本_售后损失 = new Money(dto.赠品成本_售后损失.value, new Integer(dto.赠品成本_售后损失.precision.value, dto.赠品成本_售后损失.precision.options), dto.赠品成本_售后损失.options);
+        item.赠品成本_额外缴税 = new Money(dto.赠品成本_额外缴税.value, new Integer(dto.赠品成本_额外缴税.precision.value, dto.赠品成本_额外缴税.precision.options), dto.赠品成本_额外缴税.options);
+        item.赠品成本_额外收入 = new Money(dto.赠品成本_额外收入.value, new Integer(dto.赠品成本_额外收入.precision.value, dto.赠品成本_额外收入.precision.options), dto.赠品成本_额外收入.options);
+        return item;
+    }
 }

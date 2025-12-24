@@ -70,6 +70,40 @@ export class Model_Report_SalesRevenue {
         this.#收入_原始差额 = new Money(0, 10);
         this.#明细 = [];
     }
+
+    static parse(dto) {
+        const model = new Model_Report_SalesRevenue();
+        model.订单数量_退款前 = new Integer(dto.订单数量_退款前.value, dto.订单数量_退款前.options);
+        model.订单数量_退款后 = new Integer(dto.订单数量_退款后.value, dto.订单数量_退款后.options);
+        model.订单数量_售前损失 = new Integer(dto.订单数量_售前损失.value, dto.订单数量_售前损失.options);
+        model.订单数量_售中损失 = new Integer(dto.订单数量_售中损失.value, dto.订单数量_售中损失.options);
+        model.订单数量_售后损失 = new Integer(dto.订单数量_售后损失.value, dto.订单数量_售后损失.options);
+        model.订单数量_原始差额 = new Integer(dto.订单数量_原始差额.value, dto.订单数量_原始差额.options);
+        model.GMV_单 = new Money(dto.GMV_单.value, new Integer(dto.GMV_单.precision.value, dto.GMV_单.precision.options), dto.GMV_单.options);
+        model.GMV_退款前 = new Money(dto.GMV_退款前.value, new Integer(dto.GMV_退款前.precision.value, dto.GMV_退款前.precision.options), dto.GMV_退款前.options);
+        model.GMV_退款后 = new Money(dto.GMV_退款后.value, new Integer(dto.GMV_退款后.precision.value, dto.GMV_退款后.precision.options), dto.GMV_退款后.options);
+        model.GMV_售前损失 = new Money(dto.GMV_售前损失.value, new Integer(dto.GMV_售前损失.precision.value, dto.GMV_售前损失.precision.options), dto.GMV_售前损失.options);
+        model.GMV_售中损失 = new Money(dto.GMV_售中损失.value, new Integer(dto.GMV_售中损失.precision.value, dto.GMV_售中损失.precision.options), dto.GMV_售中损失.options);
+        model.GMV_售后损失 = new Money(dto.GMV_售后损失.value, new Integer(dto.GMV_售后损失.precision.value, dto.GMV_售后损失.precision.options), dto.GMV_售后损失.options);
+        model.GMV_原始差额 = new Money(dto.GMV_原始差额.value, new Integer(dto.GMV_原始差额.precision.value, dto.GMV_原始差额.precision.options), dto.GMV_原始差额.options);
+        model.销售金额_单 = new Money(dto.销售金额_单.value, new Integer(dto.销售金额_单.precision.value, dto.销售金额_单.precision.options), dto.销售金额_单.options);
+        model.销售金额_退款前 = new Money(dto.销售金额_退款前.value, new Integer(dto.销售金额_退款前.precision.value, dto.销售金额_退款前.precision.options), dto.销售金额_退款前.options);
+        model.销售金额_退款后 = new Money(dto.销售金额_退款后.value, new Integer(dto.销售金额_退款后.precision.value, dto.销售金额_退款后.precision.options), dto.销售金额_退款后.options);
+        model.销售金额_售前损失 = new Money(dto.销售金额_售前损失.value, new Integer(dto.销售金额_售前损失.precision.value, dto.销售金额_售前损失.precision.options), dto.销售金额_售前损失.options);
+        model.销售金额_售中损失 = new Money(dto.销售金额_售中损失.value, new Integer(dto.销售金额_售中损失.precision.value, dto.销售金额_售中损失.precision.options), dto.销售金额_售中损失.options);
+        model.销售金额_售后损失 = new Money(dto.销售金额_售后损失.value, new Integer(dto.销售金额_售后损失.precision.value, dto.销售金额_售后损失.precision.options), dto.销售金额_售后损失.options);
+        model.销售金额_原始差额 = new Money(dto.销售金额_原始差额.value, new Integer(dto.销售金额_原始差额.precision.value, dto.销售金额_原始差额.precision.options), dto.销售金额_原始差额.options);
+        model.收入_单 = new Money(dto.收入_单.value, new Integer(dto.收入_单.precision.value, dto.收入_单.precision.options), dto.收入_单.options);
+        model.收入_退款前 = new Money(dto.收入_退款前.value, new Integer(dto.收入_退款前.precision.value, dto.收入_退款前.precision.options), dto.收入_退款前.options);
+        model.收入_退款后 = new Money(dto.收入_退款后.value, new Integer(dto.收入_退款后.precision.value, dto.收入_退款后.precision.options), dto.收入_退款后.options);
+        model.收入_售前损失 = new Money(dto.收入_售前损失.value, new Integer(dto.收入_售前损失.precision.value, dto.收入_售前损失.precision.options), dto.收入_售前损失.options);
+        model.收入_售中损失 = new Money(dto.收入_售中损失.value, new Integer(dto.收入_售中损失.precision.value, dto.收入_售中损失.precision.options), dto.收入_售中损失.options);
+        model.收入_售后损失 = new Money(dto.收入_售后损失.value, new Integer(dto.收入_售后损失.precision.value, dto.收入_售后损失.precision.options), dto.收入_售后损失.options);
+        model.收入_原始差额 = new Money(dto.收入_原始差额.value, new Integer(dto.收入_原始差额.precision.value, dto.收入_原始差额.precision.options), dto.收入_原始差额.options);
+        model.明细 = dto.明细.map(itemDto => Model_Report_SalesRevenue_Item.parse(itemDto));
+        return model;
+    }
+
     get GMV_单() { return this.#GMV_单; }
     get 收入_单() { return this.#收入_单; }
     get 订单数量_退款前() { return this.#订单数量_退款前; }
@@ -142,6 +176,7 @@ export class Model_Report_SalesRevenue {
     set 收入_售后损失(value) { this.#收入_售后损失 = value }
     set 收入_原始差额(value) { this.#收入_原始差额 = value }
 
+    set 明细(value) { this.#明细 = value; }
 
     // 用来校验自身数据是否存在明显问题
     checkAll() {
@@ -251,7 +286,7 @@ export class Model_Report_SalesRevenue_Item {
         this.#GMV_售中损失 = new Money(0, 10);
         this.#GMV_售后损失 = new Money(0, 10);
         this.#GMV_原始差额 = new Money(0, 10);
-        
+
         this.#销售金额_退款前 = new Money(0, 10);
         this.#销售金额_退款后 = new Money(0, 10);
         this.#销售金额_售前损失 = new Money(0, 10);
@@ -265,6 +300,32 @@ export class Model_Report_SalesRevenue_Item {
         this.#收入_售中损失 = new Money(0, 10);
         this.#收入_售后损失 = new Money(0, 10);
         this.#收入_原始差额 = new Money(0, 10);
+    }
+
+    static parse(dto) {
+        const item = new Model_Report_SalesRevenue_Item();
+        item.商品名称 = dto.商品名称;
+        item.进项税率 = new Percentage(dto.进项税率.value, dto.进项税率.options);
+        item.销项税率 = new Percentage(dto.销项税率.value, dto.销项税率.options);
+        item.GMV_退款前 = new Money(dto.GMV_退款前.value, new Integer(dto.GMV_退款前.precision.value, dto.GMV_退款前.precision.options), dto.GMV_退款前.options);
+        item.GMV_退款后 = new Money(dto.GMV_退款后.value, new Integer(dto.GMV_退款后.precision.value, dto.GMV_退款后.precision.options), dto.GMV_退款后.options);
+        item.GMV_售前损失 = new Money(dto.GMV_售前损失.value, new Integer(dto.GMV_售前损失.precision.value, dto.GMV_售前损失.precision.options), dto.GMV_售前损失.options);
+        item.GMV_售中损失 = new Money(dto.GMV_售中损失.value, new Integer(dto.GMV_售中损失.precision.value, dto.GMV_售中损失.precision.options), dto.GMV_售中损失.options);
+        item.GMV_售后损失 = new Money(dto.GMV_售后损失.value, new Integer(dto.GMV_售后损失.precision.value, dto.GMV_售后损失.precision.options), dto.GMV_售后损失.options);
+        item.GMV_原始差额 = new Money(dto.GMV_原始差额.value, new Integer(dto.GMV_原始差额.precision.value, dto.GMV_原始差额.precision.options), dto.GMV_原始差额.options);
+        item.销售金额_退款前 = new Money(dto.销售金额_退款前.value, new Integer(dto.销售金额_退款前.precision.value, dto.销售金额_退款前.precision.options), dto.销售金额_退款前.options);
+        item.销售金额_退款后 = new Money(dto.销售金额_退款后.value, new Integer(dto.销售金额_退款后.precision.value, dto.销售金额_退款后.precision.options), dto.销售金额_退款后.options);
+        item.销售金额_售前损失 = new Money(dto.销售金额_售前损失.value, new Integer(dto.销售金额_售前损失.precision.value, dto.销售金额_售前损失.precision.options), dto.销售金额_售前损失.options);
+        item.销售金额_售中损失 = new Money(dto.销售金额_售中损失.value, new Integer(dto.销售金额_售中损失.precision.value, dto.销售金额_售中损失.precision.options), dto.销售金额_售中损失.options);
+        item.销售金额_售后损失 = new Money(dto.销售金额_售后损失.value, new Integer(dto.销售金额_售后损失.precision.value, dto.销售金额_售后损失.precision.options), dto.销售金额_售后损失.options);
+        item.销售金额_原始差额 = new Money(dto.销售金额_原始差额.value, new Integer(dto.销售金额_原始差额.precision.value, dto.销售金额_原始差额.precision.options), dto.销售金额_原始差额.options);
+        item.收入_退款前 = new Money(dto.收入_退款前.value, new Integer(dto.收入_退款前.precision.value, dto.收入_退款前.precision.options), dto.收入_退款前.options);
+        item.收入_退款后 = new Money(dto.收入_退款后.value, new Integer(dto.收入_退款后.precision.value, dto.收入_退款后.precision.options), dto.收入_退款后.options);
+        item.收入_售前损失 = new Money(dto.收入_售前损失.value, new Integer(dto.收入_售前损失.precision.value, dto.收入_售前损失.precision.options), dto.收入_售前损失.options);
+        item.收入_售中损失 = new Money(dto.收入_售中损失.value, new Integer(dto.收入_售中损失.precision.value, dto.收入_售中损失.precision.options), dto.收入_售中损失.options);
+        item.收入_售后损失 = new Money(dto.收入_售后损失.value, new Integer(dto.收入_售后损失.precision.value, dto.收入_售后损失.precision.options), dto.收入_售后损失.options);
+        item.收入_原始差额 = new Money(dto.收入_原始差额.value, new Integer(dto.收入_原始差额.precision.value, dto.收入_原始差额.precision.options), dto.收入_原始差额.options);
+        return item;
     }
 
     get 商品名称() { return this.#商品名称; }

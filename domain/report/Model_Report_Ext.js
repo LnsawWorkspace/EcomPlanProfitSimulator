@@ -22,6 +22,19 @@ export class Model_Report_Ext {
         this.#资本回报率 = new Percentage(0, 4);
         this.#推广回报率 = new Percentage(0, 4);
     }
+
+    static parse(dto) {
+        const model = new Model_Report_Ext();
+        model.总成本 = new Money(dto.总成本.value, new Integer(dto.总成本.precision.value, dto.总成本.precision.options), dto.总成本.options);
+        model.利润 = new Money(dto.利润.value, new Integer(dto.利润.precision.value, dto.利润.precision.options), dto.利润.options);
+        model.利润率 = new Percentage(dto.利润率.value, dto.利润率.options);
+        model.资本回报率 = new Percentage(dto.资本回报率.value, dto.资本回报率.options);
+        model.推广回报率 = new Percentage(dto.推广回报率.value, dto.推广回报率.options);
+        model.因退款造成的成本损失 = new Money(dto.因退款造成的成本损失.value, new Integer(dto.因退款造成的成本损失.precision.value, dto.因退款造成的成本损失.precision.options), dto.因退款造成的成本损失.options);
+        model.因退款造成的利润损失 = new Money(dto.因退款造成的利润损失.value, new Integer(dto.因退款造成的利润损失.precision.value, dto.因退款造成的利润损失.precision.options), dto.因退款造成的利润损失.options);
+        return model;
+    }
+
     get 总成本() {return this.#总成本;}
     get 利润() {return this.#利润;}
     get 利润率() {return this.#利润率;}
