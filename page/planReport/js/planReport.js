@@ -791,9 +791,14 @@ class PlanReportManager {
             });
             // 推广费
             if (reportData.modelReportAdvertising) {
-                const advertisingCost = reportData.modelReportAdvertising.广告费用_有效成本.toNumber();
-                const lastEnd = data[data.length - 1].end;
-                data.push({ label: `广告：${reportData.modelReportAdvertising.广告名称}`, start: lastEnd, end: lastEnd - advertisingCost, fill: "#64B5F6" });
+                if (reportData.modelReportAdvertising.广告名称 === undefined || reportData.modelReportAdvertising.广告名称 === null || reportData.modelReportAdvertising.广告名称.trim() === "") {
+
+                } else {
+                    const advertisingCost = reportData.modelReportAdvertising.广告费用_有效成本.toNumber();
+                    const lastEnd = data[data.length - 1].end;
+                    data.push({ label: `广告：${reportData.modelReportAdvertising.广告名称}`, start: lastEnd, end: lastEnd - advertisingCost, fill: "#64B5F6" });
+                }
+
             }
             // 每单支出
             reportData.modelreportEnpensePerOrder.明细.forEach(item => {
