@@ -16,7 +16,9 @@ self.onmessage = function (e) {
     }
     // roiEnd,必须大于roiStart，
     const roiEnd = new Decimal(e.data.roiEnd);
-
+    if (roiEnd.lte(roiStart)) {
+        roiEnd = roiStart.plus(roiStep);
+    }
     const results = [];
     const sc = new SimulationCore();
     console.log('%c  + start Simulation:', "color: green", performance.now());

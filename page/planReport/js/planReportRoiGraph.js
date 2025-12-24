@@ -160,7 +160,7 @@ class PlanReportRoiGraphManager {
             document.getElementById('roi-graph-start').value = 0;
             roiStart = new Decimal(0);
         }
-        roiStart = roiStart.toDecimalPlaces(2, Decimal.ROUND_DOWN);
+        roiStart = roiStart.toDecimalPlaces(4, Decimal.ROUND_DOWN);
         document.getElementById('roi-graph-start').value = roiStart.toString();
         // roiStep,最小0.01
         let roiStep = new Decimal(document.getElementById('roi-graph-step').value);
@@ -170,7 +170,7 @@ class PlanReportRoiGraphManager {
             this.#showToast.error('ROI 步长必须大于等于0.0001'); 
             return;
         }
-        roiStep = roiStep.toDecimalPlaces(3, Decimal.ROUND_DOWN);
+        roiStep = roiStep.toDecimalPlaces(4, Decimal.ROUND_DOWN);
         document.getElementById('roi-graph-step').value = roiStep.toString();
         // roiEnd,必须大于roiStart，
         let roiEnd = new Decimal(document.getElementById('roi-graph-end').value);
@@ -179,7 +179,7 @@ class PlanReportRoiGraphManager {
             this.#showToast.error('ROI 结束值必须大于开始值');
             return;
         }
-        roiEnd = roiEnd.toDecimalPlaces(2, Decimal.ROUND_DOWN);
+        roiEnd = roiEnd.toDecimalPlaces(4, Decimal.ROUND_DOWN);
         document.getElementById('roi-graph-end').value = roiEnd.toString();
 
         const worker = new Worker('js/planReportRoiGraphWork.js', { type: 'module' });
