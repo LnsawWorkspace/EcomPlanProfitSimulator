@@ -184,6 +184,7 @@ class PlanReportRoiGraphManager {
     }
 
     #showReport() {
+        this.Echarts.Loading();
         this.#planParams.modelPlanParamsSale.salePrice = new Decimal(document.getElementById('roi-graph-salePrice').value);
         this.#planParams.modelPlanParamsSale.payOrderQuantity = new Decimal(document.getElementById('roi-graph-orderQuantity').value);
         // roiStart,必须大于0，最小0.01，
@@ -219,7 +220,6 @@ class PlanReportRoiGraphManager {
         worker.onmessage = (e) => {
             // 计算完成
             worker.terminate();
-            console.log('%c  + Simulation Completed:', "color: green", e.data);
             const results = [];
             for (const resultData of e.data) {
                 const planReport = Entity_PlanReport.parse(resultData);
@@ -229,6 +229,7 @@ class PlanReportRoiGraphManager {
         };
     }
     Echarts = {
+        ECharts: null,
         computeRSquaredFromY(oldY, newY) {
             if (!Array.isArray(oldY) || !Array.isArray(newY) ||
                 oldY.length !== newY.length || oldY.length === 0) {
@@ -348,7 +349,9 @@ class PlanReportRoiGraphManager {
             // 基于准备好的dom，初始化echarts实例
             const that = this;
             echarts.registerTransform(ecStat.transform.histogram);
-            let myChart = echarts.init(document.getElementById('roi-graph-container'));
+            if (this.ECharts === null) {
+                this.ECharts = echarts.init(document.getElementById('roi-graph-container'));
+            }
 
             this.legendAdd(data);
             // 指定图表的配置项和数据
@@ -401,11 +404,63 @@ class PlanReportRoiGraphManager {
                 series: this.series(data),
             };
 
-            myChart.on('legendselectchanged', function (params) {
+            this.ECharts.on('legendselectchanged', function (params) {
                 that.legend.selected = params.selected;
             });
             // 使用刚指定的配置项和数据显示图表。
-            myChart.setOption(option);
+            this.ECharts.clear();
+            this.ECharts.setOption(option);
+        },
+        Loading: function () {
+            if (this.ECharts === null) {
+                this.ECharts = echarts.init(document.getElementById('roi-graph-container'));
+            }
+            // 指定图表的配置项和数据
+            let option = {
+                graphic: {
+                    id: 'loading-rect',
+                    elements: [
+                        {
+                            type: 'group',
+                            left: 'center',
+                            top: 'center',
+                            children: new Array(7).fill(0).map((val, i) => ({
+                                type: 'rect',
+                                x: i * 20,
+                                shape: {
+                                    x: 0,
+                                    y: -40,
+                                    width: 10,
+                                    height: 80
+                                },
+                                style: {
+                                    fill: '#5470c6'
+                                },
+                                keyframeAnimation: {
+                                    duration: 1000,
+                                    delay: i * 200,
+                                    loop: true,
+                                    keyframes: [
+                                        {
+                                            percent: 0.5,
+                                            scaleY: 0.3,
+                                            easing: 'cubicIn'
+                                        },
+                                        {
+                                            percent: 1,
+                                            scaleY: 1,
+                                            easing: 'cubicOut'
+                                        }
+                                    ]
+                                }
+                            }))
+                        }
+                    ]
+                }
+            };
+            // 使用刚指定的配置项和数据显示图表。
+            this.ECharts.clear();
+            this.ECharts.setOption(option);
         },
     }
 }
