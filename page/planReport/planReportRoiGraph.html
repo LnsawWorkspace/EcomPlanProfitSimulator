@@ -33,8 +33,22 @@
         <div class="row mb-4 g-3 align-items-center">
             <div class="col-md-3">
                 <div class="input-group">
+                    <span class="input-group-text">售价</span>
+                    <input type="number" class="form-control" id="roi-graph-salePrice" min="0" step="0.1" value="0"
+                        placeholder="请输入售价">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <span class="input-group-text">单量</span>
+                    <input type="number" class="form-control" id="roi-graph-orderQuantity" min="0.01" step="0.01"
+                        value="0.1">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group">
                     <span class="input-group-text">开始</span>
-                    <input type="number" class="form-control" id="roi-graph-start" min="0" step="0.1" value="0"
+                    <input type="number" class="form-control" id="roi-graph-start" min="0" step="0.1" value="1"
                         placeholder="请输入售价">
                 </div>
             </div>
@@ -67,6 +81,8 @@
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <!-- 自身 JS -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@6.0.0/dist/echarts.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts-stat@1.2.0/dist/ecStat.min.js"
+        integrity="sha256-/xLj3SToEeldrxH0s+kpBkAD5sMwo2A8UtLmUppqV4s=" crossorigin="anonymous"></script>
     <script type="module" src="./js/planReportRoiGraph.js"></script>
 </body>
 

@@ -22,7 +22,6 @@ import { SimulationCore } from "../../../service/SimulationCore.js";
 
 import Percentage from '../../../infrastructure/Percentage.js';
 import Money from '../../../infrastructure/Money.js';
-
 class PlanReportRoiGraphManager {
     #showToast = {};
     #elements = {};
@@ -87,7 +86,7 @@ class PlanReportRoiGraphManager {
         const clickListeners = new Map([
             // 没用showReport 而是用的 initPlanReport 是为了避免方案参数发生变化，因此需要重新获取方案参数
             // 不过这里需要用到url，如果url被编辑，会导致无法获取方案参数
-            ["roi-graph-generate-btn", () => { this.#initPlanReport(); }],
+            ["roi-graph-generate-btn", () => { this.#refreshReport(); }],
         ]);
 
         for (const [elementKey, handler] of clickListeners) {
@@ -110,8 +109,6 @@ class PlanReportRoiGraphManager {
         this.#repositoryWorkspace = new Repository_Workspace();
         await this.#repositoryWorkspace.initDatabase();
         this.#workspace = await this.#repositoryWorkspace.getWorkspaceById(workspaceId);
-        // 可以关闭 repositoryWorkspace了，因为不需要了
-        this.#repositoryWorkspace.close();
         if (this.#workspace) {
             // 注意 repositoryPlanGroup, repositoryPlanMeta 和 repositoryPlanParams 用的是同一个链接，都是 workspaceId 对应的链接。 workspaceId 是库的名称。
             this.#repositoryPlanGroup = new Repository_PlanGroup(workspaceId);
@@ -133,7 +130,40 @@ class PlanReportRoiGraphManager {
                                 titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
                             }
                         }
+                        document.getElementById('roi-graph-salePrice').value = this.#planParams.modelPlanParamsSale.salePrice.toString();
+                        document.getElementById('roi-graph-orderQuantity').value = this.#planParams.modelPlanParamsSale.payOrderQuantity.toString();
                         this.#simulationCore = new SimulationCore();
+                        this.#showReport();
+                    } else {
+                        this.#hidePage();
+                    }
+                } else {
+                    this.#hidePage();
+                }
+            } else {
+                this.#hidePage();
+            }
+        } else {
+            this.#hidePage();
+        }
+    }
+
+    async #refreshReport() {
+        this.#workspace = await this.#repositoryWorkspace.getWorkspaceById(this.#workspace.id);
+        if (this.#workspace) {
+            this.#planGroup = await this.#repositoryPlanGroup.getPlanGroupById(this.#planGroup.id);
+            if (this.#planGroup) {
+                this.#planMeta = await this.#repositoryPlanMeta.getPlanMetaById(this.#planMeta.id);
+                if (this.#planMeta) {
+                    this.#planParams = await this.#repositoryPlanParams.getPlanParamsById(this.#planMeta.id);
+                    if (this.#planParams) {
+                        // 修改 .main-title 下的H1的内容
+                        if (this.#planMeta && this.#planMeta.name) {
+                            const titleElement = document.querySelector('.main-title');
+                            if (titleElement) {
+                                titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
+                            }
+                        }
                         this.#showReport();
                     } else {
                         this.#hidePage();
@@ -154,6 +184,8 @@ class PlanReportRoiGraphManager {
     }
 
     #showReport() {
+        this.#planParams.modelPlanParamsSale.salePrice = new Decimal(document.getElementById('roi-graph-salePrice').value);
+        this.#planParams.modelPlanParamsSale.payOrderQuantity = new Decimal(document.getElementById('roi-graph-orderQuantity').value);
         // roiStart,必须大于0，最小0.01，
         let roiStart = new Decimal(document.getElementById('roi-graph-start').value);
         if (roiStart.lte(0)) {
@@ -167,7 +199,7 @@ class PlanReportRoiGraphManager {
         if (roiStep.lt(0.0001)) {
             roiStep = new Decimal(0.0001).toDecimalPlaces(4, Decimal.ROUND_DOWN);
             document.getElementById('roi-graph-step').value = roiStep.toString();
-            this.#showToast.error('ROI 步长必须大于等于0.0001'); 
+            this.#showToast.error('ROI 步长必须大于等于0.0001');
             return;
         }
         roiStep = roiStep.toDecimalPlaces(4, Decimal.ROUND_DOWN);
@@ -196,8 +228,28 @@ class PlanReportRoiGraphManager {
             this.Echarts.init(results);
         };
     }
-
     Echarts = {
+        computeRSquaredFromY(oldY, newY) {
+            if (!Array.isArray(oldY) || !Array.isArray(newY) ||
+                oldY.length !== newY.length || oldY.length === 0) {
+                throw new Error('oldY 和 newY 必须是等长非空数组');
+            }
+            const n = oldY.length;
+            const meanY = oldY.reduce((sum, y) => sum + y, 0) / n;
+            const ssTot = oldY.reduce((sum, y) => sum + Math.pow(y - meanY, 2), 0);
+            const ssRes = oldY.reduce((sum, y, i) => sum + Math.pow(y - newY[i], 2), 0);
+            return 1 - ssRes / ssTot;
+
+            // const rSquared = this.computeRSquaredFromY(
+            //     data.map(item => item.modelReportExt.利润.toNumber()),
+            //     lh.points.map(point => point[1])
+            // );
+
+            // const lh = ecStat.regression('polynomial', data.map(item => [
+            //     item.planParams.modelPlanParamsAdvertising.roi.toNumber(),
+            //     item.modelReportExt.利润.toNumber()
+            // ]));
+        },
         legend: {
             type: "plain",
             width: "100%",
@@ -218,7 +270,7 @@ class PlanReportRoiGraphManager {
             const adName = "广告：" + data[0].modelReportAdvertising.广告名称;
             if (!this.legend.data.includes(adName)) {
                 this.legend.data.push(adName);
-                this.legend.selected[adName] = false;
+                this.legend.selected[adName] = true;
             }
         },
         series: function (data) {
@@ -271,13 +323,33 @@ class PlanReportRoiGraphManager {
                         },
                     },
                 },
+                // {
+                //     name: '运费',
+                //     type: 'line',
+                //     smooth: true,
+                //     data: data.map(item => {
+                //         const shippingExpense = item.modelreportEnpensePerOrder.明细.find(expense =>
+                //             expense.费用名称 === "运费"
+                //         );
+                //         return shippingExpense ? shippingExpense.费用成本_有效成本.toNumber() : 0;
+                //     }),
+                //     tooltip: { // 单独配置该系列的tooltip
+                //         valueFormatter: function (value) {
+                //             const v = new Money(value, 4);
+                //             v.options.suffix = ' 元';
+                //             return v.toLocaleFixed(2) + v.options.suffix;
+                //         },
+                //     },
+                // },
             ];
             return s;
         },
         init: function (data) {
             // 基于准备好的dom，初始化echarts实例
             const that = this;
+            echarts.registerTransform(ecStat.transform.histogram);
             let myChart = echarts.init(document.getElementById('roi-graph-container'));
+
             this.legendAdd(data);
             // 指定图表的配置项和数据
             let option = {
@@ -301,9 +373,6 @@ class PlanReportRoiGraphManager {
                         },
                     },
                     top: '0%',
-                },
-                dataset: {
-
                 },
                 grid: {
                     top: '10%',

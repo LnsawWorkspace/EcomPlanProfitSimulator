@@ -83,7 +83,13 @@ class PlanReportManager {
     #initializeEventListeners() {
         // 使用Map和forEach优化事件监听设置
         const clickListeners = new Map([
-            ['viewRoiGraphButton', () => window.open(`planReportRoiGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank')],
+            ['viewRoiGraphButton', () => {
+                if (this.#reportData.modelReportAdvertising?.广告名称) {
+                    window.open(`planReportRoiGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank');
+                } else {
+                    this.#showToast.info('该方案未设置广告投放，无法查看ROI图表');
+                }
+            }],
         ]);
 
         for (const [elementKey, handler] of clickListeners) {
