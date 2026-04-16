@@ -1,6 +1,7 @@
 /* 左侧容器 */
 .left-container {
-  max-width: 500px;
+  max-width: 460px;
+  min-width: 460px;
   height: calc(100vh - var(--header-height));
   display: flex;
   flex-direction: column;

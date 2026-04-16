@@ -16,6 +16,10 @@ import { Repository_PlanMeta } from '../../../repository/Repository_PlanMeta.js'
 import { Repository_PlanParams } from '../../../repository/Repository_PlanParams.js';
 import LnsawTool from '../../../infrastructure/utils/LnsawTool.js';
 import Decimal from '../../../infrastructure/decimal.mjs';
+import Money from '../../../infrastructure/Money.js';
+import Integer from '../../../infrastructure/Integer.js';
+import Percentage from '../../../infrastructure/Percentage.js';
+
 class PlanParamsManager {
 
     #showToast = {};
@@ -77,9 +81,6 @@ class PlanParamsManager {
         return s;
     }
 
-    /**
-   * 初始化工作台
-   */
     async initialize() {
         console.log("%c PlanParamsManager初始化开始 ", "color: green; font-weight: bold;", performance.now());
         this.#initializeElements();
@@ -90,6 +91,8 @@ class PlanParamsManager {
         console.log("%c 事件监听初始化完成 ", "color: green; font-weight: bold;", performance.now());
         await this.#initPlanParams();
         console.log("%c PlanParamsManager初始化完成 ", "color: green; font-weight: bold;", performance.now());
+
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el))
 
         const navigationEntry = performance.getEntriesByType('navigation')[0];
         console.log('导航开始时间:', navigationEntry.startTime);
@@ -102,7 +105,7 @@ class PlanParamsManager {
     #initializeElements() {
         const elements_id = {
             savePlanParams: 'savePlanParams',
-            submitBtn: 'submitBtn',
+            goReport: 'goReport',
 
 
             goodsContainer: 'goodsContainer',
@@ -153,6 +156,8 @@ class PlanParamsManager {
                     this.Goods.editingRow = null;
                     this.Gift.editingRow = null;
                     this.Expense_PerOrder.editingRow = null;
+                    this.Expense_MNPerOrder.editingRow = null;
+                    this.Expense_Fixed.editingRow = null;
                 });
 
                 element.addEventListener('hidden.bs.modal', () => {
@@ -176,6 +181,10 @@ class PlanParamsManager {
                     if (id === 'paramsModal_ExpenseMNPerOrder') {
                         this.Expense_MNPerOrder.initSelectOptions(this);
                     }
+
+                    if (id === 'paramsModal_ExpenseFixed') {
+                        this.Expense_Fixed.initSelectOptions(this);
+                    }
                 });
             }
         }
@@ -187,7 +196,7 @@ class PlanParamsManager {
         // 使用Map和forEach优化事件监听设置
         const clickListeners = new Map([
             ['savePlanParams', () => this.#saveParamsData()],
-            ['submitBtn', () => this.#saveParamsData()],
+            ['goReport', () => this.#goReport()],
 
             ['addGoodsBtn', () => this.Goods.addRow(this)],
             ['addGiftBtn', () => this.Gift.addRow(this)],
@@ -201,6 +210,17 @@ class PlanParamsManager {
         for (const [elementKey, handler] of clickListeners) {
             this.#elements[elementKey]?.addEventListener('click', handler);
         }
+    }
+    #goReport() {
+        // 先保存
+        this.#saveParamsData();
+        // 然后跳转到报告页面，传递 workspaceId, groupId, planId 参数，用open的方式打开页面
+        const urlParams = new URLSearchParams(window.location.search);
+        const workspaceId = urlParams.get('workspaceId');
+        const groupId = urlParams.get('groupId');
+        const planId = urlParams.get('planId');
+        const reportUrl = `/page/planReport/planReport.html?workspaceId=${encodeURIComponent(workspaceId)}&groupId=${encodeURIComponent(groupId)}&planId=${encodeURIComponent(planId)}`;
+        window.open(reportUrl, '_blank');
     }
 
     money(v) {
@@ -221,14 +241,18 @@ class PlanParamsManager {
         const planId = urlParams.get('planId');
         const workspaceId = urlParams.get('workspaceId');
         const groupId = urlParams.get('groupId');
-        console.log("%c 开始获取workspace信息,并初始化db：", "color: green; font-weight: bold;", performance.now());
-        if (workspaceId) {
-            this.#repositoryWorkspace = new Repository_Workspace();
-            await this.#repositoryWorkspace.initDatabase();
-            this.#workspace = await this.#repositoryWorkspace.getWorkspaceById(workspaceId);
-            // 可以关闭 repositoryWorkspace了，因为不需要了
-            this.#repositoryWorkspace.close();
-            console.log("当前workspace：", this.#workspace);
+        if (workspaceId === undefined || workspaceId === null || workspaceId === ''
+            || groupId === undefined || groupId === null || groupId === ''
+            || planId === undefined || planId === null || planId === ''
+        ) { this.#hidePage(); return; }
+
+        this.#repositoryWorkspace = new Repository_Workspace();
+        await this.#repositoryWorkspace.initDatabase();
+        this.#workspace = await this.#repositoryWorkspace.getWorkspaceById(workspaceId);
+        // 可以关闭 repositoryWorkspace了，因为不需要了
+        this.#repositoryWorkspace.close();
+        // 当this.#workspace存在时，初始化其他repository,否则不执行任何操作
+        if (this.#workspace) {
             // 注意 repositoryPlanGroup, repositoryPlanMeta 和 repositoryPlanParams 用的是同一个链接，都是 workspaceId 对应的链接。 workspaceId 是库的名称。
             this.#repositoryPlanGroup = new Repository_PlanGroup(workspaceId);
             await this.#repositoryPlanGroup.initDatabase();
@@ -236,34 +260,39 @@ class PlanParamsManager {
             await this.#repositoryPlanMeta.initDatabase();
             this.#repositoryPlanParams = new Repository_PlanParams(workspaceId);
             await this.#repositoryPlanParams.initDatabase();
-        }
-        console.log("%c workspace信息获取完成：", "color: green; font-weight: bold;", performance.now());
-        console.log("%c 开始加载方案参数：", "color: green; font-weight: bold;", performance.now());
-        if (groupId) {
-            this.#planGroup = await this.#repositoryPlanGroup.getPlanGroupById(groupId);
-            console.log("当前方案组：", this.#planGroup);
-        }
-        //如果有planId参数，则加载对应的方案数据
-        if (planId) {
-            this.#planMeta = await this.#repositoryPlanMeta.getPlanMetaById(planId);
-            // 不可以关闭 repositoryPlanMeta ，因为和 repositoryPlanParams用的是同一个链接，可以选择 设置 this.#repositoryPlanMeta = null，但不关闭链接。
-            this.#repositoryPlanMeta = null; // 因为用不上了，所以置为null。
-            console.log("当前方案元数据：", this.#planMeta);
-            //加载方案数据的逻辑
-            await this.#repositoryPlanParams.getPlanParamsById(this.#planMeta.id)
-                .then((planParams) => {
-                    if (planParams) { this.#loadPlanParams(planParams); } else { console.log("未找到对应的方案参数"); }
-                });
-        }
-        // 修改 .main-title 下的H1的内容
-        if (this.#planMeta && this.#planMeta.name) {
-            const titleElement = document.querySelector('.main-title h1 span');
-            if (titleElement) {
-                titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
-            }
-        }
-        console.log("%c 方案参数加载完成：", "color: green; font-weight: bold;", performance.now());
 
+            this.#planGroup = await this.#repositoryPlanGroup.getPlanGroupById(groupId);
+            if (this.#planGroup) {
+                this.#planMeta = await this.#repositoryPlanMeta.getPlanMetaById(planId);
+                if (this.#planMeta) {
+                    //加载方案数据的逻辑
+                    await this.#repositoryPlanParams.getPlanParamsById(this.#planMeta.id)
+                        .then((planParams) => {
+                            // 修改 .main-title 下的H1的内容
+                            const titleElement = document.querySelector('.main-title h1 span');
+                            if (titleElement) {
+                                titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
+                            }
+                            if (planParams) {
+                                this.#loadPlanParams(planParams);
+
+                            }
+                        });
+                    console.log("%c 方案参数加载完成：", "color: green; font-weight: bold;", performance.now());
+                } else {
+                    this.#hidePage();
+                }
+            } else {
+                this.#hidePage();
+            }
+        } else {
+            this.#hidePage();
+        }
+    }
+
+    #hidePage() {
+        // 隐藏整个页面，提示该方案不存在。
+        document.body.innerHTML = '<div style="text-align:center; margin-top:50px;"><h2>方案不存在，或已被移除。</h2></div>';
     }
 
     #saveParamsData() {
@@ -280,10 +309,6 @@ class PlanParamsManager {
         } catch (error) {
 
         }
-    }
-
-    #getReport() {
-
     }
 
     #getParams() {
@@ -306,7 +331,6 @@ class PlanParamsManager {
     }
 
     #loadPlanParams(planParams) {
-        console.log("加载方案参数", planParams);
 
         // 填充销售参数
         if (planParams.modelPlanParamsSale) {
@@ -430,18 +454,18 @@ class PlanParamsManager {
                 if (!name) return; // 跳过空名称的行
 
                 const numRaw = that.#sanitizeNumberString(text(1));
-                const purchaseAmountRaw = that.#sanitizeNumberString(text(2));
-                const purchaseQuantityRaw = that.#sanitizeNumberString(text(3));
-                const valueIncTaxRaw = that.#sanitizeNumberString(text(4));
-                const valueExcTaxRaw = that.#sanitizeNumberString(text(5));
-                const fairValueRaw = that.#sanitizeNumberString(text(6));
+                const purchaseAmountRaw = 0;
+                const purchaseQuantityRaw = 0;
+                const valueIncTaxRaw = that.#sanitizeNumberString(text(2));
+                const valueExcTaxRaw = that.#sanitizeNumberString(text(3));
+                const fairValueRaw = that.#sanitizeNumberString(text(4));
 
-                const inputRateRaw = that.#sanitizeNumberString(text(7));
-                const outputRateRaw = that.#sanitizeNumberString(text(8));
+                const inputRateRaw = that.#sanitizeNumberString(text(5));
+                const outputRateRaw = that.#sanitizeNumberString(text(6));
 
-                const refundBefRaw = that.#sanitizeNumberString(text(9));
-                const refundIngRaw = that.#sanitizeNumberString(text(10));
-                const refundAftRaw = that.#sanitizeNumberString(text(11));
+                const refundBefRaw = that.#sanitizeNumberString(text(7));
+                const refundIngRaw = that.#sanitizeNumberString(text(8));
+                const refundAftRaw = that.#sanitizeNumberString(text(9));
 
                 // 构建 DTO，保留原始字符串或解析为 Decimal（Model 会使用 ValidateUtils.decimal/decimalRange 进行最终校验）
                 const dto = {
@@ -483,20 +507,20 @@ class PlanParamsManager {
                 if (!name) return; // 跳过空名称的行
 
                 const numRaw = that.#sanitizeNumberString(text(1));
-                const purchaseAmountRaw = that.#sanitizeNumberString(text(2));
-                const purchaseQuantityRaw = that.#sanitizeNumberString(text(3));
-                const valueIncTaxRaw = that.#sanitizeNumberString(text(4));
-                const valueExcTaxRaw = that.#sanitizeNumberString(text(5));
-                const fairValueRaw = that.#sanitizeNumberString(text(6));
+                const purchaseAmountRaw = 0;
+                const purchaseQuantityRaw = 0;
+                const valueIncTaxRaw = that.#sanitizeNumberString(text(2));
+                const valueExcTaxRaw = that.#sanitizeNumberString(text(3));
+                const fairValueRaw = that.#sanitizeNumberString(text(4));
 
-                const inputRateRaw = that.#sanitizeNumberString(text(7));
-                const outputRateRaw = that.#sanitizeNumberString(text(8));
+                const inputRateRaw = that.#sanitizeNumberString(text(5));
+                const outputRateRaw = that.#sanitizeNumberString(text(6));
 
-                const refundBefRaw = that.#sanitizeNumberString(text(9));
-                const refundIngRaw = that.#sanitizeNumberString(text(10));
-                const refundAftRaw = that.#sanitizeNumberString(text(11));
+                const refundBefRaw = that.#sanitizeNumberString(text(7));
+                const refundIngRaw = that.#sanitizeNumberString(text(8));
+                const refundAftRaw = that.#sanitizeNumberString(text(9));
 
-                const subjectTypeRaw = text(12);
+                const subjectTypeRaw = text(10);
 
                 // 构建 DTO，保留原始字符串或解析为 Decimal（Model 会使用 ValidateUtils.decimal/decimalRange 进行最终校验）
                 const dto = {
@@ -634,16 +658,27 @@ class PlanParamsManager {
                 // 若行不包含有效单元格则跳过（例如表头或空行）
                 if (!cells || cells.length < 2) return;
                 const text = (i) => (cells[i] && cells[i].textContent) ? cells[i].textContent.trim() : '';
+
                 const name = text(0);
-                if (!name) return;
+                if (!name) return; // 跳过空名称的行
                 const amountRaw = that.#sanitizeNumberString(text(1));
                 const inputRateRaw = that.#sanitizeNumberString(text(2));
+                const typeText = text(3);
+                const baseRaw = text(4);
+                const baseHaveTaxText = text(5);
+
+                // 解析计费类型：显示文本到内部值 ('num'|'per')
+                const valueType = (typeText === '固定金额') ? 'num' : 'per';
 
                 // 构建 DTO，按 Model_PlanParams_Expense_Fixed 的字段要求传递
                 const dto = {
                     name: name,
-                    value: amountRaw || 0,
+                    // value: 金额原值或百分比（如果是百分比则传 0-1 的 Decimal）
+                    valueMoney: (valueType === 'num') ? (amountRaw || 0) : 0,
+                    valuePercentage: (valueType === 'per') ? (amountRaw ? (new Decimal(amountRaw)).div(100) : 0) : 0,
+                    valueType: valueType,
                     inputRate: inputRateRaw ? (new Decimal(inputRateRaw)).div(100) : undefined,
+                    base: baseRaw,
                 };
                 try {
                     const rowData = new Model_PlanParams_Expense_Fixed(dto);
@@ -679,37 +714,44 @@ class PlanParamsManager {
 
             // 格式化后的展示值
             let 商品数量 = that.numFmt(rawNum);
-            let 采购金额 = that.money(rawPurchaseAmount);
-            // 采购数量为数量类，应为纯数值而非货币
-            let 采购数量 = that.numFmt(rawPurchaseQuantity);
-            let 含税成本 = that.money(rawCostWithTax);
-            let 不含税成本 = that.money(rawCostNoTax);
+
+            let 含税成本 = new Money(rawCostWithTax || 0, 4);
+            let 不含税成本 = new Money(rawCostNoTax || 0, 4);
             let 进项税率 = that.pctFmt(rawInputRate);
             let 销项税率 = that.pctFmt((rawOutputRate === undefined || rawOutputRate === null || rawOutputRate === '') ? rawInputRate : rawOutputRate);
-            let 公允价值 = that.money(rawFairValue);
+            let 公允价值 = new Money(rawFairValue || 0, 4);
             let 售前回收 = that.pctFmt(rawRefundBef);
             let 售中回收 = that.pctFmt(rawRefundIng);
             let 售后回收 = that.pctFmt(rawRefundAft);
+
+            let 采购金额 = new Money(rawPurchaseAmount || 0, 4);
+            let 采购数量 = new Integer(rawPurchaseQuantity || 0, 4);
+            if (采购金额.greaterThan(Money.ZERO) && 采购数量.greaterThan(Integer.ZERO)) {
+                含税成本 = 采购金额.dividedBy(采购数量);
+                不含税成本 = 含税成本.dividedBy(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            } else if (含税成本.greaterThan(Money.ZERO)) {
+                不含税成本 = 含税成本.dividedBy(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            } else {
+                含税成本 = 不含税成本.times(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            }
 
             if (this.editingRow === null) {
                 this.goodsCounter++;
                 //构建一行tr
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${this.goodsCounter}</th>
                 newRow.innerHTML =
                     `
-                            <th scope="row" class="text-center">${this.goodsCounter}</th>
                             <td class="fw-semibold item-name">${商品名称}</td>
-                            <td class="text-end">${商品数量}</td>
-                            <td class="text-end">${采购金额}</td>
-                            <td class="text-end">${采购数量}</td>                            
-                            <td class="text-end">${含税成本}</td>
-                            <td class="text-end">${不含税成本}</td>
-                            <td class="text-end">${公允价值}</td>
-                            <td class="text-center">${进项税率}</td>
-                            <td class="text-center">${销项税率}</td>
-                            <td class="text-center">${售前回收}</td>
-                            <td class="text-center">${售中回收}</td>
-                            <td class="text-center">${售后回收}</td>
+                            <td class="text-end">${商品数量}</td>                      
+                            <td class="text-end">${含税成本.options.prefix + 含税成本.toLocaleFixed(4)}</td>
+                            <td class="text-end">${不含税成本.options.prefix + 不含税成本.toLocaleFixed(4)}</td>
+                            <td class="text-end">${公允价值.options.prefix + 公允价值.toLocaleFixed(4)}</td>
+                            <td class="text-end">${进项税率}</td>
+                            <td class="text-end">${销项税率}</td>
+                            <td class="text-end">${售前回收}</td>
+                            <td class="text-end">${售中回收}</td>
+                            <td class="text-end">${售后回收}</td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary modify">
@@ -736,16 +778,14 @@ class PlanParamsManager {
                 const cells = this.editingRow.querySelectorAll('td');
                 cells[0].textContent = 商品名称;
                 cells[1].textContent = 商品数量;
-                cells[2].textContent = 采购金额;
-                cells[3].textContent = 采购数量;
-                cells[4].textContent = 含税成本;
-                cells[5].textContent = 不含税成本;
-                cells[6].textContent = 公允价值;
-                cells[7].textContent = 进项税率;
-                cells[8].textContent = 销项税率;
-                cells[9].textContent = 售前回收;
-                cells[10].textContent = 售中回收;
-                cells[11].textContent = 售后回收;
+                cells[2].textContent = 含税成本.options.prefix + 含税成本.toLocaleFixed(4);
+                cells[3].textContent = 不含税成本.options.prefix + 不含税成本.toLocaleFixed(4);
+                cells[4].textContent = 公允价值.options.prefix + 公允价值.toLocaleFixed(4);
+                cells[5].textContent = 进项税率;
+                cells[6].textContent = 销项税率;
+                cells[7].textContent = 售前回收;
+                cells[8].textContent = 售中回收;
+                cells[9].textContent = 售后回收;
             }
 
             //关闭模态窗
@@ -756,16 +796,16 @@ class PlanParamsManager {
             const tds = e.target.closest('tr').querySelectorAll('td');;
             document.getElementById("goods-name").value = tds[0].textContent;
             document.getElementById("goods-num").value = tds[1].textContent;
-            document.getElementById("goods-purchase_amount").value = that.#sanitizeNumberString(tds[2].textContent);
-            document.getElementById("goods-purchase_quantity").value = that.#sanitizeNumberString(tds[3].textContent);
-            document.getElementById("goods-cost_withtax").value = that.#sanitizeNumberString(tds[4].textContent);
-            document.getElementById("goods-cost_notax").value = that.#sanitizeNumberString(tds[5].textContent);
-            document.getElementById("goods-fair_value").value = that.#sanitizeNumberString(tds[6].textContent);
-            document.getElementById("goods-input_rate").value = that.#sanitizeNumberString(tds[7].textContent);
-            document.getElementById("goods-output_rate").value = that.#sanitizeNumberString(tds[8].textContent);
-            document.getElementById("goods-refund_bef_rec").value = that.#sanitizeNumberString(tds[9].textContent);
-            document.getElementById("goods-refund_ing_rec").value = that.#sanitizeNumberString(tds[10].textContent);
-            document.getElementById("goods-refund_aft_rec").value = that.#sanitizeNumberString(tds[11].textContent);
+            document.getElementById("goods-purchase_amount").value = 0;
+            document.getElementById("goods-purchase_quantity").value = 0;
+            document.getElementById("goods-cost_withtax").value = that.#sanitizeNumberString(tds[2].textContent);
+            document.getElementById("goods-cost_notax").value = that.#sanitizeNumberString(tds[3].textContent);
+            document.getElementById("goods-fair_value").value = that.#sanitizeNumberString(tds[4].textContent);
+            document.getElementById("goods-input_rate").value = that.#sanitizeNumberString(tds[5].textContent);
+            document.getElementById("goods-output_rate").value = that.#sanitizeNumberString(tds[6].textContent);
+            document.getElementById("goods-refund_bef_rec").value = that.#sanitizeNumberString(tds[7].textContent);
+            document.getElementById("goods-refund_ing_rec").value = that.#sanitizeNumberString(tds[8].textContent);
+            document.getElementById("goods-refund_aft_rec").value = that.#sanitizeNumberString(tds[9].textContent);
 
             that.#modals["paramsModal_Goods"].show();
         },
@@ -812,20 +852,18 @@ class PlanParamsManager {
                 const refundAftRec = (item.refundAftRec.toPercentString(2) ?? '');
 
                 const newRow = document.createElement('tr');
+                // <th scope="row" class="text-start">${index + 1}</th>
                 newRow.innerHTML = `
-                    <th scope="row" class="text-center">${index + 1}</th>
                         <td class="fw-semibold item-name">${name}</td>
                         <td class="text-end">${quantity}</td>
-                        <td class="text-end">${purchaseAmount}</td>
-                        <td class="text-end">${purchaseQuantity}</td>
                         <td class="text-end">${valueIncTax}</td>
                         <td class="text-end">${valueExcTax}</td>
                         <td class="text-end">${fairValue}</td>
-                        <td class="text-center">${inputRate}</td>
-                        <td class="text-center">${outputRate}</td>
-                        <td class="text-center">${refundBefRec}</td>
-                        <td class="text-center">${refundIngRec}</td>
-                        <td class="text-center">${refundAftRec}</td>
+                        <td class="text-end">${inputRate}</td>
+                        <td class="text-end">${outputRate}</td>
+                        <td class="text-end">${refundBefRec}</td>
+                        <td class="text-end">${refundIngRec}</td>
+                        <td class="text-end">${refundAftRec}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-primary modify"><i class="bi bi-pencil"></i></button>
@@ -873,14 +911,11 @@ class PlanParamsManager {
 
             // 格式化后的展示值
             let 礼品数量 = that.numFmt(rawNum);
-            let 采购金额 = that.money(rawPurchaseAmount);
-            // 采购数量为数量类，应为纯数值而非货币
-            let 采购数量 = that.numFmt(rawPurchaseQuantity);
-            let 含税成本 = that.money(rawCostWithTax);
-            let 不含税成本 = that.money(rawCostNoTax);
+            let 含税成本 = new Money(rawCostWithTax || 0, 4);
+            let 不含税成本 = new Money(rawCostNoTax || 0, 4);
             let 进项税率 = that.pctFmt(rawInputRate);
             let 销项税率 = that.pctFmt((rawOutputRate === undefined || rawOutputRate === null || rawOutputRate === '') ? rawInputRate : rawOutputRate);
-            let 公允价值 = that.money(rawFairValue);
+            let 公允价值 = new Money(rawFairValue || 0, 4);
             let 售前回收 = that.pctFmt(rawRefundBef);
             let 售中回收 = that.pctFmt(rawRefundIng);
             let 售后回收 = that.pctFmt(rawRefundAft);
@@ -888,26 +923,35 @@ class PlanParamsManager {
 
             const subjectColor = 科目类型 === "视同销售" ? 'text-danger' : 'text-success';
 
+            let 采购金额 = new Money(rawPurchaseAmount || 0, 4);
+            let 采购数量 = new Integer(rawPurchaseQuantity || 0, 4);
+            if (采购金额.greaterThan(Money.ZERO) && 采购数量.greaterThan(Integer.ZERO)) {
+                含税成本 = 采购金额.dividedBy(采购数量);
+                不含税成本 = 含税成本.dividedBy(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            } else if (含税成本.greaterThan(Money.ZERO)) {
+                不含税成本 = 含税成本.dividedBy(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            } else {
+                含税成本 = 不含税成本.times(new Percentage(销项税率).plus(Percentage.ONE_HUNDRED_PERCENT));
+            }
+
             if (this.editingRow === null) {
                 this.giftCounter++;
                 //构建一行tr
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${this.giftCounter}</th>
                 newRow.innerHTML =
                     `
-                            <th scope="row" class="text-center">${this.giftCounter}</th>
                             <td class="fw-semibold item-name">${礼品名称}</td>
-                            <td class="text-end">${礼品数量}</td>
-                            <td class="text-end">${采购金额}</td>
-                            <td class="text-end">${采购数量}</td>                            
-                            <td class="text-end">${含税成本}</td>
-                            <td class="text-end">${不含税成本}</td>
-                            <td class="text-end">${公允价值}</td>
-                            <td class="text-center">${进项税率}</td>
-                            <td class="text-center">${销项税率}</td>
-                            <td class="text-center">${售前回收}</td>
-                            <td class="text-center">${售中回收}</td>
-                            <td class="text-center">${售后回收}</td>
-                            <td class="text-center fw-semibold ${subjectColor}">${科目类型}</td>
+                            <td class="text-end">${礼品数量}</td>                         
+                            <td class="text-end">${含税成本.options.prefix + 含税成本.toLocaleFixed(4)}</td>
+                            <td class="text-end">${不含税成本.options.prefix + 不含税成本.toLocaleFixed(4)}</td>
+                            <td class="text-end">${公允价值.options.prefix + 公允价值.toLocaleFixed(4)}</td>
+                            <td class="text-end">${进项税率}</td>
+                            <td class="text-end">${销项税率}</td>
+                            <td class="text-end">${售前回收}</td>
+                            <td class="text-end">${售中回收}</td>
+                            <td class="text-end">${售后回收}</td>
+                            <td class="text-end fw-semibold ${subjectColor}">${科目类型}</td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary modify">
@@ -934,23 +978,21 @@ class PlanParamsManager {
                 const cells = this.editingRow.querySelectorAll('td');
                 cells[0].textContent = 礼品名称;
                 cells[1].textContent = 礼品数量;
-                cells[2].textContent = 采购金额;
-                cells[3].textContent = 采购数量;
-                cells[4].textContent = 含税成本;
-                cells[5].textContent = 不含税成本;
-                cells[6].textContent = 公允价值;
-                cells[7].textContent = 进项税率;
-                cells[8].textContent = 销项税率;
-                cells[9].textContent = 售前回收;
-                cells[10].textContent = 售中回收;
-                cells[11].textContent = 售后回收;
-                cells[12].textContent = 科目类型;
+                cells[2].textContent = 含税成本.options.prefix + 含税成本.toLocaleFixed(4);
+                cells[3].textContent = 不含税成本.options.prefix + 不含税成本.toLocaleFixed(4);
+                cells[4].textContent = 公允价值.options.prefix + 公允价值.toLocaleFixed(4);
+                cells[5].textContent = 进项税率;
+                cells[6].textContent = 销项税率;
+                cells[7].textContent = 售前回收;
+                cells[8].textContent = 售中回收;
+                cells[9].textContent = 售后回收;
+                cells[10].textContent = 科目类型;
                 if (科目类型 === "视同销售") {
-                    cells[12].classList.remove('text-success');
-                    cells[12].classList.add('text-danger');
+                    cells[10].classList.remove('text-success');
+                    cells[10].classList.add('text-danger');
                 } else {
-                    cells[12].classList.remove('text-danger');
-                    cells[12].classList.add('text-success');
+                    cells[10].classList.remove('text-danger');
+                    cells[10].classList.add('text-success');
                 }
             }
 
@@ -962,17 +1004,17 @@ class PlanParamsManager {
             const tds = e.target.closest('tr').querySelectorAll('td');;
             document.getElementById("gift-name").value = tds[0].textContent;
             document.getElementById("gift-num").value = tds[1].textContent;
-            document.getElementById("gift-purchase_amount").value = that.#sanitizeNumberString(tds[2].textContent);
-            document.getElementById("gift-purchase_quantity").value = that.#sanitizeNumberString(tds[3].textContent);
-            document.getElementById("gift-cost_withtax").value = that.#sanitizeNumberString(tds[4].textContent);
-            document.getElementById("gift-cost_notax").value = that.#sanitizeNumberString(tds[5].textContent);
-            document.getElementById("gift-fair_value").value = that.#sanitizeNumberString(tds[6].textContent);
-            document.getElementById("gift-input_rate").value = that.#sanitizeNumberString(tds[7].textContent);
-            document.getElementById("gift-output_rate").value = that.#sanitizeNumberString(tds[8].textContent);
-            document.getElementById("gift-refund_bef_rec").value = that.#sanitizeNumberString(tds[9].textContent);
-            document.getElementById("gift-refund_ing_rec").value = that.#sanitizeNumberString(tds[10].textContent);
-            document.getElementById("gift-refund_aft_rec").value = that.#sanitizeNumberString(tds[11].textContent);
-            document.getElementById("gift-deemedSale").checked = (tds[12].textContent === "视同销售");
+            document.getElementById("gift-purchase_amount").value = 0;
+            document.getElementById("gift-purchase_quantity").value = 0;
+            document.getElementById("gift-cost_withtax").value = that.#sanitizeNumberString(tds[2].textContent);
+            document.getElementById("gift-cost_notax").value = that.#sanitizeNumberString(tds[3].textContent);
+            document.getElementById("gift-fair_value").value = that.#sanitizeNumberString(tds[4].textContent);
+            document.getElementById("gift-input_rate").value = that.#sanitizeNumberString(tds[5].textContent);
+            document.getElementById("gift-output_rate").value = that.#sanitizeNumberString(tds[6].textContent);
+            document.getElementById("gift-refund_bef_rec").value = that.#sanitizeNumberString(tds[7].textContent);
+            document.getElementById("gift-refund_ing_rec").value = that.#sanitizeNumberString(tds[8].textContent);
+            document.getElementById("gift-refund_aft_rec").value = that.#sanitizeNumberString(tds[9].textContent);
+            document.getElementById("gift-deemedSale").checked = (tds[10].textContent === "视同销售");
             that.#modals["paramsModal_Gift"].show();
         },
         removeRow: function (e, that) {
@@ -1019,21 +1061,19 @@ class PlanParamsManager {
                 const subjectColor = subjectType === "视同销售" ? 'text-danger' : 'text-success';
 
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${index + 1}</th>
                 newRow.innerHTML = `
-                    <th scope="row" class="text-center">${index + 1}</th>
                         <td class="fw-semibold item-name">${name}</td>
                         <td class="text-end">${quantity}</td>
-                        <td class="text-end">${purchaseAmount}</td>
-                        <td class="text-end">${purchaseQuantity}</td>
                         <td class="text-end">${valueIncTax}</td>
                         <td class="text-end">${valueExcTax}</td>
                         <td class="text-end">${fairValue}</td>
-                        <td class="text-center">${inputRate}</td>
-                        <td class="text-center">${outputRate}</td>
-                        <td class="text-center">${refundBefRec}</td>
-                        <td class="text-center">${refundIngRec}</td>
-                        <td class="text-center">${refundAftRec}</td>
-                        <td class="text-center fw-semibold ${subjectColor}">${subjectType}</td>
+                        <td class="text-end">${inputRate}</td>
+                        <td class="text-end">${outputRate}</td>
+                        <td class="text-end">${refundBefRec}</td>
+                        <td class="text-end">${refundIngRec}</td>
+                        <td class="text-end">${refundAftRec}</td>
+                        <td class="text-end fw-semibold ${subjectColor}">${subjectType}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-primary modify"><i class="bi bi-pencil"></i></button>
@@ -1072,7 +1112,8 @@ class PlanParamsManager {
                 const txt = nameCell ? String(nameCell.textContent || '').trim() : '';
                 if (txt) goodsNamesSet.add('商品：' + txt);
             }
-            options = ["-", "售价", ...goodsNamesSet];
+            // options = ["-", "售价", ...goodsNamesSet];
+            options = ["-", "售价"]; // 暂时只支持售价
             // 清空现有选项
             selectElement.innerHTML = '';
             // 添加新选项
@@ -1118,18 +1159,18 @@ class PlanParamsManager {
                 this.expenseCounter++;
                 //构建一行tr
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${this.expenseCounter}</th>
                 newRow.innerHTML =
                     `
-                            <th scope="row" class="text-center">${this.expenseCounter}</th>
                             <td class="fw-semibold item-name">${费用名称}</td>
                             <td class="text-end">${费用金额}</td>
-                            <td class="text-center">${进项税率}</td>
-                            <td class="text-center">${计费类型 === "num" ? "固定金额" : "指定比例"}</td>
+                            <td class="text-end">${进项税率}</td>
+                            <td class="text-end">${计费类型 === "num" ? "固定金额" : "指定比例"}</td>
                             <td class="text-end">${计费基数}</td>
-                            <td class="text-center">${计费类型 === "num" ? "-" : 计费基数含税 ? "含税" : "不含税"}</td>
-                            <td class="text-center">${售前回收}</td>
-                            <td class="text-center">${售中回收}</td>
-                            <td class="text-center">${售后回收}</td>
+                            <td class="text-end">${计费类型 === "num" ? "-" : 计费基数含税 ? "含税" : "不含税"}</td>
+                            <td class="text-end">${售前回收}</td>
+                            <td class="text-end">${售中回收}</td>
+                            <td class="text-end">${售后回收}</td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary modify">
@@ -1217,17 +1258,17 @@ class PlanParamsManager {
                 const refundIngRec = (item.refundIngRec.toPercentString(2) ?? '');
                 const refundAftRec = (item.refundAftRec.toPercentString(2) ?? '');
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${index + 1}</th>
                 newRow.innerHTML = `
-                    <th scope="row" class="text-center">${index + 1}</th>
                         <td class="fw-semibold item-name">${name}</td>
                         <td class="text-end">${value}</td>
-                        <td class="text-center">${inputRate}</td>
-                        <td class="text-center">${valueType === 'num' ? '固定金额' : '指定比例'}</td>
+                        <td class="text-end">${inputRate}</td>
+                        <td class="text-end">${valueType === 'num' ? '固定金额' : '指定比例'}</td>
                         <td class="text-end">${base}</td>
-                        <td class="text-center">${valueType === "num" ? "-" : baseHaveTax ? '含税' : '不含税'}</td>
-                        <td class="text-center">${refundBefRec}</td>
-                        <td class="text-center">${refundIngRec}</td>
-                        <td class="text-center">${refundAftRec}</td>
+                        <td class="text-end">${valueType === "num" ? "-" : baseHaveTax ? '含税' : '不含税'}</td>
+                        <td class="text-end">${refundBefRec}</td>
+                        <td class="text-end">${refundIngRec}</td>
+                        <td class="text-end">${refundAftRec}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-primary modify"><i class="bi bi-pencil"></i></button>
@@ -1266,7 +1307,8 @@ class PlanParamsManager {
                 const txt = nameCell ? String(nameCell.textContent || '').trim() : '';
                 if (txt) goodsNamesSet.add('商品：' + txt);
             }
-            options = ["-", "售价", ...goodsNamesSet];
+            // options = ["-", "售价", ...goodsNamesSet];
+            options = ["-", "售价"];//暂时只支持售价
             // 清空现有选项
             selectElement.innerHTML = '';
             // 添加新选项
@@ -1322,14 +1364,14 @@ class PlanParamsManager {
                 this.expenseCounter++;
                 //构建一行tr
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${this.expenseCounter}</th>
                 newRow.innerHTML =
                     `
-                            <th scope="row" class="text-center">${this.expenseCounter}</th>
                             <td class="fw-semibold item-name">${费用名称}</td>
                             <td class="text-end">${每单费用比例}</td>
                             <td class="text-end">${费用金额}</td>
-                            <td class="text-center">${进项税率}</td>
-                            <td class="text-center">${计费类型 === "num" ? "固定金额" : "指定比例"}</td>
+                            <td class="text-end">${进项税率}</td>
+                            <td class="text-end">${计费类型 === "num" ? "固定金额" : "指定比例"}</td>
                             <td class="text-end">${计费基数}</td>
                             <td class="text-end">${计费类型 === "num" ? "-" : 计费基数含税 ? "含税" : "不含税"}</td>
                             <td class="text-end">${售前退款}</td>
@@ -1437,13 +1479,13 @@ class PlanParamsManager {
                 const refundIngPer = (item.refundIngPer.toPercentString(2) ?? '');
                 const refundAftPer = (item.refundAftPer.toPercentString(2) ?? '');
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${index + 1}</th>
                 newRow.innerHTML = `
-                    <th scope="row" class="text-center">${index + 1}</th>
                         <td class="fw-semibold item-name">${name}</td>
                         <td class="text-end">${orderPer}</td>
                         <td class="text-end">${value}</td>
-                        <td class="text-center">${inputRate}</td>
-                        <td class="text-center">${valueType === 'num' ? '固定金额' : '指定比例'}</td>
+                        <td class="text-end">${inputRate}</td>
+                        <td class="text-end">${valueType === 'num' ? '固定金额' : '指定比例'}</td>
                         <td class="text-end">${base}</td>
                         <td class="text-end">${valueType === "num" ? "-" : baseHaveTax ? '含税' : '不含税'}</td>
                         <td class="text-end">${refundBefPer}</td>
@@ -1476,6 +1518,29 @@ class PlanParamsManager {
     Expense_Fixed = {
         editingRow: null,
         expenseCounter: 0,
+        setSelectValue: null,
+        initSelectOptions: function (that) {
+            const selectElement = document.getElementById("expenseFixed-base");
+            let options = [];
+            // options = ["-", "售价", ...goodsNamesSet];
+            options = ["-", "付款金额", "销售金额", "收入", "利润"]; // 暂时只支持售价
+            // 清空现有选项
+            selectElement.innerHTML = '';
+            // 添加新选项
+            options.forEach(optionText => {
+                const option = document.createElement('option');
+                option.value = optionText;
+                option.textContent = optionText;
+                selectElement.appendChild(option);
+            });
+            // 设置默认选中值为 "-"
+            selectElement.value = "-";
+            // 如果this.setSelectValue不为null，则设置为该值
+            if (this.setSelectValue !== null) {
+                selectElement.value = this.setSelectValue;
+                this.setSelectValue = null; // 重置为null，避免影响下次调用
+            }
+        },
         addRow: function (that) {
             //获取数据
             let 费用名称 = document.getElementById("expenseFixed-name").value;
@@ -1483,19 +1548,27 @@ class PlanParamsManager {
             // 原始输入
             const rawCost = document.getElementById("expenseFixed-value").value;
             const rawInputRate = document.getElementById("expenseFixed-input_rate").value;
+            const rawCostType = document.getElementById("expenseFixed-cost_type_money").checked;
+            const rawBase = document.getElementById("expenseFixed-base").value;
+
             // 格式化后的展示值
-            let 费用金额 = that.money(rawCost);
+            let 费用金额 = rawCostType ? that.money(rawCost) : that.pctFmt(rawCost);
             let 进项税率 = that.pctFmt(rawInputRate);
+            let 计费类型 = rawCostType ? "num" : "per";
+            let 计费基数 = 计费类型 === "num" ? "-" : rawBase; // 固定金额时强制为 "-"
+
             if (this.editingRow === null) {
                 this.expenseCounter++;
-                //构建一行tr    
+                //构建一行tr
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${this.expenseCounter}</th>
                 newRow.innerHTML =
                     `
-                            <th scope="row" class="text-center">${this.expenseCounter}</th>
                             <td class="fw-semibold item-name">${费用名称}</td>
-                            <td class="text-center">${费用金额}</td>
-                            <td class="text-center">${进项税率}</td>
+                            <td class="text-end">${费用金额}</td>
+                            <td class="text-end">${进项税率}</td>
+                            <td class="text-end">${计费类型 === "num" ? "固定金额" : "指定比例"}</td>
+                            <td class="text-end">${计费基数}</td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary modify">
@@ -1505,7 +1578,7 @@ class PlanParamsManager {
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
-                            </td>
+                            </td>              
                         `
                 const tbody = document.getElementById('expenseFixedContainer');
                 //添加事件监听（传入页面管理实例 that）
@@ -1514,8 +1587,7 @@ class PlanParamsManager {
                 });
                 newRow.querySelector('.remove').addEventListener('click', (e) => {
                     this.removeRow(e, that);
-                }
-                );
+                });
 
                 tbody.appendChild(newRow);
             } else {
@@ -1523,6 +1595,8 @@ class PlanParamsManager {
                 cells[0].textContent = 费用名称;
                 cells[1].textContent = 费用金额;
                 cells[2].textContent = 进项税率;
+                cells[3].textContent = 计费类型 === "num" ? "固定金额" : "指定比例";
+                cells[4].textContent = 计费基数;
             }
             //关闭模态窗
             that.#modals["paramsModal_ExpenseFixed"].hide();
@@ -1533,6 +1607,10 @@ class PlanParamsManager {
             document.getElementById("expenseFixed-name").value = tds[0].textContent;
             document.getElementById("expenseFixed-value").value = that.#sanitizeNumberString(tds[1].textContent);
             document.getElementById("expenseFixed-input_rate").value = that.#sanitizeNumberString(tds[2].textContent);
+            document.getElementById("expenseFixed-cost_type_money").checked = (tds[3].textContent === "固定金额");
+            document.getElementById("expenseFixed-cost_type_percent").checked = (tds[3].textContent === "指定比例");
+            document.getElementById("expenseFixed-base").value = that.#sanitizeNumberString(tds[4].textContent);
+            this.setSelectValue = tds[4].textContent;
             that.#modals["paramsModal_ExpenseFixed"].show();
         },
         removeRow: function (e, that) {
@@ -1556,18 +1634,22 @@ class PlanParamsManager {
             tbody.innerHTML = '';
             if (!Array.isArray(data)) return;
             for (const [index, item] of data.entries()) {
-                if (!item) continue;
+                                if (!item) continue;
                 const name = item.name || '';
                 if (!name || String(name).trim() === '') continue;
                 // 直接读取属性并格式化
-                const value = (item.value.options.prefix + item.value.toLocaleFixed() ?? 0);
+                const value = item.valueType === 'num' ? (item.valueMoney.options.prefix + item.valueMoney.toLocaleFixed() ?? 0) : (item.valuePercentage.toPercentString(2) ?? '');
                 const inputRate = (item.inputRate.toPercentString(2) ?? '');
+                const valueType = item.valueType || 'num';
+                const base = item.base || '-';
                 const newRow = document.createElement('tr');
+                //<th scope="row" class="text-start">${index + 1}</th>
                 newRow.innerHTML = `
-                    <th scope="row" class="text-center">${index + 1}</th>
                         <td class="fw-semibold item-name">${name}</td>
-                        <td class="text-center">${value}</td>
-                        <td class="text-center">${inputRate}</td>
+                        <td class="text-end">${value}</td>
+                        <td class="text-end">${inputRate}</td>
+                        <td class="text-end">${valueType === 'num' ? '固定金额' : '指定比例'}</td>
+                        <td class="text-end">${base}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-primary modify"><i class="bi bi-pencil"></i></button>

@@ -12,6 +12,7 @@ import Decimal from '../infrastructure/decimal.mjs';
 import Percentage from '../infrastructure/Percentage.js';
 import Money from '../infrastructure/Money.js';
 import Integer from '../infrastructure/Integer.js';
+import { Model_PlanParams_Refund } from '../domain/plan/Model_PlanParams_Refund.js';
 
 
 export class SimulationCore {
@@ -22,9 +23,9 @@ export class SimulationCore {
      * @returns {any}
      */
     runSimulation(entity) {
-        console.log('%c  + start Simulation:', "color: green", performance.now());
+        // console.log('%c  + start Simulation:', "color: green", performance.now());
         entity.modelPlanParamsSale.quantityPattern = 'real';
-        const report = new Entity_PlanReport({ id: crypto.randomUUID() });
+        const report = new Entity_PlanReport({ id: crypto.randomUUID(), planParams: entity });
         this.#getSalesRevenue(entity, report);
         this.#getGoodsCost(entity, report);
         this.#getGiftCost(entity, report);
@@ -32,8 +33,13 @@ export class SimulationCore {
         this.#getEnpenseMNPerOrder(entity, report);
         this.#getEnpenseFixed(entity, report);
         this.#getAdvertisingCost(entity, report);
+        const refund0Report = this.#run0Refund(entity);
         this.#getExtReport(entity, report);
-        console.log('%c  + end Simulation:', "color: green", performance.now());
+        // 基于利润的必须在最后计算
+        this.#getEnpenseFixed_fromProfit(entity, report);
+        //并且重新计算最终的利润
+        this.#getExtReport(entity, report, refund0Report);
+        // console.log('%c  + end Simulation:', "color: green", performance.now());
         return report;
     }
 
@@ -102,6 +108,8 @@ export class SimulationCore {
 
         if (商品税率一致) {
             const 商品单售价 = entity_params.modelPlanParamsSale.salePrice;
+            // GMV暂时保留，也许之后会重新定义然后使用。
+            report.GMV_单 = 商品单售价;
             report.GMV_退款前 = 商品单售价.times(report.订单数量_退款前, 4);
             report.GMV_退款后 = 商品单售价.times(report.订单数量_退款后, 4);
             report.GMV_售前损失 = 商品单售价.times(report.订单数量_售前损失, 4);
@@ -110,7 +118,17 @@ export class SimulationCore {
             report.GMV_原始差额 = report.GMV_退款前.minus(report.GMV_退款后).minus(report.GMV_售前损失.plus(report.GMV_售中损失).plus(report.GMV_售后损失), 4);
             report.GMV_退款后 = report.GMV_退款后.plus(report.GMV_原始差额);
 
+            report.销售金额_单 = 商品单售价;
+            report.销售金额_退款前 = 商品单售价.times(report.订单数量_退款前, 4);
+            report.销售金额_退款后 = 商品单售价.times(report.订单数量_退款后, 4);
+            report.销售金额_售前损失 = 商品单售价.times(report.订单数量_售前损失, 4);
+            report.销售金额_售中损失 = 商品单售价.times(report.订单数量_售中损失, 4);
+            report.销售金额_售后损失 = 商品单售价.times(report.订单数量_售后损失, 4);
+            report.销售金额_原始差额 = report.销售金额_退款前.minus(report.销售金额_退款后).minus(report.销售金额_售前损失.plus(report.销售金额_售中损失).plus(report.销售金额_售后损失), 4);
+            report.销售金额_退款后 = report.销售金额_退款后.plus(report.销售金额_原始差额);
+
             const 商品单收入 = 商品单售价.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(firstOutputRate), 4);
+            report.收入_单 = 商品单收入;
             report.收入_退款前 = 商品单收入.times(report.订单数量_退款前, 4);
             report.收入_退款后 = 商品单收入.times(report.订单数量_退款后, 4);
             report.收入_售前损失 = 商品单收入.times(report.订单数量_售前损失, 4);
@@ -161,6 +179,8 @@ export class SimulationCore {
                 // - 生气！自己写都写不明白。算了 反正用8位精度数据没出错就行了。
                 const 当前商品单售价 = goodsItem.当前商品单售价
                 const 当前商品单收入 = goodsItem.当前商品单售价.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(goodsItem.销项税率), 8);
+                report.GMV_单 = report.GMV_单.plus(当前商品单售价);
+                report.收入_单 = report.收入_单.plus(当前商品单收入);
 
                 const revenueItem = new Model_Report_SalesRevenue_Item();
                 revenueItem.商品名称 = goodsItem.商品名称;
@@ -209,6 +229,7 @@ export class SimulationCore {
                 report.收入_售后损失 = report.收入_售后损失.plus(当前商品单收入.times(report.订单数量_售后损失));
             });
 
+            // - GMV暂时保留，也许之后会重新定义然后使用。
             report.GMV_退款前 = new Money(report.GMV_退款前.value, 4);
             report.GMV_退款后 = new Money(report.GMV_退款后.value, 4);
             report.GMV_售前损失 = new Money(report.GMV_售前损失.value, 4);
@@ -216,6 +237,14 @@ export class SimulationCore {
             report.GMV_售后损失 = new Money(report.GMV_售后损失.value, 4);
             report.GMV_原始差额 = report.GMV_退款前.minus(report.GMV_退款后).minus(report.GMV_售前损失.plus(report.GMV_售中损失).plus(report.GMV_售后损失), 4);
             report.GMV_退款后 = report.GMV_退款后.plus(report.GMV_原始差额);
+
+            report.销售金额_退款前 = new Money(report.GMV_退款前.value, 4);
+            report.销售金额_退款后 = new Money(report.GMV_退款后.value, 4);
+            report.销售金额_售前损失 = new Money(report.GMV_售前损失.value, 4);
+            report.销售金额_售中损失 = new Money(report.GMV_售中损失.value, 4);
+            report.销售金额_售后损失 = new Money(report.GMV_售后损失.value, 4);
+            report.销售金额_原始差额 = report.销售金额_退款前.minus(report.销售金额_退款后).minus(report.销售金额_售前损失.plus(report.销售金额_售中损失).plus(report.销售金额_售后损失), 4);
+            report.销售金额_退款后 = report.销售金额_退款后.plus(report.销售金额_原始差额);
 
             report.收入_退款前 = new Money(report.收入_退款前.value, 4);
             report.收入_退款后 = new Money(report.收入_退款后.value, 4);
@@ -302,6 +331,7 @@ export class SimulationCore {
                 } else {
                     应税金额 = costItem.赠品成本_退款后.times(0.1, 4);
                 }
+                costItem.赠品成本_额外收入 = 应税金额;
                 costItem.赠品成本_额外缴税 = 应税金额.times(税率, 4);
             }
 
@@ -329,18 +359,19 @@ export class SimulationCore {
             costItem.进项税率 = goodsItem.inputRate;
 
             let value = goodsItem.valueMoney;
+            // - 应该独立一个方法用来获取费用的单价的，不过暂时先不改。
             if (goodsItem.valueType !== 'num') {
-                switch (goodsItem.base) {
-                    case "售价":
-                        if (goodsItem.baseHaveTax) {
-                            //基于含税
-                            value = entity_params.modelPlanParamsSale.salePrice.times(goodsItem.valuePercentage, 4);
-                        }
-                        break;
-
-                    default:
-                        break;
+                if (goodsItem.base === "售价") {
+                    if (goodsItem.baseHaveTax) {
+                        //基于含税
+                        value = entity_report.modelReportSalesRevenue.销售金额_单.times(goodsItem.valuePercentage, 4);
+                    } else {
+                        //基于不含税
+                        value = entity_report.modelReportSalesRevenue.收入_单.times(goodsItem.valuePercentage, 4);
+                    }
                 }
+                // 除了售价会有基于其他的情况么？基于商品成本？基于赠品成本？
+                // 实际上 就算是就算是售价，也可用直接要求输入金额。只是用百分比会方便一些，不用调整售价还需要调整这里的百分比而已。
             }
 
             costItem.费用成本_含税 = value;
@@ -420,17 +451,17 @@ export class SimulationCore {
 
             let value = goodsItem.valueMoney;
             if (goodsItem.valueType !== 'num') {
-                switch (goodsItem.base) {
-                    case "售价":
-                        if (goodsItem.baseHaveTax) {
-                            //基于含税
-                            value = entity_params.modelPlanParamsSale.salePrice.times(goodsItem.valuePercentage, 4);
-                        }
-                        break;
-
-                    default:
-                        break;
+                if (goodsItem.base === "售价") {
+                    if (goodsItem.baseHaveTax) {
+                        //基于含税
+                        value = entity_report.modelReportSalesRevenue.GMV_单.times(goodsItem.valuePercentage, 4);
+                    } else {
+                        //基于不含税
+                        value = entity_report.modelReportSalesRevenue.收入_单.times(goodsItem.valuePercentage, 4);
+                    }
                 }
+                // 除了售价会有基于其他的情况么？基于商品成本？基于赠品成本？
+                // 实际上 就算是就算是售价，也可用直接要求输入金额。只是用百分比会方便一些，不用调整售价还需要调整这里的百分比而已。
             }
 
             costItem.费用成本_含税 = value;
@@ -460,11 +491,68 @@ export class SimulationCore {
             const costItem = new Model_Report_Enpense_Fixed_Item();
             costItem.费用名称 = goodsItem.name;
             costItem.进项税率 = goodsItem.inputRate;
-            costItem.费用成本 = goodsItem.value.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(goodsItem.inputRate), 4);
 
-            report.明细.push(costItem);
+            let value = goodsItem.valueMoney;
+            // - 应该独立一个方法用来获取费用的单价的，不过暂时先不改。
+            // 注意！固定支出的，不区分是否含税，因为基于的字段本身就已经有含税和不含税的区别了。
+            if (goodsItem.valueType !== 'num') {
+                // - 根据定义，付款金额是退款前的金额,本身就是含税的金额
+                if (goodsItem.base === "付款金额") {
+                    value = entity_report.modelReportSalesRevenue.销售金额_退款前.times(goodsItem.valuePercentage, 4);
+                }
+                // - 根据定义，销售金额是退款后的金额，对应的是含税的收入
+                if (goodsItem.base === "销售金额") {
+                    value = entity_report.modelReportSalesRevenue.销售金额_退款后.times(goodsItem.valuePercentage, 4);
+                }
+                // - 退款后的收入才是真收入，并且收入是不含税的
+                if (goodsItem.base === "收入") {
+                    value = entity_report.modelReportSalesRevenue.收入_退款后.times(goodsItem.valuePercentage, 4);
+                }
+            }
 
-            report.费用成本 = report.费用成本.plus(costItem.费用成本);
+            // - 如果是利润的跳过
+            if (goodsItem.base !== '利润') {
+                costItem.费用成本 = value.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(goodsItem.inputRate), 4);
+
+                report.明细.push(costItem);
+
+                report.费用成本 = report.费用成本.plus(costItem.费用成本);
+            }
+
+        });
+    }
+    /**
+     * 仅计算基于利润的固定费用
+     * @param {Entity_PlanParams} entity_params
+     * @param {Entity_PlanReport} entity_report
+     */
+    #getEnpenseFixed_fromProfit(entity_params, entity_report) {
+        const report = entity_report.modelReportEnpenseFixed;
+        entity_params.modelPlanParamsExpenseFixed?.forEach((goodsItem) => {
+            const costItem = new Model_Report_Enpense_Fixed_Item();
+            costItem.费用名称 = goodsItem.name;
+            costItem.进项税率 = goodsItem.inputRate;
+            let value = goodsItem.valueMoney;
+            // - 应该独立一个方法用来获取费用的单价的，不过暂时先不改。
+            // 注意！固定支出的，不区分是否含税，因为基于的字段本身就已经有含税和不含税的区别了。
+            if (goodsItem.valueType !== 'num') {
+                // - 根据定义，付款金额是退款前的金额,本身就是含税的金额
+                if (goodsItem.base === "利润") {
+                    value = entity_report.modelReportExt.利润.times(goodsItem.valuePercentage, 4);
+                    if (value.isNegative()) {
+                        value = value.times(-1);
+                    }
+                }
+            }
+
+            // - 如果是利润则计算
+            if (goodsItem.base === '利润') {
+                costItem.费用成本 = value.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(goodsItem.inputRate), 4);
+
+                report.明细.push(costItem);
+
+                report.费用成本 = report.费用成本.plus(costItem.费用成本);
+            }
         });
     }
     /**
@@ -484,12 +572,18 @@ export class SimulationCore {
         }
 
         // 通过ROI 计算具体的广告费用,按理说应该按照单价*数量比较合适
+        // 啊 好像不太合适。广告费。。。。
+        // 假如是CPC，比如 平均 100个点击 一个成交
+        // 广告费本质上和成交。。除非收费方式是CPS，否则广告费和成交数量没有直接关系
+        // 但这里我们为了方便，统一用ROI这种指标来代替ALL的广告方式。方便计算。本质上不会有问题。
+        // 主要是 道道是 按照平均一单的广告费*订单数量 还是按照总价/ROI 来计算广告费更合适一些呢？好纠结啊。
         const 单广告费用 = entity_params.modelPlanParamsSale.salePrice.dividedBy(entity_params.modelPlanParamsAdvertising.roi, 4);
-        report.广告费用_退款前 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款前, 4);
-        report.广告费用_退款后 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款后, 4);
-        report.广告费用_售前损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售前损失, 4);
-        report.广告费用_售中损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售中损失, 4);
-        report.广告费用_售后损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售后损失, 4);
+        report.广告名称 = entity_params.modelPlanParamsAdvertising.name;
+        report.广告费用_退款前 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款前, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
+        report.广告费用_退款后 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款后, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
+        report.广告费用_售前损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售前损失, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
+        report.广告费用_售中损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售中损失, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
+        report.广告费用_售后损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售后损失, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
         report.广告费用_原始差额 = report.广告费用_退款前.minus(report.广告费用_退款后).minus(report.广告费用_售前损失.plus(report.广告费用_售中损失).plus(report.广告费用_售后损失), 4);
         report.广告费用_退款后 = report.广告费用_退款后.plus(report.广告费用_原始差额);
     }
@@ -497,7 +591,7 @@ export class SimulationCore {
      * @param {Entity_PlanParams} entity_params
      * @param {Entity_PlanReport} entity_report
      */
-    #getExtReport(entity_params, entity_report) {
+    #getExtReport(entity_params, entity_report, entity_report_0refund) {
         const report = entity_report.modelReportExt;
         let 总成本 = new Money(0, 4);
         总成本 = 总成本.plus(entity_report.modelReportGoodsCost.商品成本_有效成本);
@@ -508,11 +602,24 @@ export class SimulationCore {
         总成本 = 总成本.plus(entity_report.modelReportAdvertising.广告费用_有效成本);
         report.总成本 = 总成本;
         report.利润 = entity_report.modelReportSalesRevenue.收入_退款后.minus(总成本, 4);
-        report.利润率 = report.利润.dividedBy(entity_report.modelReportSalesRevenue.收入_退款后, 4);
-        report.资本回报率 = new Percentage(report.利润.dividedBy(总成本, 4).value);
+        report.利润率 = new Percentage(report.利润.dividedBy(entity_report.modelReportSalesRevenue.收入_退款后, 8).value);
+        report.资本回报率 = new Percentage(report.利润.dividedBy(总成本, 8).value);
         if (!entity_report.modelReportAdvertising.广告费用_有效成本.isZero()) {
-            report.推广回报率 = new Percentage(report.利润.dividedBy(entity_report.modelReportAdvertising.广告费用_有效成本, 4).value);
+            report.推广回报率 = new Percentage(report.利润.dividedBy(entity_report.modelReportAdvertising.广告费用_有效成本, 8).value);
         }
+
+        let 总退款损失 = new Money(0, 4);
+        总退款损失 = 总退款损失.plus(entity_report.modelReportGoodsCost.商品成本_总退款损失);
+        总退款损失 = 总退款损失.plus(entity_report.modelReportGiftCost.赠品成本_总退款损失);
+        总退款损失 = 总退款损失.plus(entity_report.modelreportEnpensePerOrder.费用成本_总退款损失);
+        总退款损失 = 总退款损失.plus(entity_report.modelreportEnpenseMNPerOrder.费用成本_总退款损失);
+        总退款损失 = 总退款损失.plus(entity_report.modelReportAdvertising.广告费用_总退款损失);
+        report.因退款造成的成本损失 = 总退款损失;
+
+        if (entity_report_0refund) {
+            report.因退款造成的利润损失 = entity_report_0refund.modelReportExt.利润.minus(report.利润, 4);
+        }
+
     }
 
 
@@ -546,5 +653,51 @@ export class SimulationCore {
 
         return result;
     }
+
+    #run0Refund(entity) {
+        // 这里不能用原始的entity，必须深拷贝一个新的出来
+        entity = Entity_PlanParams.parse(entity.toSerializable());
+        entity.modelPlanParamsRefund = new Model_PlanParams_Refund({
+            id: crypto.randomUUID(),
+            refundBefRate: new Percentage(0),
+            refundIngRate: new Percentage(0),
+            refundAftRate: new Percentage(0),
+        });
+        // console.log('%c  + start Simulation:', "color: green", performance.now());
+        entity.modelPlanParamsSale.quantityPattern = 'real';
+        const report = new Entity_PlanReport({ id: crypto.randomUUID(), planParams: entity });
+        this.#getSalesRevenue(entity, report);
+        this.#getGoodsCost(entity, report);
+        this.#getGiftCost(entity, report);
+        this.#getEnpensePerOrder(entity, report);
+        this.#getEnpenseMNPerOrder(entity, report);
+        this.#getEnpenseFixed(entity, report);
+        this.#getAdvertisingCost(entity, report);
+        this.#getExtReport(entity, report);
+        // 基于利润的必须在最后计算
+        this.#getEnpenseFixed_fromProfit(entity, report);
+        //并且重新计算最终的利润
+        this.#getExtReport(entity, report);
+        // console.log('%c  + end Simulation:', "color: green", performance.now());
+        return report;
+    }
+
+    /**
+     * 关于退款损失
+     * 
+     * 之前的退款损失是没问题的，现在说的退款损失是另外的一个角度。
+     * 一个订单退款了，其损失并不是损失了一些成本（支付了成本但是没有收入）
+     * 比如说 退款了 损失了包装费2块钱
+     * 实际上 损失的不只是2块钱
+     * 因为如果这个订单没有退款，那么这个订单还会产生收入
+     * 
+     * 那么，怎么计算这个损失呢？
+     * 收入部分好处理，直接算退款的这部分订单的收入是多少就行
+     * 其他的部分怎么处理呢？
+     * 实际上，我应该按照退款率是0的算一次，然后得出来一个结果。这个就是最理想的结果
+     * 然后用这个结果的利润减去实际的利润，就是损失的利润
+     * 
+     * 损失的利润 = 理想利润 - 实际利润 视为退款损失（利润层面的损失）。
+     */
 
 }

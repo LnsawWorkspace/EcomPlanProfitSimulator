@@ -19,6 +19,7 @@ import Decimal from '../../../infrastructure/decimal.mjs';
 import { SimulationCore } from "../../../service/SimulationCore.js";
 
 import Percentage from '../../../infrastructure/Percentage.js';
+import Money from '../../../infrastructure/Money.js';
 
 class PlanReportManager {
     #showToast = {};
@@ -42,12 +43,8 @@ class PlanReportManager {
         this.#initializeElements();
         this.#initializeEventListeners();
         await this.#initPlanReport();
-
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el))
         Decimal.set({ precision: 40 });
-
-        this.#reportData = this.#simulationCore.runSimulation(this.#planParams);
-        console.log("可读性报表：", this.#reportData.toSerializable());
-        this.#showReport();
     }
     /**
      * 初始化提示信息函数
@@ -66,6 +63,7 @@ class PlanReportManager {
      */
     #initializeElements() {
         const elements_id = {
+            viewRoiGraphButton: 'viewRoiGraphButton',
 
         };
         const element_class = {
@@ -85,6 +83,13 @@ class PlanReportManager {
     #initializeEventListeners() {
         // 使用Map和forEach优化事件监听设置
         const clickListeners = new Map([
+            ['viewRoiGraphButton', () => {
+                if (this.#reportData.modelReportAdvertising?.广告名称) {
+                    window.open(`planReportRoiGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank');
+                } else {
+                    this.#showToast.info('该方案未设置广告投放，无法查看ROI图表');
+                }
+            }],
         ]);
 
         for (const [elementKey, handler] of clickListeners) {
@@ -100,12 +105,16 @@ class PlanReportManager {
         const planId = urlParams.get('planId');
         const workspaceId = urlParams.get('workspaceId');
         const groupId = urlParams.get('groupId');
-        if (workspaceId) {
-            this.#repositoryWorkspace = new Repository_Workspace();
-            await this.#repositoryWorkspace.initDatabase();
-            this.#workspace = await this.#repositoryWorkspace.getWorkspaceById(workspaceId);
-            // 可以关闭 repositoryWorkspace了，因为不需要了
-            this.#repositoryWorkspace.close();
+        if (workspaceId === undefined || workspaceId === null || workspaceId === ''
+            || groupId === undefined || groupId === null || groupId === ''
+            || planId === undefined || planId === null || planId === ''
+        ) { this.#hidePage(); return; }
+        this.#repositoryWorkspace = new Repository_Workspace();
+        await this.#repositoryWorkspace.initDatabase();
+        this.#workspace = await this.#repositoryWorkspace.getWorkspaceById(workspaceId);
+        // 可以关闭 repositoryWorkspace了，因为不需要了
+        this.#repositoryWorkspace.close();
+        if (this.#workspace) {
             // 注意 repositoryPlanGroup, repositoryPlanMeta 和 repositoryPlanParams 用的是同一个链接，都是 workspaceId 对应的链接。 workspaceId 是库的名称。
             this.#repositoryPlanGroup = new Repository_PlanGroup(workspaceId);
             await this.#repositoryPlanGroup.initDatabase();
@@ -113,25 +122,40 @@ class PlanReportManager {
             await this.#repositoryPlanMeta.initDatabase();
             this.#repositoryPlanParams = new Repository_PlanParams(workspaceId);
             await this.#repositoryPlanParams.initDatabase();
-        }
-        if (groupId) {
             this.#planGroup = await this.#repositoryPlanGroup.getPlanGroupById(groupId);
-        }
-        //如果有planId参数，则加载对应的方案数据
-        if (planId) {
-            this.#planMeta = await this.#repositoryPlanMeta.getPlanMetaById(planId);
-            this.#planParams = await this.#repositoryPlanParams.getPlanParamsById(this.#planMeta.id);
-            this.#simulationCore = new SimulationCore();
-        }
-        // 修改 .main-title 下的H1的内容
-        if (this.#planMeta && this.#planMeta.name) {
-            const titleElement = document.querySelector('.main-title');
-            if (titleElement) {
-                titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
+            if (this.#planGroup) {
+                this.#planMeta = await this.#repositoryPlanMeta.getPlanMetaById(planId);
+                if (this.#planMeta) {
+                    this.#planParams = await this.#repositoryPlanParams.getPlanParamsById(this.#planMeta.id);
+                    if (this.#planParams) {
+                        // 修改 .main-title 下的H1的内容
+                        if (this.#planMeta && this.#planMeta.name) {
+                            const titleElement = document.querySelector('.main-title');
+                            if (titleElement) {
+                                titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
+                            }
+                        }
+                        this.#simulationCore = new SimulationCore();
+                        this.#reportData = this.#simulationCore.runSimulation(this.#planParams);
+                        console.log("可读性报表：", this.#reportData.toSerializable());
+                        this.#showReport();
+                    } else {
+                        this.#hidePage();
+                    }
+                } else {
+                    this.#hidePage();
+                }
+            } else {
+                this.#hidePage();
             }
+        } else {
+            this.#hidePage();
         }
     }
-
+    #hidePage() {
+        // 隐藏整个页面，提示该方案不存在。
+        document.body.innerHTML = '<div style="text-align:center; margin-top:50px;"><h2>方案或方案参数不存在。</h2></div>';
+    }
 
     #showReport() {
         if (!this.#reportData) {
@@ -149,36 +173,35 @@ class PlanReportManager {
         document.getElementById("totalValidOrderCount").textContent = this.#reportData.modelReportSalesRevenue.订单数量_退款后.toString() || "--";
 
         document.getElementById("totalGMV").textContent = this.#reportData.modelReportSalesRevenue.GMV_退款前.toLocaleFixed(4) || "--";
+        document.getElementById("totalSaleAmount").textContent = this.#reportData.modelReportSalesRevenue.销售金额_退款后.toLocaleFixed(4) || "--";
         document.getElementById("totalRevenue").textContent = this.#reportData.modelReportSalesRevenue.收入_退款后.toLocaleFixed(4) || "--";
         document.getElementById("totalCost").textContent = this.#reportData.modelReportExt.总成本.toLocaleFixed(4) || "--";
         document.getElementById("totalProfit").textContent = this.#reportData.modelReportExt.利润.toLocaleFixed(4) || "--";
 
         document.getElementById("totalROI_Business").textContent = this.#reportData.modelReportExt.资本回报率.toPercentString(4) || "--";
         // 如果this.#reportData.modelReportExt.资本回报率大于0，则显示绿色，否则显示红色
-        const roiBusinessElement = document.getElementById("totalROI_Business");
-        if (this.#reportData.modelReportExt.资本回报率.value.greaterThan(0)) {
-            roiBusinessElement.style.color = "green";
-        } else if (this.#reportData.modelReportExt.资本回报率.value.lessThan(0)) {
-            roiBusinessElement.style.color = "red";
-        }
+        this.#cardLeftStytle(this.#reportData.modelReportExt.资本回报率.value, document.getElementById("totalROI_Business"));
 
-        if (this.#reportData.modelReportExt.推广回报率.value.greaterThan(0)) {
+        if (!this.#reportData.modelReportExt.推广回报率.value.equals(0)) {
             const roiAdvertisingElement = document.getElementById("totalROI_Advertising");
             roiAdvertisingElement.textContent = this.#reportData.modelReportExt.推广回报率.toPercentString(4) || "--";
-            // 如果this.#reportData.modelReportExt.推广回报率大于0，则显示绿色，否则显示红色
-            if (this.#reportData.modelReportExt.推广回报率.value.greaterThan(0)) {
-                roiAdvertisingElement.style.color = "green";
-            } else if (this.#reportData.modelReportExt.推广回报率.value.lessThan(0)) {
-                roiAdvertisingElement.style.color = "red";
-            }
+            this.#cardLeftStytle(this.#reportData.modelReportExt.推广回报率.value, roiAdvertisingElement);
         } else {
             const roiAdvertisingElement = document.getElementById("totalROI_Advertising");
             roiAdvertisingElement.textContent = "--";
         }
+
+        document.getElementById("totalProfit_Per").textContent = this.#reportData.modelReportExt.利润率.toPercentString(4) || "--";
+        this.#cardLeftStytle(this.#reportData.modelReportExt.利润率.value, document.getElementById("totalProfit_Per"));
+        document.getElementById("totalRefundCost").textContent = this.#reportData.modelReportExt.因退款造成的成本损失.toLocaleFixed(4) || "--";
+        document.getElementById("totalRefundProfit").textContent = this.#reportData.modelReportExt.因退款造成的利润损失.toLocaleFixed(4) || "--";
+
+        document.getElementById("totalAdvertisingMoney").textContent = this.#reportData.modelReportAdvertising.广告费用_有效成本.toLocaleFixed(4) || "--";
     }
     #showEcharts() {
         this.Echarts.showCostStructureChart(this.Echarts.getCostStructureData(this.#reportData));
         this.Echarts.showRefundCostStructureChart(this.Echarts.getRefundCostStructureData(this.#reportData));
+        this.D3.showrevenueAndCostWaterfallChart(this.D3.getrevenueAndCostWaterfallData(this.#reportData));
     }
     #showGoodsTable() {
         //清空tbody
@@ -252,6 +275,10 @@ class PlanReportManager {
 
         // 声明tr，用create
         const tr = document.createElement('tr');
+        const 赠品成本_总退款损失 = new Percentage(this.#reportData.modelReportGiftCost.赠品成本_总退款损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value);
+        const 赠品成本_售前损失 = new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售前损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value);
+        const 赠品成本_售中损失 = new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售中损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value);
+        const 赠品成本_售后损失 = new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售后损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value);
         tr.innerHTML = `
                     <td class="fw-bold product-col">总计</td>
                     <td class="text-end">${this.#reportData.modelReportGiftCost.赠品成本_有效成本.toLocaleFixed(4)}</td>
@@ -261,10 +288,10 @@ class PlanReportManager {
                     <td class="text-end">${this.#reportData.modelReportGiftCost.赠品成本_售前损失.toLocaleFixed(4)}</td>
                     <td class="text-end">${this.#reportData.modelReportGiftCost.赠品成本_售中损失.toLocaleFixed(4)}</td>
                     <td class="text-end">${this.#reportData.modelReportGiftCost.赠品成本_售后损失.toLocaleFixed(4)}</td>
-                    <td class="text-end">${new Percentage(this.#reportData.modelReportGiftCost.赠品成本_总退款损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value).toPercentString(4)}</td>
-                    <td class="text-end">${new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售前损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value).toPercentString(4)}</td>
-                    <td class="text-end">${new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售中损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value).toPercentString(4)}</td>
-                    <td class="text-end">${new Percentage(this.#reportData.modelReportGiftCost.赠品成本_售后损失.dividedBy(this.#reportData.modelReportGiftCost.赠品成本_有效成本).value).toPercentString(4)}</td>
+                    <td class="text-end">${赠品成本_总退款损失.isNaN() ? '-' : 赠品成本_总退款损失.toPercentString(4)}</td>
+                    <td class="text-end">${赠品成本_售前损失.isNaN() ? '-' : 赠品成本_售前损失.toPercentString(4)}</td>
+                    <td class="text-end">${赠品成本_售中损失.isNaN() ? '-' : 赠品成本_售中损失.toPercentString(4)}</td>
+                    <td class="text-end">${赠品成本_售后损失.isNaN() ? '-' : 赠品成本_售后损失.toPercentString(4)}</td>
                     `;
         //先清空
         document.getElementById('Report_Container_Gift_Foot').innerHTML = '';
@@ -340,14 +367,28 @@ class PlanReportManager {
 
     }
 
+    #cardLeftStytle(value, element) {
+        if (value.greaterThan(0)) {
+            element.parentNode.classList.remove("negative", "primary");
+            element.parentNode.classList.add("positive");
+            element.classList.remove("negative", "primary");
+            element.classList.add("positive");
+        } else if (value.lessThan(0)) {
+            element.parentNode.classList.remove("positive", "primary");
+            element.parentNode.classList.add("negative");
+            element.classList.remove("positive", "primary");
+            element.classList.add("negative");
+        }
+    }
+
     Echarts = {
         showCostStructureChart: function (data) {
             // 初始化echarts实例
-            var myChart = echarts.init(document.getElementById('costStructureChart'));
+            const myChart = echarts.init(document.getElementById('costStructureChart'));
             //使用矩形树图
-            var option = {
+            const option = {
                 title: {
-                    // text: '成本结构'
+                    text: '成本结构'
                 },
                 tooltip: {
                     trigger: 'item'
@@ -504,11 +545,11 @@ class PlanReportManager {
         },
         showRefundCostStructureChart: function (data) {
             // 初始化echarts实例
-            var myChart = echarts.init(document.getElementById('refundCostStructureChart'));
+            const myChart = echarts.init(document.getElementById('refundCostStructureChart'));
             //使用矩形树图
-            var option = {
+            const option = {
                 title: {
-                    // text: '成本结构'
+                    text: '退款损失',
                 },
                 tooltip: {
                     trigger: 'item'
@@ -643,16 +684,170 @@ class PlanReportManager {
             return root;
         },
     }
+    D3 = {
+        showrevenueAndCostWaterfallChart: function (data) {
+            // const data = [
+            //     { label: "收入", start: 0, end: 1000, type: "income" },
+            //     { label: "运费", start: 1000, end: 700, type: "freight" },
+            //     { label: "成本", start: 700, end: -100, type: "cost" },
+            //     { label: "利润", start: 0, end: -100, type: "profit" }
+            // ];
+
+            const labels = data.map(d => d.label);
+
+            const svgTest = d3.select("body")
+                .append("svg")
+                .attr("visibility", "hidden")
+                .style("position", "absolute")
+                .style("left", "-9999px");
+
+            // 用与y轴字体一致的font
+            const testText = svgTest.append("g")
+                .attr("class", "y axis")
+
+            let maxWidth = 0;
+            labels.forEach(txt => {
+                const t = testText.append("text").text(txt);
+                const w = t.node().getBBox().width; // 或 getComputedTextLength()
+                if (w > maxWidth) maxWidth = w;
+                t.remove();
+            });
+            svgTest.remove();
+
+            // 关键：画布尺寸以viewBox为主，实际显示百分比宽高，自适应
+            const viewBoxWidth = 800, viewBoxHeight = data.length * 24;
+            const margin = { top: 10, right: 10, bottom: 40, left: maxWidth + 20 };
+            const width = viewBoxWidth - margin.left - margin.right;
+            const height = viewBoxHeight - margin.top - margin.bottom;
+
+            const svg = d3.select("#revenueAndCostWaterfallChart")
+                .attr("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+
+            const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const y = d3.scaleBand()
+                .domain(data.map(d => d.label))
+                .range([0, height])
+                .padding(0);
+
+            const xMin = Math.min(0, d3.min(data, d => Math.min(d.start, d.end)));
+            const xMax = Math.max(0, d3.max(data, d => Math.max(d.start, d.end)));
+            const x = d3.scaleLinear()
+                .domain([xMin - 120, xMax + 120])
+                .range([0, width]);
+
+            const yAxis = chart.append("g")
+                .attr("class", "y axis")
+                .call(d3.axisLeft(y).tickSize(0))
+            yAxis.select(".domain").remove();
+            yAxis.selectAll("text")
+                .attr("text-anchor", "start")
+                .attr("x", -margin.left + 8);
+
+            const xAxis = chart.append("g")
+                .attr("class", "x grid")
+                .attr("transform", `translate(0,0)`)
+                .call(d3.axisBottom(x)
+                    .ticks(10)
+                    .tickSize(height)
+                    .tickFormat(d => d))
+            xAxis.select(".domain").remove();
+
+            chart.selectAll("rect.bar")
+                .data(data)
+                .join("rect")
+                .attr("y", d => y(d.label))
+                .attr("height", y.bandwidth())
+                .attr("x", d => x(Math.min(d.start, d.end)))
+                .attr("width", d => Math.abs(x(d.end) - x(d.start)))
+                .attr("fill", d => d.fill)
+                .attr("class", "bar");
+
+            // 检查是否有负值
+            const hasNegative = data.some(d => d.end < 0 || d.start < 0);
+            // 添加辅助线
+            if (hasNegative) {
+                const alltick = xAxis.selectAll("g.tick");
+                alltick.each(function (tick) {
+                    const textValue = d3.select(this).select("text").text();
+                    if (textValue === "0") {
+                        const tickLine = d3.select(this).select("line").remove();
+                    }
+                });
+                chart.append("line")
+                    .attr("x1", x(0))
+                    .attr("x2", x(0))
+                    .attr("y1", 0)
+                    .attr("y2", height)
+                    .attr("stroke", "red")
+                    .attr("stroke-width", 0.5)
+            }
+        },
+        getrevenueAndCostWaterfallData: function (reportData) {
+            const data = [];
+            // 收入
+            const totalRevenue = reportData.modelReportSalesRevenue.收入_退款后.toNumber();
+            data.push({ label: "收入", start: 0, end: totalRevenue, fill: "#2979FF" });
+
+            // 商品成本
+            reportData.modelReportGoodsCost.明细.forEach(item => {
+                const cost = item.商品成本_有效成本.toNumber();
+                const lastEnd = data[data.length - 1].end;
+                data.push({ label: `商品：${item.商品名称}`, start: lastEnd, end: lastEnd - cost, fill: "#81C784" });
+            });
+            // 赠品成本
+            reportData.modelReportGiftCost.明细.forEach(item => {
+                const cost = item.赠品成本_有效成本.toNumber();
+                const lastEnd = data[data.length - 1].end;
+                data.push({ label: `赠品：${item.赠品名称}`, start: lastEnd, end: lastEnd - cost, fill: "#AED581" });
+            });
+            // 推广费
+            if (reportData.modelReportAdvertising) {
+                if (reportData.modelReportAdvertising.广告名称 === undefined || reportData.modelReportAdvertising.广告名称 === null || reportData.modelReportAdvertising.广告名称.trim() === "") {
+
+                } else {
+                    const advertisingCost = reportData.modelReportAdvertising.广告费用_有效成本.toNumber();
+                    const lastEnd = data[data.length - 1].end;
+                    data.push({ label: `广告：${reportData.modelReportAdvertising.广告名称}`, start: lastEnd, end: lastEnd - advertisingCost, fill: "#64B5F6" });
+                }
+
+            }
+            // 每单支出
+            reportData.modelreportEnpensePerOrder.明细.forEach(item => {
+                const cost = item.费用成本_有效成本.toNumber();
+                const lastEnd = data[data.length - 1].end;
+                data.push({ label: `费用：${item.费用名称}`, start: lastEnd, end: lastEnd - cost, fill: "#FFD54F" });
+            });
+            // 比例支出
+            reportData.modelreportEnpenseMNPerOrder.明细.forEach(item => {
+                const cost = item.费用成本_有效成本.toNumber();
+                const lastEnd = data[data.length - 1].end;
+                data.push({ label: `费用：${item.费用名称}`, start: lastEnd, end: lastEnd - cost, fill: "#FFB74D" });
+            });
+            // 固定支出
+            reportData.modelReportEnpenseFixed.明细.forEach(item => {
+                const cost = item.费用成本.toNumber();
+                const lastEnd = data[data.length - 1].end;
+                data.push({ label: `费用：${item.费用名称}`, start: lastEnd, end: lastEnd - cost, fill: "#A1887F" });
+            });
+            // 利润
+            const totalProfit = reportData.modelReportExt.利润.toNumber();
+            data.push({ label: "利润", start: 0, end: totalProfit, fill: "#7C4DFF" });
+
+            return data;
+        }
+    }
 }
 // 页面加载完成后初始化
 window.addEventListener('DOMContentLoaded', async () => {
     try {
         // 创建并初始化
-        const planParams = new PlanReportManager();
-        await planParams.initialize();
+        const planReport = new PlanReportManager();
+        await planReport.initialize();
 
-        // 将实例暴露到全局，方便调试
-        window.planParams = planParams;
+        // // 将实例暴露到全局，方便调试
+        // window.planReport = planReport;
     } catch (error) {
         console.error('Failed to initialize planParams:', error);
         alert('方案报告页面初始化失败，请刷新页面重试-2');

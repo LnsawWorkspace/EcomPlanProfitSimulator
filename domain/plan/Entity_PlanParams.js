@@ -140,11 +140,11 @@ export class Entity_PlanParams extends Entity_Base {
                     .map(item => (item instanceof Model_PlanParams_Goods) ? item : Model_PlanParams_Goods.parse(item));
             } else if (hasContent(dto.modelPlanParamsGoods)) {
                 // 单对象也支持
-                entity.modelPlanParamsGoods = [
+                entity.modelPlanParamsGoods = 
                     (dto.modelPlanParamsGoods instanceof Model_PlanParams_Goods)
                         ? dto.modelPlanParamsGoods
                         : Model_PlanParams_Goods.parse(dto.modelPlanParamsGoods)
-                ];
+                ;
             }
         }
         // Gift（可能为数组或单对象）
@@ -154,11 +154,11 @@ export class Entity_PlanParams extends Entity_Base {
                     .filter(item => hasContent(item))
                     .map(item => (item instanceof Model_PlanParams_Gift) ? item : Model_PlanParams_Gift.parse(item));
             } else if (hasContent(dto.modelPlanParamsGift)) {
-                entity.modelPlanParamsGift = [
+                entity.modelPlanParamsGift = 
                     (dto.modelPlanParamsGift instanceof Model_PlanParams_Gift)
                         ? dto.modelPlanParamsGift
                         : Model_PlanParams_Gift.parse(dto.modelPlanParamsGift)
-                ];
+                ;
             }
         }
         // Expense_PerOrder（可能为数组或单对象）
@@ -168,11 +168,11 @@ export class Entity_PlanParams extends Entity_Base {
                     .filter(item => hasContent(item))
                     .map(item => (item instanceof Model_PlanParams_Expense_PerOrder) ? item : Model_PlanParams_Expense_PerOrder.parse(item));
             } else if (hasContent(dto.modelPlanParamsExpensePerOrder)) {
-                entity.modelPlanParamsExpensePerOrder = [
+                entity.modelPlanParamsExpensePerOrder = 
                     (dto.modelPlanParamsExpensePerOrder instanceof Model_PlanParams_Expense_PerOrder)
                         ? dto.modelPlanParamsExpensePerOrder
                         : Model_PlanParams_Expense_PerOrder.parse(dto.modelPlanParamsExpensePerOrder)
-                ];
+                ;
             }
         }
         // Expense_MNPerOrder（可能为数组或单对象）
@@ -182,11 +182,11 @@ export class Entity_PlanParams extends Entity_Base {
                     .filter(item => hasContent(item))
                     .map(item => (item instanceof Model_PlanParams_Expense_MNPerOrder) ? item : Model_PlanParams_Expense_MNPerOrder.parse(item));
             } else if (hasContent(dto.modelPlanParamsExpenseMNPerOrder)) {
-                entity.modelPlanParamsExpenseMNPerOrder = [
+                entity.modelPlanParamsExpenseMNPerOrder = 
                     (dto.modelPlanParamsExpenseMNPerOrder instanceof Model_PlanParams_Expense_MNPerOrder)
                         ? dto.modelPlanParamsExpenseMNPerOrder
                         : Model_PlanParams_Expense_MNPerOrder.parse(dto.modelPlanParamsExpenseMNPerOrder)
-                ];
+                ;
             }
         }
         // Expense_Fixed（可能为数组或单对象）
@@ -196,11 +196,11 @@ export class Entity_PlanParams extends Entity_Base {
                     .filter(item => hasContent(item))
                     .map(item => (item instanceof Model_PlanParams_Expense_Fixed) ? item : Model_PlanParams_Expense_Fixed.parse(item));
             } else if (hasContent(dto.modelPlanParamsExpenseFixed)) {
-                entity.modelPlanParamsExpenseFixed = [
+                entity.modelPlanParamsExpenseFixed = 
                     (dto.modelPlanParamsExpenseFixed instanceof Model_PlanParams_Expense_Fixed)
                         ? dto.modelPlanParamsExpenseFixed
                         : Model_PlanParams_Expense_Fixed.parse(dto.modelPlanParamsExpenseFixed)
-                ];
+                ;
             }
         }
 

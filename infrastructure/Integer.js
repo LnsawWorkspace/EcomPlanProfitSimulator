@@ -38,6 +38,9 @@ export default class Integer {
         rounding: Integer.ROUND_DEFAULT,
     };
 
+    // - 静态零值实例，方便使用。
+    static ZERO = new Integer(0);
+
     /** @type {Decimal} - 数值 */
     #value;
     /** @type {Object} - 选项配置 */

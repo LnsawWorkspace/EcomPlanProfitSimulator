@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>业务利润模拟沙盘-方案详细信息</title>
+    <link rel="canonical" href="https://ecomplanprofitsimulator.lnsaw.com/page/workbench/workbench.html">
+    <meta name="description" content="电商商品利润计算器，帮助您快速计算商品利润，优化电商业务。">
+    <title>电商商品利润计算器-方案参数</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
         crossorigin="anonymous">
@@ -21,23 +23,32 @@
     <!-- Toast 容器 -->
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;"></div>
 
-    <main class="container plan-params-container">
-
-        <div class="main-title">
-            <h1><i class="bi bi-collection me-2"></i><span>方案详情</span></h1>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="container params-container header-content">
+            <h1 class="header-title">方案参数</h1>
+            <p class="header-subtitle main-title">默认工作区 -> 拼多多-半边绒睡衣 G689 -> 推广：规格：粉色 加长 加厚</p>
         </div>
+    </header>
+
+    <main class="container params-container">
 
         <!-- 目标参数卡片 -->
-        <div class="card">
+        <div class="params-card">
             <div class="card-header">
-                <h5 class="main-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-bullseye"></i></span>
-                    目标
-                </h5>
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-bullseye"></i>
+                    </div>
+                    <h4 class="card-title">目标</h4>
+                </div>
+                <div class="card-actions">
+                    <!-- 标题右边的位置，可以添加按钮-->
+                </div>
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-4 ">
+                    <div class="col-md-4">
                         <label for="price" class="form-label">售价</label>
                         <div class="input-group">
                             <span class="input-group-text">¥</span>
@@ -45,13 +56,14 @@
                                 placeholder="请输入售价">
                         </div>
                     </div>
-                    <div class="col-md-4 ">
-                        <label for="sale_Number" class="form-label">销售单量</label>
-                        <input type="number" class="form-control" id="sale_Number" min="0" placeholder="请输入销售单量"
+                    <div class="col-md-4">
+                        <label for="sale_Number" class="form-label">目标单量</label>
+                        <input type="number" class="form-control" id="sale_Number" min="0" placeholder="请输入目标单量"
                             required>
                     </div>
-                    <div class="col-md-4 ">
-                        <label for="allocationMethod" class="form-label">销售金额分摊</label>
+                    <div class="col-md-4">
+                        <label for="allocationMethod" class="form-label d-inline-block" data-bs-toggle="tooltip"
+                            data-bs-title="当存在多个商品且销项税率不一致时，需要将销售额进行合理分配。">销售金额分摊</label>
                         <div class="btn-group w-100">
                             <input type="radio" class="btn-check" name="sale_method" id="sale_method_cost"
                                 autocomplete="off" checked>
@@ -64,7 +76,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-4 ">
+                    <div class="col-md-4">
                         <label for="price" class="form-label">售前退款</label>
                         <div class="input-group">
                             <input type="number" class="form-control" id="refund_bef_per" min="0" max="100" step="0.01"
@@ -72,7 +84,7 @@
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
-                    <div class="col-md-4 ">
+                    <div class="col-md-4">
                         <label for="price" class="form-label">售中退款</label>
                         <div class="input-group">
                             <input type="number" class="form-control" id="refund_ing_per" min="0" max="100" step="0.01"
@@ -80,7 +92,7 @@
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
-                    <div class="col-md-4 ">
+                    <div class="col-md-4">
                         <label for="price" class="form-label">售后退款</label>
                         <div class="input-group">
                             <input type="number" class="form-control" id="refund_aft_per" min="0" max="100" step="0.01"
@@ -93,27 +105,32 @@
         </div>
 
         <!-- 推广参数卡片 -->
-        <div class="card">
+        <div class="params-card">
             <div class="card-header">
-                <h5 class="main-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-bullseye"></i></span>
-                    推广
-                </h5>
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-megaphone"></i>
+                    </div>
+                    <h4 class="card-title">推广</h4>
+                </div>
+                <div class="card-actions">
+                    <!-- 标题右边的位置，可以添加按钮-->
+                </div>
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-4 ">
+                    <div class="col-md-4">
                         <label for="advertising_name" class="form-label">推广名称</label>
                         <div class="input-group">
                             <input type="text" class="form-control" id="advertising_name" placeholder="请输推广名称">
                         </div>
                     </div>
-                    <div class="col-md-4 ">
+                    <div class="col-md-4">
                         <label for="advertising_roi" class="form-label">ROI</label>
                         <input type="number" class="form-control" id="advertising_roi" min="0" step="0.01"
                             placeholder="ROI=GMV/推广成本">
                     </div>
-                    <div class="col-md-4 ">
+                    <div class="col-md-4">
                         <label for="advertising_roi" class="form-label">推广税率</label>
                         <div class="input-group">
                             <input type="number" class="form-control" id="advertising_rate" min="0" max="100" value="6"
@@ -123,7 +140,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-4 ">
+                    <div class="col-md-4">
                         <label for="price" class="form-label">售前回收率</label>
                         <div class="input-group">
                             <input type="number" class="form-control" id="advertising_refund_bef_rec" min="0" max="100"
@@ -131,7 +148,7 @@
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
-                    <div class="col-md-4 ">
+                    <div class="col-md-4">
                         <label for="price" class="form-label">售中回收率</label>
                         <div class="input-group">
                             <input type="number" class="form-control" id="advertising_refund_ing_rec" min="0" max="100"
@@ -139,7 +156,7 @@
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
-                    <div class="col-md-4 ">
+                    <div class="col-md-4">
                         <label for="price" class="form-label">售后回收率</label>
                         <div class="input-group">
                             <input type="number" class="form-control" id="advertising_refund_aft_rec" min="0" max="100"
@@ -152,206 +169,216 @@
         </div>
 
         <!-- 商品参数卡片 -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="section-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-box-seam"></i></span>
-                    商品信息
-                </h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#paramsModal_Goods">
-                    <i class="bi bi-plus-circle me-1"></i>新增商品
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table text-center table-hover" id="goodsTable">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">商品名称</th>
-                                <th scope="col">商品数量</th>
-                                <th scope="col">采购金额</th>
-                                <th scope="col">采购数量</th>
-                                <th scope="col">含税成本</th>
-                                <th scope="col">不含税成本</th>
-                                <th scope="col">公允价值</th>
-                                <th scope="col">进项税率</th>
-                                <th scope="col">销项税率</th>
-                                <th scope="col">售前回收</th>
-                                <th scope="col">售中回收</th>
-                                <th scope="col">售后回收</th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="goodsContainer">
-
-                        </tbody>
-                    </table>
+        <div class="params-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <h4 class="card-title">商品信息</h4>
                 </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#paramsModal_Goods">
+                        <i class="bi bi-plus-circle me-1"></i>新增商品
+                    </button>
+                </div>
+            </div>
+            <div class="card-body-table">
+                <table class="data-table" id="goodsTable">
+                    <thead>
+                        <tr>
+                            <!-- <th scope="col" class="text-start">#</th> -->
+                            <th scope="col" class="text-start">商品</th>
+                            <th scope="col" class="text-end">数量</th>
+                            <th scope="col" class="text-end">含税成本</th>
+                            <th scope="col" class="text-end">不含税成本</th>
+                            <th scope="col" class="text-end">公允价值</th>
+                            <th scope="col" class="text-end">进项税率</th>
+                            <th scope="col" class="text-end">销项税率</th>
+                            <th scope="col" class="text-end">售前回收</th>
+                            <th scope="col" class="text-end">售中回收</th>
+                            <th scope="col" class="text-end">售后回收</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="goodsContainer">
+
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- 赠品参数卡片 -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="section-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-gift"></i></span>
-                    赠品信息
-                </h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#paramsModal_Gift">
-                    <i class="bi bi-plus-circle me-1"></i>新增赠品
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table text-center table-hover" id="giftTable">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">赠品名称</th>
-                                <th scope="col">赠品数量</th>
-                                <th scope="col">采购金额</th>
-                                <th scope="col">采购数量</th>
-                                <th scope="col">含税成本</th>
-                                <th scope="col">不含税成本</th>
-                                <th scope="col">公允价值</th>
-                                <th scope="col">进项税率</th>
-                                <th scope="col">退税税率</th>
-                                <th scope="col">售前回收</th>
-                                <th scope="col">售中回收</th>
-                                <th scope="col">售后回收</th>
-                                <th scope="col">费用类型</th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="giftContainer">
-
-                        </tbody>
-                    </table>
+        <div class="params-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-gift"></i>
+                    </div>
+                    <h4 class="card-title">赠品信息</h4>
                 </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-primary " data-bs-toggle="modal"
+                        data-bs-target="#paramsModal_Gift">
+                        <i class="bi bi-plus-circle me-1"></i>新增赠品
+                    </button>
+                </div>
+            </div>
+            <div class="card-body-table">
+                <table class="data-table" id="giftTable">
+                    <thead>
+                        <tr>
+                            <!-- <th scope="col" class="text-start">#</th> -->
+                            <th scope="col" class="text-start">赠品</th>
+                            <th scope="col" class="text-end">数量</th>
+                            <th scope="col" class="text-end">含税成本</th>
+                            <th scope="col" class="text-end">不含税成本</th>
+                            <th scope="col" class="text-end">公允价值</th>
+                            <th scope="col" class="text-end">进项税率</th>
+                            <th scope="col" class="text-end">销项税率</th>
+                            <th scope="col" class="text-end">售前回收</th>
+                            <th scope="col" class="text-end">售中回收</th>
+                            <th scope="col" class="text-end">售后回收</th>
+                            <th scope="col" class="text-end">费用类型</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="giftContainer">
+
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- 每单支出参数 -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="section-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-currency-dollar"></i></span>
-                    每单支出
-                </h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#paramsModal_ExpensePerOrder">
-                    <i class="bi bi-plus-circle me-1"></i>新增支出
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table text-center table-hover" id="expensePerOrderTable">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">支出名称</th>
-                                <th scope="col">支出成本</th>
-                                <th scope="col">进项税率</th>
-                                <th scope="col">成本类型</th>
-                                <th scope="col">基于</th>
-                                <th scope="col">基于含税</th>
-                                <th scope="col">售前回收</th>
-                                <th scope="col">售中回收</th>
-                                <th scope="col">售后回收</th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="expensePerOrderContainer">
-
-                        </tbody>
-                    </table>
+        <div class="params-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-currency-dollar"></i>
+                    </div>
+                    <h4 class="card-title">每单支出</h4>
                 </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-primary " data-bs-toggle="modal"
+                        data-bs-target="#paramsModal_ExpensePerOrder">
+                        <i class="bi bi-plus-circle me-1"></i>新增支出
+                    </button>
+                </div>
+            </div>
+            <div class="card-body-table">
+                <table class="data-table" id="expensePerOrderTable">
+                    <thead>
+                        <tr>
+                            <!-- <th scope="col" class="text-start">#</th> -->
+                            <th scope="col" class="text-start">支出名称</th>
+                            <th scope="col" class="text-end">支出成本</th>
+                            <th scope="col" class="text-end">进项税率</th>
+                            <th scope="col" class="text-end">成本类型</th>
+                            <th scope="col" class="text-end">基于</th>
+                            <th scope="col" class="text-end">基于含税</th>
+                            <th scope="col" class="text-end">售前回收</th>
+                            <th scope="col" class="text-end">售中回收</th>
+                            <th scope="col" class="text-end">售后回收</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensePerOrderContainer">
+
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- M单中N单每单支出-->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="section-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-currency-dollar"></i></span>
-                    部分订单支出
-                </h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#paramsModal_ExpenseMNPerOrder">
-                    <i class="bi bi-plus-circle me-1"></i>新增支出
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table text-center table-hover" id="expenseMNPerOrderTable">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">支出名称</th>
-                                <th scope="col">订单比例</th>
-                                <th scope="col">支出成本</th>
-                                <th scope="col">进项税率</th>
-                                <th scope="col">成本类型</th>
-                                <th scope="col">基于</th>
-                                <th scope="col">基于含税</th>
-                                <th scope="col">售前退款</th>
-                                <th scope="col">售中退款</th>
-                                <th scope="col">售后退款</th>
-                                <th scope="col">售前回收</th>
-                                <th scope="col">售中回收</th>
-                                <th scope="col">售后回收</th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="expenseMNPerOrderContainer">
-
-                        </tbody>
-                    </table>
+        <div class="params-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-currency-exchange"></i>
+                    </div>
+                    <h4 class="card-title">部分订单支出</h4>
                 </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-primary " data-bs-toggle="modal"
+                        data-bs-target="#paramsModal_ExpenseMNPerOrder">
+                        <i class="bi bi-plus-circle me-1"></i>新增支出
+                    </button>
+                </div>
+            </div>
+            <div class="card-body-table">
+                <table class="data-table" id="expenseMNPerOrderTable">
+                    <thead>
+                        <tr>
+                            <!-- <th scope="col" class="text-start">#</th> -->
+                            <th scope="col" class="text-start">支出名称</th>
+                            <th scope="col" class="text-end">订单比例</th>
+                            <th scope="col" class="text-end">支出成本</th>
+                            <th scope="col" class="text-end">进项税率</th>
+                            <th scope="col" class="text-end">成本类型</th>
+                            <th scope="col" class="text-end">基于</th>
+                            <th scope="col" class="text-end">基于含税</th>
+                            <th scope="col" class="text-end">售前退款</th>
+                            <th scope="col" class="text-end">售中退款</th>
+                            <th scope="col" class="text-end">售后退款</th>
+                            <th scope="col" class="text-end">售前回收</th>
+                            <th scope="col" class="text-end">售中回收</th>
+                            <th scope="col" class="text-end">售后回收</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseMNPerOrderContainer">
+
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- 固定支出-->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="section-title mb-0">
-                    <span class="icon-wrapper"><i class="bi bi-currency-dollar"></i></span>
-                    固定支出
-                </h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#paramsModal_ExpenseFixed">
-                    <i class="bi bi-plus-circle me-1"></i>新增支出
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table text-center table-hover" id="expenseFixedTable">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">支出名称</th>
-                                <th scope="col">支出成本</th>
-                                <th scope="col">进项税率</th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="expenseFixedContainer">
-
-                        </tbody>
-                    </table>
+        <div class="params-card">
+            <div class="card-header">
+                <div class="card-title-wrapper">
+                    <div class="card-icon">
+                        <i class="bi bi-archive"></i>
+                    </div>
+                    <h4 class="card-title">固定支出</h4>
                 </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-primary " data-bs-toggle="modal"
+                        data-bs-target="#paramsModal_ExpenseFixed">
+                        <i class="bi bi-plus-circle me-1"></i>新增支出
+                    </button>
+                </div>
+            </div>
+            <div class="card-body-table">
+                <table class="data-table" id="expenseFixedTable">
+                    <thead>
+                        <tr>
+                            <!-- <th scope="col" class="text-start">#</th> -->
+                            <th scope="col" class="text-start">支出名称</th>
+                            <th scope="col" class="text-end">支出成本</th>
+                            <th scope="col" class="text-end">进项税率</th>
+                            <th scope="col" class="text-end">成本类型</th>
+                            <th scope="col" class="text-end">基于</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseFixedContainer">
+
+                    </tbody>
+                </table>
             </div>
         </div>
 
+        <div class="footHelper"></div>
+
         <!-- 提交按钮 -->
         <div class="submit-section fixed-bottom bg-white p-3 border-top">
-            <div class="container">
+            <div class="container params-container">
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <button type="button" class="btn btn-primary me-md-2 px-4" id="savePlanParams">保存</button>
-                    <button type="button" class="btn btn-success px-4" id="submitBtn">查看报告</button>
+                    <button type="button" class="btn btn-primary me-md-2 px-4" id="savePlanParams">保存方案</button>
+                    <button type="button" class="btn btn-success px-4" id="goReport">保存并查看报告</button>
                 </div>
             </div>
         </div>
@@ -408,7 +435,6 @@
                                         <p class="small text-primary mb-0">用来辅助计算成本</p>
                                     </div>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-light">¥</span>
                                         <input type="number" class="form-control" id="goods-purchase_quantity" value="0"
                                             min="0" step="0.01" onkeypress="return event.keyCode !== 45"
                                             placeholder="0.00">
@@ -433,7 +459,7 @@
                                 <div class="col-md-6">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">不含税成本</label>
-                                        <p class="small text-primary mb-0">优先使用含税成本，或采购金额和采购数量</p>
+                                        <p class="small text-primary mb-0"></p>
                                     </div>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light">¥</span>
@@ -460,7 +486,7 @@
                                 <div class="col-md-6">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">销项税率</label>
-                                        <p class="small text-primary mb-0">必填</p>
+                                        <p class="small text-primary mb-0">如果不填写，则等于进项税率</p>
                                     </div>
                                     <div class="input-group">
                                         <input type="number" class="form-control" id="goods-output_rate" value=""
@@ -474,7 +500,7 @@
                                 <div class="col-md-12">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">公允价值</label>
-                                        <p class="small text-primary mb-0">选择"公允分摊法"时必须填写</p>
+                                        <p class="small text-primary mb-0">当存在多个不同税率商品，并选择"公允分摊法"时必须填写。</p>
                                     </div>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light">¥</span>
@@ -489,7 +515,7 @@
                             <div class="border rounded p-3 bg-light">
                                 <h6 class="fw-semibold mb-3"><i class="bi bi-arrow-clockwise me-2"></i>退款回收率设置</h6>
                                 <p class="small text-danger mb-3">
-                                    发生退款时，不同阶段的商品回收率。例如：售中回收率90%，表示有10%的商品没有退回，或者丢失、损坏。
+                                    发生退款时，不同阶段的商品回收率。例如：商品成本1000元，回收率为80%，表示有20%的损失，即800元回收，200元损失。该损失可以是任何形式导致的成本损失，如丢失、损坏、折价回收等。
                                 </p>
                                 <div class="row g-3">
                                     <div class="col-md-4">
@@ -583,7 +609,6 @@
                                         <p class="small text-primary mb-0">用来辅助计算成本</p>
                                     </div>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-light">¥</span>
                                         <input type="number" class="form-control" id="gift-purchase_quantity" value="0"
                                             min="0" step="0.01" onkeypress="return event.keyCode !== 45"
                                             placeholder="0.00">
@@ -608,7 +633,7 @@
                                 <div class="col-md-6">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">不含税成本</label>
-                                        <p class="small text-primary mb-0">优先使用含税成本，或采购金额和采购数量</p>
+                                        <p class="small text-primary mb-0"></p>
                                     </div>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light">¥</span>
@@ -634,11 +659,11 @@
                                 <div class="col-md-6">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">销项税率</label>
-                                        <p class="small text-primary mb-0">默认等于进项税率，一般不需要填</p>
+                                        <p class="small text-primary mb-0">如果不填写，则等于进项税率</p>
                                     </div>
                                     <div class="input-group">
-                                        <input type="number" class="form-control" id="gift-output_rate" value="0"
-                                            min="0" max="100" step="0.01" onkeypress="return event.keyCode !== 45">
+                                        <input type="number" class="form-control" id="gift-output_rate" value="" min="0"
+                                            max="100" step="0.01" onkeypress="return event.keyCode !== 45">
                                         <span class="input-group-text bg-light">%</span>
                                     </div>
                                 </div>
@@ -648,7 +673,7 @@
                                 <div class="col-md-6">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">公允价值</label>
-                                        <p class="small text-primary mb-0">如果为视同销售，则优先使用公允价值计算税额</p>
+                                        <p class="small text-primary mb-0">当视同销售时候，若公允价值大于0，则使用公允价值计算税额。</p>
                                     </div>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light">¥</span>
@@ -678,7 +703,7 @@
                             <div class="border rounded p-3 bg-light">
                                 <h6 class="fw-semibold mb-3"><i class="bi bi-arrow-clockwise me-2"></i>退款回收率设置</h6>
                                 <p class="small text-danger mb-3">
-                                    发生退款时，不同阶段的商品回收率。例如：售中回收率90%，表示有10%的商品没有退回，或者丢失、损坏。
+                                    发生退款时，不同阶段的赠品回收率。例如：赠品成本1000元，回收率为80%，表示有20%的损失，即800元回收，200元损失。该损失可以是任何形式导致的成本损失，如丢失、损坏、折价回收等。
                                 </p>
                                 <div class="row g-3">
                                     <div class="col-md-4">
@@ -770,7 +795,7 @@
                                 <div class="col-md-4">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">成本类型</label>
-                                        <p class="small text-primary mb-0">该成本是含税成本</p>
+                                        <p class="small text-primary mb-0"></p>
                                     </div>
                                     <div class="d-grid">
                                         <div class="btn-group w-100">
@@ -788,7 +813,7 @@
                                 <div class="col-md-4">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">来源字段</label>
-                                        <p class="small text-primary mb-0">选择"百分比"时必须填写</p>
+                                        <p class="small text-primary mb-0">当类型是"百分比"时，必须选择。</p>
                                     </div>
                                     <div class="input-group">
                                         <select class="form-select" id="expensePerOrder-base">
@@ -798,7 +823,7 @@
                                 <div class="col-md-4">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">来源类型</label>
-                                        <p class="small text-primary mb-0">该成本是含税成本</p>
+                                        <p class="small text-primary mb-0"></p>
                                     </div>
                                     <div class="d-grid">
                                         <div class="btn-group w-100">
@@ -819,7 +844,7 @@
                             <div class="border rounded p-3 bg-light">
                                 <h6 class="fw-semibold mb-3"><i class="bi bi-arrow-clockwise me-2"></i>退款回收率设置</h6>
                                 <p class="small text-danger mb-3">
-                                    发生退款时，不同阶段的商品回收率。例如：售中回收率90%，表示有10%的商品没有退回，或者丢失、损坏。
+                                    发生退款时，不同阶段的支出回收率。例如：支出成本1000元，回收率为80%，表示有20%的损失，即800元回收，200元损失。
                                 </p>
                                 <div class="row g-3">
                                     <div class="col-md-4">
@@ -926,7 +951,7 @@
                                 <div class="col-md-4">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">成本类型</label>
-                                        <p class="small text-primary mb-0">该成本是含税成本</p>
+                                        <p class="small text-primary mb-0"></p>
                                     </div>
                                     <div class="d-grid">
                                         <div class="btn-group w-100">
@@ -944,7 +969,7 @@
                                 <div class="col-md-4">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">来源字段</label>
-                                        <p class="small text-primary mb-0">选择"百分比"时必须填写</p>
+                                        <p class="small text-primary mb-0">当类型是"百分比"时，必须选择。</p>
                                     </div>
                                     <div class="input-group">
                                         <select class="form-select" id="expenseMNPerOrder-base">
@@ -954,7 +979,7 @@
                                 <div class="col-md-4">
                                     <div class="d-flex align-items-center mb-2">
                                         <label class="form-label fw-semibold mb-0 me-2">来源类型</label>
-                                        <p class="small text-primary mb-0">该成本是含税成本</p>
+                                        <p class="small text-primary mb-0"></p>
                                     </div>
                                     <div class="d-grid">
                                         <div class="btn-group w-100">
@@ -1010,7 +1035,7 @@
                             <div class="border rounded p-3 bg-light">
                                 <h6 class="fw-semibold mb-3"><i class="bi bi-arrow-clockwise me-2"></i>退款回收率</h6>
                                 <p class="small text-danger mb-3">
-                                    发生退款时，不同阶段的商品回收率。例如：售中回收率90%，表示有10%的商品没有退回，或者丢失、损坏。
+                                    发生退款时，不同阶段的支出回收率。例如：支出成本1000元，回收率为80%，表示有20%的损失，即800元回收，200元损失。
                                 </p>
                                 <div class="row g-3">
                                     <div class="col-md-4">
@@ -1056,7 +1081,7 @@
 
         <!-- 添加固定支出模态窗 -->
         <div class="modal fade" id="paramsModal_ExpenseFixed" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-dialog modal-dialog-centered modal-xl">
                 <div class="modal-content">
                     <div class="modal-header bg-light">
                         <h5 class="modal-title fw-bold"><i class="bi bi-expensePerOrder me-2"></i>添加固定支出</h5>
@@ -1065,33 +1090,68 @@
 
                     <div class="modal-body p-4">
                         <form id="expenseFixedForm">
-                            <div class="col-md-12">
-                                <div class="d-flex align-items-center mb-2">
-                                    <label class="form-label fw-semibold mb-0 me-2">支出名称</label>
-                                    <p class="small text-primary mb-0">必须填写</p>
+                            <!-- 支出基本信息 -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0 me-2">支出名称</label>
+                                        <p class="small text-primary mb-0">必须填写</p>
+                                    </div>
+                                    <input type="text" class="form-control" id="expenseFixed-name" placeholder="输入支出名称">
                                 </div>
-                                <input type="text" class="form-control" id="expenseFixed-name" placeholder="输入支出名称">
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0 me-2">支出成本</label>
+                                        <p class="small text-primary mb-0"></p>
+                                    </div>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">¥</span>
+                                        <input type="number" class="form-control" id="expenseFixed-value" value=""
+                                            min="0" onkeypress="return event.keyCode !== 45" placeholder="输入支出金额">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0 me-2">进项税率</label>
+                                        <p class="small text-primary mb-0"></p>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="expenseFixed-input_rate" value="6"
+                                            min="0" max="100" step="0.01" onkeypress="return event.keyCode !== 45">
+                                        <span class="input-group-text bg-light">%</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-12">
-                                <div class="d-flex align-items-center mb-2">
-                                    <label class="form-label fw-semibold mb-0 me-2">支出成本</label>
-                                    <p class="small text-primary mb-0"></p>
+
+                            <!-- 价格信息 -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0 me-2">成本类型</label>
+                                        <p class="small text-primary mb-0"></p>
+                                    </div>
+                                    <div class="d-grid">
+                                        <div class="btn-group w-100">
+                                            <input type="radio" class="btn-check" name="expenseFixedCostType"
+                                                id="expenseFixed-cost_type_money" autocomplete="off" checked>
+                                            <label class="btn btn-outline-primary"
+                                                for="expenseFixed-cost_type_money">固定金额</label>
+                                            <input type="radio" class="btn-check" name="expenseFixedCostType"
+                                                id="expenseFixed-cost_type_percent" autocomplete="off">
+                                            <label class="btn btn-outline-primary"
+                                                for="expenseFixed-cost_type_percent">百分比</label>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light">¥</span>
-                                    <input type="number" class="form-control" id="expenseFixed-value" value="" min="0"
-                                        onkeypress="return event.keyCode !== 45" placeholder="输入支出金额">
-                                </div>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="d-flex align-items-center mb-2">
-                                    <label class="form-label fw-semibold mb-0 me-2">进项税率</label>
-                                    <p class="small text-primary mb-0"></p>
-                                </div>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="expenseFixed-input_rate" value="6"
-                                        min="0" max="100" step="0.01" onkeypress="return event.keyCode !== 45">
-                                    <span class="input-group-text bg-light">%</span>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <label class="form-label fw-semibold mb-0 me-2">来源字段</label>
+                                        <p class="small text-primary mb-0">当类型是"百分比"时，必须选择。</p>
+                                    </div>
+                                    <div class="input-group">
+                                        <select class="form-select" id="expenseFixed-base">
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -1109,7 +1169,7 @@
     </modal>
 
     <!-- Bootstrp JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         crossorigin="anonymous"></script>
     <!-- 自身 JS -->
     <script type="module" src="./js/PlanParamsManager.js"></script>

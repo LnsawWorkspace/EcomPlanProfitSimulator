@@ -3,11 +3,14 @@
  * 负责方案的增删改查和数据管理等功能
  */
 import { Entity_PlanMeta } from '../../../domain/Entity_PlanMeta.js';
+import { Entity_PlanParams } from '../../../domain/plan/Entity_PlanParams.js';
 import { Repository_PlanMeta } from '../../../repository/Repository_PlanMeta.js';
+import { Repository_PlanParams } from '../../../repository/Repository_PlanParams.js';
 
 class PlanMetaManager {
 	// 使用ES2025私有字段
 	#Repository_PlanMeta;
+	#Repository_PlanParams;
 	#openEdityModalType = 'create';
 	#elements = {};
 	#modals = {};
@@ -40,6 +43,7 @@ class PlanMetaManager {
 		this.#showToast = showToast;
 		// 初始化数据仓库
 		this.#Repository_PlanMeta = new Repository_PlanMeta(this.#workbenchData.currentWorkspace?.id);
+		this.#Repository_PlanParams = new Repository_PlanParams(this.#workbenchData.currentWorkspace?.id);
 	}
 
 	/**
@@ -50,6 +54,7 @@ class PlanMetaManager {
 			console.log('%c  plan init start', 'color: #00ff00', performance.now());
 			// 初始化数据库
 			await this.#Repository_PlanMeta.initDatabase();
+			await this.#Repository_PlanParams.initDatabase();
 			return true;
 		} catch (error) {
 			console.error('Failed to initialize plan manager:', error);
@@ -128,6 +133,9 @@ class PlanMetaManager {
 			<p class="plan-item-description">${plan.description}</p>
 
 			<div class="plan-item-actions">
+				<button class="plan-action-btn plan-copy-btn" title="复制方案">
+					<i class="bi bi-copy"></i>
+				</button>
 				<button class="plan-action-btn plan-view-btn" title="查看报告">
 					<i class="bi bi-file-earmark-bar-graph"></i>
 				</button>
@@ -150,6 +158,8 @@ class PlanMetaManager {
 
 			planItem.querySelector('.plan-to-params-btn').addEventListener('click', () => this.#callbacks.toParams(plan));
 			planItem.querySelector('.plan-view-btn').addEventListener('click', () => this.#callbacks.toReport(plan));
+
+			planItem.querySelector('.plan-copy-btn').addEventListener('click', () => this.#copyPlan(plan));
 		});
 	}
 
@@ -330,6 +340,49 @@ class PlanMetaManager {
 			this.#showToast.error('删除失败');
 			return false;
 		}
+	}
+
+	async #copyPlan(plan) {
+		// 方案的复制有两部分组成
+		// 1. 复制方案元数据
+		// 2. 复制方案数据
+
+		// 读取现有方案元数据
+		const existingPlanMeta = await this.#Repository_PlanMeta.getPlanMetaById(plan.id);
+		// 创建一个新的方案元数据对象
+		const newPlanMeta = new Entity_PlanMeta({
+			id: crypto.randomUUID(),
+			groupId: existingPlanMeta.groupId,
+			name: existingPlanMeta.name + ' - 复制' + Date.now(),
+			description: existingPlanMeta.description,
+			enabled: existingPlanMeta.enabled
+		});
+		// 保存新的方案元数据
+		await this.#Repository_PlanMeta.savePlanMeta(newPlanMeta);
+		// 读取现有方案数据
+		const existingPlanParam = await this.#Repository_PlanParams.getPlanParamsById(plan.id);
+		// 创建一个新的方案数据对象
+		const newPlanParam = new Entity_PlanParams({
+			id: newPlanMeta.id, // 使用新的方案元数据ID
+		});
+		newPlanParam.modelPlanParamsSale = existingPlanParam.modelPlanParamsSale;
+		newPlanParam.modelPlanParamsRefund = existingPlanParam.modelPlanParamsRefund;
+		newPlanParam.modelPlanParamsGoods = existingPlanParam.modelPlanParamsGoods;
+		newPlanParam.modelPlanParamsGift = existingPlanParam.modelPlanParamsGift;
+		newPlanParam.modelPlanParamsExpensePerOrder = existingPlanParam.modelPlanParamsExpensePerOrder;
+		newPlanParam.modelPlanParamsExpenseMNPerOrder = existingPlanParam.modelPlanParamsExpenseMNPerOrder;
+		newPlanParam.modelPlanParamsExpenseFixed = existingPlanParam.modelPlanParamsExpenseFixed;
+		newPlanParam.modelPlanParamsAdvertising = existingPlanParam.modelPlanParamsAdvertising;
+		// 保存新的方案数据
+		await this.#Repository_PlanParams.savePlanParams(newPlanParam);
+
+		// 刷新方案列表
+		await this.loadPlanMetasByGroup();
+		// 显示成功消息
+		this.#showToast.success(plan.name ? '方案复制成功' : '方案复制成功');
+
+		// 触发保存回调
+		this.#callbacks.onPlanSaved?.(this.#openEdityModalType, plan);
 	}
 }
 

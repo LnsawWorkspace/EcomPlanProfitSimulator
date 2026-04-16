@@ -1,492 +1,159 @@
-/* 业务利润模拟沙盘 - 方案详细信息页面样式 */
-
-/* 全局样式重置与基础设置 - 使用明亮现代的色调 */
-:root {
-    /* Bootstrap五个主要主题色保持不变，用于按钮等交互元素 */
-    --primary-color: #0d6efd;
-    --secondary-color: #6c757d;
-    --success-color: #198754;
-    --warning-color: #ffc107;
-    --danger-color: #dc3545;
-
-    /* 新增标题背景专用颜色 - 使用明亮的浅色调 */
-    --header-bg-color: #f8f9fa;
-    --header-bg-light: #ffffff;
-    --header-bg-dark: #e9ecef;
-
-    /* 背景和文字颜色 */
-    --background-color: #ffffff;
-    --card-background: #ffffff;
-    --text-primary: #333333;
-    --text-secondary: #6c757d;
-    --text-dark: #212529;
-    --border-color: #e9ecef;
-
-    /* 阴影效果 */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04);
-    --shadow-lg: 0 8px 15px rgba(0, 0, 0, 0.03);
-
-    --border-radius: 12px;
-    --transition: all 0.3s ease;
-    /* 表格悬停色变量：--table-row-hover 用于 td 行悬停，--table-head-hover 用于 tbody 中的 th（更鲜艳但透明度低） */
-    --table-row-hover: rgba(13, 110, 253, 0.06);
-    --table-head-hover: #e3fdfd;
-    /* 更鲜艳但透明度更低的高亮色 */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-    margin: 0;
-    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    background-color: #f5f7fa;
+    color: #000000;
     min-height: 100vh;
 }
 
-/* 容器样式 */
-.plan-params-container {
-    padding: 2.5rem 1.5rem;
-    max-width: 1800px;
-    margin: 0 auto;
-}
-
-
-/* 标题样式 */
-h1 {
-    color: var(--text-dark);
-    font-weight: 700;
-    margin-bottom: 2.5rem;
-    font-size: 2.25rem;
-    display: flex;
-    align-items: center;
-    letter-spacing: -0.02em;
-}
-
-h1 i {
-    font-size: 1.8rem;
-    color: var(--primary-color);
-    margin-right: 0.75rem;
-}
-
-/* 卡片样式 */
-.card {
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
+/* 头部样式 */
+.header {
+    background: linear-gradient(135deg, #4361ee, #3f37c9);
+    color: white;
+    padding: 2rem 0;
     margin-bottom: 2rem;
-    transition: var(--transition);
+}
+
+.header-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.5px;
+}
+
+.header-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+.params-container {
+    max-width: 1600px;
+}
+
+.params-card {
+    background-color: #ffffff;
+    border-radius: 12px;
     overflow: hidden;
-    background-color: var(--card-background);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
 }
 
-.card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-}
-
-/* 卡片头部使用明亮的浅色调 */
 .card-header {
-    background: linear-gradient(135deg, var(--header-bg-light), var(--header-bg-color));
-    color: var(--text-primary);
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--border-color);
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    padding: 1.25rem 1rem 1.25rem 1rem;
+    border-bottom: 1px solid #e9ecef;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.card-body {
-    padding: 1.75rem;
-    background-color: var(--card-background);
-}
-
-/* 图标样式 */
-.card .icon-wrapper {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    background-color: rgba(13, 110, 253, 0.08);
-    border-radius: 10px;
-    margin-right: 1rem;
-}
-
-.card .icon-wrapper i {
-    font-size: 1.25rem;
-    color: var(--primary-color);
-    
-}
-
-.card-row {
+.card-title-wrapper {
     display: flex;
-    gap: 1rem; /* 卡片间距 */
-    flex-wrap: nowrap; /* 禁止换行，始终一行 */
-    align-items: stretch; /* 高度对齐，方便左右对齐 */
-    margin-bottom: 1.5rem;
-    
-}
-
-.card-item {
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition);
-    overflow: hidden;
-    background-color: var(--card-background);
-    flex: 1 1 50%; /* 两栏优先，每项占 50%，允许收缩以防溢出 */
-    max-width: 50%;
-    min-width: 0; /* 允许内容压缩，不会导致溢出 */
-}
-.card-item .icon-wrapper {
-    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    background-color: rgba(13, 110, 253, 0.08);
-    border-radius: 10px;
-    margin-right: 1rem;
+    gap: 0.75rem;
 }
 
-.card-item .icon-wrapper i {
-    font-size: 1.25rem;
-    color: var(--primary-color);
-    
-}
-
-/* 表单样式 */
-.form-control {
-    border: 1px solid var(--border-color);
-    border-radius: calc(var(--border-radius) - 2px);
-    padding: 0.75rem 1rem;
-    font-size: 0.95rem;
-    transition: var(--transition);
-    background-color: white;
-    box-shadow: var(--shadow-sm);
-}
-
-.form-control:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
-    outline: none;
-    transform: translateY(-1px);
-}
-
-.form-label {
-    font-weight: 500;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
-    font-size: 0.95rem;
-}
-
-/* 输入组样式 */
-.input-group {
+.card-icon {
+    font-size: 1.5rem;
+    color: #4361ee;
+    width: 2.5rem;
+    height: 2.5rem;
     display: flex;
-}
-
-
-.plan-params-container {
-    padding-bottom: 140px;
-    /* 兼容固定底部提交区域 */
-}
-
-.input-group-text {
-    background-color: var(--header-bg-color);
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-    padding: 0.75rem 1rem;
-    border-radius: calc(var(--border-radius) - 2px) 0 0 calc(var(--border-radius) - 2px);
-}
-
-/* 按钮组样式 */
-.btn-group .btn {
-    border-radius: calc(var(--border-radius) - 2px);
-    font-size: 0.95rem;
-    padding: 0.5rem 1rem;
-    transition: var(--transition);
-}
-
-.btn-group .btn-outline-primary.active,
-.btn-group .btn-outline-primary:focus,
-.btn-check:checked+.btn-outline-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: white;
-}
-
-/* 按钮样式 - 保持Bootstrap的五个主要颜色 */
-.btn {
-    border-radius: calc(var(--border-radius) - 2px);
-    font-weight: 500;
-    transition: var(--transition);
-    font-size: 0.95rem;
-    padding: 0.75rem 1.25rem;
-    display: inline-flex;
-
-    /* 小屏优化：减小间距和字体，保证卡片在窄屏可读 */
     align-items: center;
     justify-content: center;
+}
+
+.card-title {
+    font-size: 1.25rem;
+}
+
+.card-actions {
+    display: flex;
     gap: 0.5rem;
-    box-shadow: var(--shadow-sm);
 }
 
-.btn-sm {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-
-    /* 中等屏适配：略微减少卡片间距 */
+.card-body{
+    padding: 2rem;
 }
 
-.btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: white;
+.card-body .row{
+    margin-bottom: 1.5rem;
 }
 
-.btn-primary:hover {
-    background-color: #0b5ed7;
-    border-color: #0b5ed7;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+.card-body .row p{
+    margin-bottom: 0.5rem;
+    color: #4361ee;
+    font-size: 0.75rem;
 }
 
-.btn-outline-primary {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-    background-color: white;
+.card-body-table {
+    overflow-x: auto;
 }
 
-.btn-outline-primary:hover {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-}
-
-/* 其他按钮颜色保持Bootstrap默认值 */
-.btn-secondary {
-    background-color: var(--secondary-color);
-    border-color: var(--secondary-color);
-}
-
-.btn-secondary:hover {
-    background-color: #5a6268;
-    border-color: #545b62;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-}
-
-.btn-success {
-    background-color: var(--success-color);
-    border-color: var(--success-color);
-}
-
-.btn-success:hover {
-    background-color: #157347;
-    border-color: #146c43;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-}
-
-.btn-danger {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-}
-
-.btn-danger:hover {
-    background-color: #bb2d3b;
-    border-color: #b02a37;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-}
-
-.btn-warning {
-    background-color: var(--warning-color);
-    border-color: var(--warning-color);
-}
-
-.btn-warning:hover {
-    background-color: #ffca2c;
-    border-color: #ffc720;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-}
-
-/* 表格样式 */
-.table {
-    border-collapse: separate;
-    border-spacing: 0;
+.data-table {
     width: 100%;
-    margin-bottom: 0;
-    background-color: white;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
+    border-collapse: collapse;
 }
 
-.table thead th {
-    background-color: var(--header-bg-color);
-    border-bottom: 2px solid var(--border-color);
-    color: var(--text-primary);
+.data-table thead {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.data-table th,
+.data-table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.data-table th {
     font-weight: 600;
-    padding: 1rem;
-    text-align: center;
-    white-space: nowrap;
-    font-size: 0.9rem;
-    letter-spacing: -0.01em;
+    color: #000000;
+    font-size: 0.90rem;
+}
+.data-table td {
+    color: #000000;
+    font-size: 0.90rem;
 }
 
-.table tbody td {
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-color);
-    vertical-align: middle;
-    font-size: 0.95rem;
-    transition: var(--transition);
+.data-table tbody tr:hover {
+    background-color: rgba(67, 97, 238, 0.05);
 }
 
-.table tbody th {
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-color);
-    vertical-align: middle;
-    font-size: 1.25rem;
-    transition: var(--transition);
+.data-table tfoot {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.data-table tfoot td {
+    font-weight: 600;
 }
 
 /* 最后一列按内容最小化，不换行 */
-table th:last-child,
-table td:last-child {
+.data-table th:last-child,
+.data-table td:last-child {
     white-space: nowrap;
     width: 1px;
-    /* shrink-to-fit trick */
-    box-sizing: border-box;
     padding: 0.5rem 1rem 0.5rem 1rem;
-    /* 根据需要调整 */
 }
 
-.table tbody tr:last-child td {
-    border-bottom: none;
+.footHelper{
+    height: 80px;
 }
 
-.table tbody tr:hover td {
-    /* 使用变量，保持轻微透明度作为整行悬停背景 */
-    background-color: var(--table-row-hover);
-    transition: background-color 0.15s ease;
-}
+@media (max-width: 1920px) {
 
-.table tbody tr:hover th {
-    /* 使用更鲜艳但透明度更低的高亮色，达到“鲜艳但淡一点”的效果 */
-    background-color: var(--table-head-hover);
-    transition: background-color 0.15s ease, color 0.15s ease, font-weight 0.15s ease;
-}
-
-/* 表格响应式处理 - 保留以确保长表格可以滚动 */
-.table-responsive {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* 行布局样式 */
-.row {
-    margin-bottom: 1.5rem;
-    display: flex;
-    flex-wrap: wrap;
-}
-
-.row>* {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-}
-
-/* 模态框样式 */
-.modal-content {
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-lg);
-}
-
-.modal-header {
-    background: linear-gradient(135deg, var(--header-bg-light), var(--header-bg-color));
-    color: var(--text-primary);
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.modal-title {
-    font-weight: 600;
-    font-size: 1.25rem;
-    margin: 0;
-}
-
-.modal-body {
-    padding: 1.75rem;
-}
-
-.modal-footer {
-    padding: 1.25rem 1.5rem;
-    border-top: 1px solid var(--border-color);
-    background-color: var(--header-bg-color);
-}
-
-/* 自定义动画 */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
+    .data-table th {
+        font-weight: 600;
+        color: #000000;
+        font-size: 0.75rem;
     }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    .data-table td {
+        color: #000000;
+        font-size: 0.75rem;
     }
-}
-
-
-/* 表单验证样式 */
-.is-invalid {
-    border-color: var(--danger-color) !important;
-}
-
-.is-invalid:focus {
-    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2) !important;
-}
-
-.invalid-feedback {
-    color: var(--danger-color);
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
-}
-
-/* 选中状态样式 */
-.form-check-input:checked {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-/* 禁用状态样式 */
-.form-control:disabled,
-.form-control[readonly] {
-    background-color: var(--header-bg-color);
-    color: var(--text-secondary);
-    opacity: 0.9;
-}
-
-/* 按钮禁用状态 */
-.btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: var(--shadow-sm);
-}
-
-/* 添加一些现代UI元素 */
-.divider {
-    height: 1px;
-    background-color: var(--border-color);
-    margin: 1.5rem 0;
 }

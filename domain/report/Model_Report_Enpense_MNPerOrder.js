@@ -23,6 +23,17 @@ export class Model_Report_Enpense_MNPerOrder {
         this.#明细 = [];
     }
 
+    static parse(dto) {
+        const model = new Model_Report_Enpense_MNPerOrder();
+        model.费用成本_退款前 = new Money(dto.费用成本_退款前.value, new Integer(dto.费用成本_退款前.precision.value, dto.费用成本_退款前.precision.options), dto.费用成本_退款前.options);
+        model.费用成本_退款后 = new Money(dto.费用成本_退款后.value, new Integer(dto.费用成本_退款后.precision.value, dto.费用成本_退款后.precision.options), dto.费用成本_退款后.options);
+        model.费用成本_售前损失 = new Money(dto.费用成本_售前损失.value, new Integer(dto.费用成本_售前损失.precision.value, dto.费用成本_售前损失.precision.options), dto.费用成本_售前损失.options);
+        model.费用成本_售中损失 = new Money(dto.费用成本_售中损失.value, new Integer(dto.费用成本_售中损失.precision.value, dto.费用成本_售中损失.precision.options), dto.费用成本_售中损失.options);
+        model.费用成本_售后损失 = new Money(dto.费用成本_售后损失.value, new Integer(dto.费用成本_售后损失.precision.value, dto.费用成本_售后损失.precision.options), dto.费用成本_售后损失.options);
+        model.明细 = dto.明细.map(itemDto => Model_Report_Enpense_MNPerOrder_Item.parse(itemDto));
+        return model;
+    }
+
     get 费用成本_退款前() { return this.#费用成本_退款前; }
     get 费用成本_退款后() { return this.#费用成本_退款后; }
     get 费用成本_售前损失() { return this.#费用成本_售前损失; }
@@ -39,6 +50,8 @@ export class Model_Report_Enpense_MNPerOrder {
     set 费用成本_售前损失(value) { this.#费用成本_售前损失 = value; }
     set 费用成本_售中损失(value) { this.#费用成本_售中损失 = value; }
     set 费用成本_售后损失(value) { this.#费用成本_售后损失 = value; }
+
+    set 明细(value) { this.#明细 = value; }
 
     checkAll() {
         const errors = [];
@@ -92,6 +105,27 @@ export class Model_Report_Enpense_MNPerOrder_Item {
         this.#费用成本_售中损失 = new Money(0, 4);
         this.#费用成本_售后损失 = new Money(0, 4);
     }
+
+    static parse(dto) {
+        const model = new Model_Report_Enpense_MNPerOrder_Item();
+        model.费用名称 = dto.费用名称;
+        model.费用成本_含税 = new Money(dto.费用成本_含税.value, new Integer(dto.费用成本_含税.precision.value, dto.费用成本_含税.precision.options), dto.费用成本_含税.options);
+        model.费用成本_不含税 = new Money(dto.费用成本_不含税.value, new Integer(dto.费用成本_不含税.precision.value, dto.费用成本_不含税.precision.options), dto.费用成本_不含税.options);
+        model.进项税率 = new Percentage(dto.进项税率.value, dto.进项税率.options);
+        model.订单数量_退款前 = new Integer(dto.订单数量_退款前.value, dto.订单数量_退款前.options);
+        model.订单数量_退款后 = new Integer(dto.订单数量_退款后.value, dto.订单数量_退款后.options);
+        model.订单数量_售前损失 = new Integer(dto.订单数量_售前损失.value, dto.订单数量_售前损失.options);
+        model.订单数量_售中损失 = new Integer(dto.订单数量_售中损失.value, dto.订单数量_售中损失.options);
+        model.订单数量_售后损失 = new Integer(dto.订单数量_售后损失.value, dto.订单数量_售后损失.options);
+        model.订单数量_原始差额 = new Integer(dto.订单数量_原始差额.value, dto.订单数量_原始差额.options);
+        model.费用成本_退款前 = new Money(dto.费用成本_退款前.value, new Integer(dto.费用成本_退款前.precision.value, dto.费用成本_退款前.precision.options), dto.费用成本_退款前.options);
+        model.费用成本_退款后 = new Money(dto.费用成本_退款后.value, new Integer(dto.费用成本_退款后.precision.value, dto.费用成本_退款后.precision.options), dto.费用成本_退款后.options);
+        model.费用成本_售前损失 = new Money(dto.费用成本_售前损失.value, new Integer(dto.费用成本_售前损失.precision.value, dto.费用成本_售前损失.precision.options), dto.费用成本_售前损失.options);
+        model.费用成本_售中损失 = new Money(dto.费用成本_售中损失.value, new Integer(dto.费用成本_售中损失.precision.value, dto.费用成本_售中损失.precision.options), dto.费用成本_售中损失.options);
+        model.费用成本_售后损失 = new Money(dto.费用成本_售后损失.value, new Integer(dto.费用成本_售后损失.precision.value, dto.费用成本_售后损失.precision.options), dto.费用成本_售后损失.options);
+        return model;
+    }
+
     get 费用名称() { return this.#费用名称; }
     get 费用成本_含税() { return this.#费用成本_含税; }
     get 费用成本_不含税() { return this.#费用成本_不含税; }
