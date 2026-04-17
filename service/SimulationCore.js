@@ -271,17 +271,18 @@ export class SimulationCore {
 
             costItem.商品数量_退款前 = entity_report.modelReportSalesRevenue.订单数量_退款前.times(goodsItem.quantity, 4);
             costItem.商品数量_退款后 = entity_report.modelReportSalesRevenue.订单数量_退款后.times(goodsItem.quantity, 4);
-            costItem.商品数量_售前损失 = entity_report.modelReportSalesRevenue.订单数量_售前损失.times(Percentage.ONE_HUNDRED_PERCENT.minus(goodsItem.refundBefRec).value).times(goodsItem.quantity, 4);
-            costItem.商品数量_售中损失 = entity_report.modelReportSalesRevenue.订单数量_售中损失.times(Percentage.ONE_HUNDRED_PERCENT.minus(goodsItem.refundIngRec).value).times(goodsItem.quantity, 4);
-            costItem.商品数量_售后损失 = entity_report.modelReportSalesRevenue.订单数量_售后损失.times(Percentage.ONE_HUNDRED_PERCENT.minus(goodsItem.refundAftRec).value).times(goodsItem.quantity, 4);
+            costItem.商品数量_售前损失 = entity_report.modelReportSalesRevenue.订单数量_售前损失.times(goodsItem.quantity, 4);
+            costItem.商品数量_售中损失 = entity_report.modelReportSalesRevenue.订单数量_售中损失.times(goodsItem.quantity, 4);
+            costItem.商品数量_售后损失 = entity_report.modelReportSalesRevenue.订单数量_售后损失.times(goodsItem.quantity, 4);
 
             // 这里没办法判断 退款前-退款后 = 售前损失 + 售中损失 + 售后损失 是否成立。因为损失存在系数。
 
             costItem.商品成本_退款前 = goodsItem.valueExcTax.times(costItem.商品数量_退款前, 4);
             costItem.商品成本_退款后 = goodsItem.valueExcTax.times(costItem.商品数量_退款后, 4);
-            costItem.商品成本_售前损失 = goodsItem.valueExcTax.times(costItem.商品数量_售前损失, 4);
-            costItem.商品成本_售中损失 = goodsItem.valueExcTax.times(costItem.商品数量_售中损失, 4);
-            costItem.商品成本_售后损失 = goodsItem.valueExcTax.times(costItem.商品数量_售后损失, 4);
+            // 损失记录在这里的逻辑是，先按照数量计算出损失的数量，再乘以成本和系数。也就是先计算出损失的数量，再计算损失的金额。那么回收率的影响是在商品的价值上而不是数量上。
+            costItem.商品成本_售前损失 = goodsItem.valueExcTax.times(costItem.商品数量_售前损失, 4).times(Percentage.ONE_HUNDRED_PERCENT.minus(goodsItem.refundBefRec).value);
+            costItem.商品成本_售中损失 = goodsItem.valueExcTax.times(costItem.商品数量_售中损失, 4).times(Percentage.ONE_HUNDRED_PERCENT.minus(goodsItem.refundIngRec).value);
+            costItem.商品成本_售后损失 = goodsItem.valueExcTax.times(costItem.商品数量_售后损失, 4).times(Percentage.ONE_HUNDRED_PERCENT.minus(goodsItem.refundAftRec).value);
 
             report.明细.push(costItem);
 
@@ -309,17 +310,18 @@ export class SimulationCore {
 
             costItem.赠品数量_退款前 = entity_report.modelReportSalesRevenue.订单数量_退款前.times(giftItem.quantity, 4);
             costItem.赠品数量_退款后 = entity_report.modelReportSalesRevenue.订单数量_退款后.times(giftItem.quantity, 4);
-            costItem.赠品数量_售前损失 = entity_report.modelReportSalesRevenue.订单数量_售前损失.times(Percentage.ONE_HUNDRED_PERCENT.minus(giftItem.refundBefRec).value).times(giftItem.quantity, 4);
-            costItem.赠品数量_售中损失 = entity_report.modelReportSalesRevenue.订单数量_售中损失.times(Percentage.ONE_HUNDRED_PERCENT.minus(giftItem.refundIngRec).value).times(giftItem.quantity, 4);
-            costItem.赠品数量_售后损失 = entity_report.modelReportSalesRevenue.订单数量_售后损失.times(Percentage.ONE_HUNDRED_PERCENT.minus(giftItem.refundAftRec).value).times(giftItem.quantity, 4);
+            costItem.赠品数量_售前损失 = entity_report.modelReportSalesRevenue.订单数量_售前损失.times(giftItem.quantity, 4);
+            costItem.赠品数量_售中损失 = entity_report.modelReportSalesRevenue.订单数量_售中损失.times(giftItem.quantity, 4);
+            costItem.赠品数量_售后损失 = entity_report.modelReportSalesRevenue.订单数量_售后损失.times(giftItem.quantity, 4);
 
             // 这里没办法判断 退款前-退款后 = 售前损失 + 售中损失 + 售后损失 是否成立。因为损失存在系数。
 
             costItem.赠品成本_退款前 = giftItem.valueExcTax.times(costItem.赠品数量_退款前, 4);
             costItem.赠品成本_退款后 = giftItem.valueExcTax.times(costItem.赠品数量_退款后, 4);
-            costItem.赠品成本_售前损失 = giftItem.valueExcTax.times(costItem.赠品数量_售前损失, 4);
-            costItem.赠品成本_售中损失 = giftItem.valueExcTax.times(costItem.赠品数量_售中损失, 4);
-            costItem.赠品成本_售后损失 = giftItem.valueExcTax.times(costItem.赠品数量_售后损失, 4);
+            // 损失记录在这里的逻辑是，先按照数量计算出损失的数量，再乘以成本和系数。也就是先计算出损失的数量，再计算损失的金额。那么回收率的影响是在赠品的价值上而不是数量上。
+            costItem.赠品成本_售前损失 = giftItem.valueExcTax.times(costItem.赠品数量_售前损失, 4).times(Percentage.ONE_HUNDRED_PERCENT.minus(giftItem.refundBefRec).value);
+            costItem.赠品成本_售中损失 = giftItem.valueExcTax.times(costItem.赠品数量_售中损失, 4).times(Percentage.ONE_HUNDRED_PERCENT.minus(giftItem.refundIngRec).value);
+            costItem.赠品成本_售后损失 = giftItem.valueExcTax.times(costItem.赠品数量_售后损失, 4).times(Percentage.ONE_HUNDRED_PERCENT.minus(giftItem.refundAftRec).value);
 
             // 判断是否需要额外缴税
             if (giftItem.subjectType === '视同销售') {
@@ -539,8 +541,11 @@ export class SimulationCore {
                 // - 根据定义，付款金额是退款前的金额,本身就是含税的金额
                 if (goodsItem.base === "利润") {
                     value = entity_report.modelReportExt.利润.times(goodsItem.valuePercentage, 4);
+                    // - 这个地方就很离谱，利润都是负数了。。还怎么计算了呢？
+                    // 如果已经是负数了，那么这项支出，就只能是0了。因为利润已经被其他的成本吃掉了，剩余的利润不足以支付这项费用了。
                     if (value.isNegative()) {
-                        value = value.times(-1);
+                        // value = value.times(-1);
+                        value = new Money(0, 4);
                     }
                 }
             }
@@ -577,15 +582,21 @@ export class SimulationCore {
         // 广告费本质上和成交。。除非收费方式是CPS，否则广告费和成交数量没有直接关系
         // 但这里我们为了方便，统一用ROI这种指标来代替ALL的广告方式。方便计算。本质上不会有问题。
         // 主要是 道道是 按照平均一单的广告费*订单数量 还是按照总价/ROI 来计算广告费更合适一些呢？好纠结啊。
-        const 单广告费用 = entity_params.modelPlanParamsSale.salePrice.dividedBy(entity_params.modelPlanParamsAdvertising.roi, 4);
+        let 单广告费用 = entity_params.modelPlanParamsSale.salePrice.dividedBy(entity_params.modelPlanParamsAdvertising.roi, 4);
+        // 这个单广告费用还是含税的呢，需要换成不含税的
+        单广告费用 = 单广告费用.dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
+
         report.广告名称 = entity_params.modelPlanParamsAdvertising.name;
-        report.广告费用_退款前 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款前, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
-        report.广告费用_退款后 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款后, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
-        report.广告费用_售前损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售前损失, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
-        report.广告费用_售中损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售中损失, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
-        report.广告费用_售后损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售后损失, 4).dividedBy(Percentage.ONE_HUNDRED_PERCENT.plus(entity_params.modelPlanParamsAdvertising.inputRate), 4);
-        report.广告费用_原始差额 = report.广告费用_退款前.minus(report.广告费用_退款后).minus(report.广告费用_售前损失.plus(report.广告费用_售中损失).plus(report.广告费用_售后损失), 4);
-        report.广告费用_退款后 = report.广告费用_退款后.plus(report.广告费用_原始差额);
+        report.广告费用_退款前 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款前, 4);
+        report.广告费用_退款后 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_退款后, 4);
+        // 这里好纠结，到底回收率是*金额还是*数量呢？理论上，广告费本来不会有能回收的部分的。
+        // 因为订单数量是integer，并且是向上取整，两种算法是不一样的。
+        report.广告费用_售前损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售前损失, 4).times(Percentage.ONE_HUNDRED_PERCENT.minus(entity_params.modelPlanParamsAdvertising.refundBefRec), 4);
+        report.广告费用_售中损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售中损失, 4).times(Percentage.ONE_HUNDRED_PERCENT.minus(entity_params.modelPlanParamsAdvertising.refundIngRec), 4);
+        report.广告费用_售后损失 = 单广告费用.times(entity_report.modelReportSalesRevenue.订单数量_售后损失, 4).times(Percentage.ONE_HUNDRED_PERCENT.minus(entity_params.modelPlanParamsAdvertising.refundAftRec), 4);
+        // // 这俩条好像不太对劲。尤其是退款后好像不能直接这样算。回收率。。。。。。其他地方的回收率的处理也有这个问题么？
+        // report.广告费用_原始差额 = report.广告费用_退款前.minus(report.广告费用_退款后).minus(report.广告费用_售前损失.plus(report.广告费用_售中损失).plus(report.广告费用_售后损失), 4);
+        // report.广告费用_退款后 = report.广告费用_退款后.plus(report.广告费用_原始差额);
     }
     /**
      * @param {Entity_PlanParams} entity_params
