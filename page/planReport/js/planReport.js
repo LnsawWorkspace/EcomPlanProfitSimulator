@@ -64,6 +64,8 @@ class PlanReportManager {
     #initializeElements() {
         const elements_id = {
             viewRoiGraphButton: 'viewRoiGraphButton',
+            viewSaleGraphButton: 'viewSaleGraphButton',
+            viewVolumeGraphButton: 'viewVolumeGraphButton',
 
         };
         const element_class = {
@@ -90,6 +92,13 @@ class PlanReportManager {
                     this.#showToast.info('该方案未设置广告投放，无法查看ROI图表');
                 }
             }],
+            ['viewSaleGraphButton', () => {
+                window.open(`planReportSaleGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank');
+            }],
+            ['viewVolumeGraphButton', () => {
+                window.open(`planReportVolumeGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank');
+            }],
+
         ]);
 
         for (const [elementKey, handler] of clickListeners) {
