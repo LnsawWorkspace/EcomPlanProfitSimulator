@@ -66,6 +66,7 @@ class PlanReportManager {
             viewRoiGraphButton: 'viewRoiGraphButton',
             viewSaleGraphButton: 'viewSaleGraphButton',
             viewVolumeGraphButton: 'viewVolumeGraphButton',
+            viewSaleVolumeGraphButton: 'viewSaleVolumeGraphButton',
 
         };
         const element_class = {
@@ -97,6 +98,9 @@ class PlanReportManager {
             }],
             ['viewVolumeGraphButton', () => {
                 window.open(`planReportVolumeGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank');
+            }],
+            ['viewSaleVolumeGraphButton', () => {
+                window.open(`planReportSaleVolumeGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank');
             }],
 
         ]);
