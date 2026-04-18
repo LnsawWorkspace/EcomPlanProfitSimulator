@@ -132,7 +132,14 @@ class PlanReportSaleGraphManager {
                                 titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
                             }
                         }
-                        document.getElementById('sale-graph-roi').value = this.#planParams.modelPlanParamsAdvertising.roi.toString();
+                        // 未必能拿到这个roi，如果拿不到, 需要直接锁定这个输入框，设置为0，并且提示用户在方案参数中设置roi才可以调整这个值
+                        if (!this.#planParams.modelPlanParamsAdvertising) {
+                            document.getElementById('sale-graph-roi').disabled = true;
+                            // this.#showToast.error('请在方案参数中设置ROI值后再调整此值');
+                        } else {
+                            document.getElementById('sale-graph-roi').disabled = false;
+                            document.getElementById('sale-graph-roi').value = this.#planParams.modelPlanParamsAdvertising.roi.toString();
+                        }
                         // 售价从1开始，结束值为最初售价的2倍
                         const initialSale = this.#planParams.modelPlanParamsSale.salePrice.toNumber();
                         document.getElementById('sale-graph-start').value = 0;
@@ -154,16 +161,22 @@ class PlanReportSaleGraphManager {
                             adjustedStep = 2 * magnitude;
                         } else if (normalizedStep <= 5) {
                             adjustedStep = 5 * magnitude;
-                        } else {
+                        } else if (normalizedStep <= 10) {
                             adjustedStep = 10 * magnitude;
+                        } else if (normalizedStep <= 20) {
+                            adjustedStep = 20 * magnitude;
+                        } else if (normalizedStep <= 50) {
+                            adjustedStep = 50 * magnitude;
+                        } else {
+                            adjustedStep = 100 * magnitude;
                         }
                         document.getElementById('sale-graph-step').value = adjustedStep.toString();
 
                         // 设置销量相关数据
-                        // 销量默认从10开始，步进是10，最大值是1000
-                        document.getElementById('volume-graph-start').value = 10;
+                        // 销量默认从0开始，步进是100，最大值是1000
+                        document.getElementById('volume-graph-start').value = 0;
                         document.getElementById('volume-graph-end').value = 1000;
-                        document.getElementById('volume-graph-step').value = 10;
+                        document.getElementById('volume-graph-step').value = 100;
 
                         this.#simulationCore = new SimulationCore();
                         this.#showReport();
@@ -218,7 +231,9 @@ class PlanReportSaleGraphManager {
 
     #showReport() {
         this.Echarts.Loading();
-        this.#planParams.modelPlanParamsAdvertising.roi = new Decimal(document.getElementById('sale-graph-roi').value);
+        if (this.#planParams.modelPlanParamsAdvertising) {
+            this.#planParams.modelPlanParamsAdvertising.roi = new Decimal(document.getElementById('sale-graph-roi').value);
+        }
         // saleStart,必须大于0，最小0.01，
         let saleStart = new Decimal(document.getElementById('sale-graph-start').value);
         if (saleStart.lte(0)) {
@@ -293,7 +308,7 @@ class PlanReportSaleGraphManager {
             const chartData = results.map(planReport => ([
                 planReport.planParams.modelPlanParamsSale.salePrice.toString(),
                 planReport.planParams.modelPlanParamsSale.payOrderQuantity.toString(),
-                Math.round(planReport.modelReportExt.利润.toNumber())
+                Math.round(planReport.modelReportExt.利润.toNumber()),
             ]));
             console.log('图表数据：', chartData);
 
@@ -315,7 +330,7 @@ class PlanReportSaleGraphManager {
                 tooltip: {
                     position: 'top',
                     formatter: function (params) {
-                        return `${params.value[0]} - ${params.value[1]} : ${params.value[2]}`;
+                        return `售价：${params.value[0]} - 单量：${params.value[1]} : 利润：${params.value[2]}`;
                     }
                 },
                 xAxis: {
@@ -352,33 +367,33 @@ class PlanReportSaleGraphManager {
                     handlerSize: 10,
                     inRange: {
                         color: [
-                            '#313695',
-                            '#355ca8',
-                            '#4575b4',
-                            '#508bbd',
-                            '#5ea3c6',
-                            '#74add1',
-                            '#8ec7df',
-                            '#abd9e9',
-                            '#c7e9f1',
-                            '#e0f3f8',
-                            '#f7fcfd',
-                            '#ffffbf',
-                            '#fff7ae',
-                            '#fee090',
-                            '#fdd37a',
-                            '#fdae61',
-                            '#fb9b4b',
-                            '#f46d43',
-                            '#e55b3c',
-                            '#d73027',
-                            '#b71b1a',
-                            '#a50026'
+                            "#1a237e", // 深蓝
+                            "#283593",
+                            "#3f51b5",
+                            "#5c6bc0",
+                            "#7e57c2", // 蓝紫过渡
+                            "#8e24aa",
+                            "#ab47bc",
+                            "#d81b60", // 紫红过渡
+                            "#e53935",
+                            "#ef5350",
+                            "#f44336",
+                            "#ff7043", // 橙红
+                            "#ff8a65",
+                            "#ffab40",
+                            "#ffa000",
+                            "#ff8f00", // 深橙
+                            "#e65100", // 橙红深色
+                            "#d84315",
+                            "#bf360c",
+                            "#b71c1c", // 深红
+                            "#871400",
+                            "#5d0000"  // 暗红（最深）
                         ]
                     },
                     outOfRange: {
-                        color: '#000000'
-                    }
+                        color: ['#01010101']
+                    },
                 },
             };
 
@@ -445,12 +460,6 @@ class PlanReportSaleGraphManager {
                 this.ECharts.setOption({
                     visualMap: {
                         range: [parseFloat(document.getElementById('min-profit').value), parseFloat(document.getElementById('max-profit').value)],
-                        inRange: {
-                            color: '#ffa500',
-                        },
-                        outOfRange: {
-                            color: '#000000'
-                        }
                     }
                 });
             }

@@ -130,14 +130,21 @@ class PlanReportSaleGraphManager {
                                 titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
                             }
                         }
-                        document.getElementById('volume-graph-roi').value = this.#planParams.modelPlanParamsAdvertising.roi.toString();
-                        document.getElementById('volume-graph-salePrice').value = this.#planParams.modelPlanParamsSale.salePrice.toString();                     
+                        // 未必能拿到这个roi，如果拿不到, 需要直接锁定这个输入框，设置为0，并且提示用户在方案参数中设置roi才可以调整这个值
+                        if (!this.#planParams.modelPlanParamsAdvertising) {
+                            document.getElementById('volume-graph-roi').disabled = true;
+                            // this.#showToast.error('请在方案参数中设置ROI值后再调整此值');
+                        } else {
+                            document.getElementById('volume-graph-roi').disabled = false;
+                            document.getElementById('volume-graph-roi').value = this.#planParams.modelPlanParamsAdvertising.roi.toString();
+                        }
+                        document.getElementById('volume-graph-salePrice').value = this.#planParams.modelPlanParamsSale.salePrice.toString();
                         // 单量的步进必须是整数
                         document.getElementById('volume-graph-step').value = '1';
                         // 默认开始是1，结束是1000
                         document.getElementById('volume-graph-start').value = '10';
                         document.getElementById('volume-graph-end').value = '1000';
-                        
+
                         this.#simulationCore = new SimulationCore();
                         this.#showReport();
                     } else {
@@ -191,7 +198,9 @@ class PlanReportSaleGraphManager {
 
     #showReport() {
         this.Echarts.Loading();
-        this.#planParams.modelPlanParamsSale.roi = new Decimal(document.getElementById('volume-graph-roi').value);
+        if (this.#planParams.modelPlanParamsAdvertising) {
+            this.#planParams.modelPlanParamsAdvertising.roi = new Decimal(document.getElementById('volume-graph-roi').value);
+        }
         this.#planParams.modelPlanParamsSale.salePrice = new Decimal(document.getElementById('volume-graph-salePrice').value);
         // saleStart,必须大于0，最小0.01，
         let saleStart = new Decimal(document.getElementById('volume-graph-start').value);

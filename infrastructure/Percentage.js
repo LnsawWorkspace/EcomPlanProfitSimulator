@@ -323,10 +323,17 @@ export default class Percentage {
         // 限制超长
         if (str.length > 128) throw new PercentageError('Numeric string is too long');
 
+        // 假如是Infinity或者-Infinity或者NaN之类的怎么办呢？理论上是允许的，但业务上通常这个属于最后的结果了吧。好烦
+        // 那么先直接放行吧
+        if (/^(?:-)?(?:Infinity|NaN)$/.test(str)) {
+            return str;
+        }
+
         // 严格校验数字格式：可选负号，数字，最多一个小数点,可以有百分比、千分比、万分比
         // 允许形式："123", "-123", "123.45", "-123.45","123.45%","123.45‰","123.45‱"
 
         if (!/^-?\d+(?:\.\d+)?(?:[%‰‱])?$/.test(str)) {
+            console.error(`Invalid numeric string format: "${input}" cleaned to "${str}"`);
             throw new PercentageError('Numeric string 格式不正确');
         }
         return str;
