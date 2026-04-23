@@ -252,8 +252,27 @@ class PlanReportRoiGraphManager {
                     利润增长率8: -1,
                     利润增长率10: -1,
                 };
+                for (let i = 0; i < data.length; i++) {
+                    if (i === 0) {
+                        data[i].modelReportExt.利润增长金额 = new Money(0, 4);
+                        data[i].modelReportExt.利润增长率 = new Percentage(0, 8);
+                    } else {
+                        data[i].modelReportExt.利润增长金额 = data[i].modelReportExt.利润.minus(data[i - 1].modelReportExt.利润);
+                        data[i].modelReportExt.利润增长率 = new Percentage(Math.abs(data[i].modelReportExt.利润.minus(data[i - 1].modelReportExt.利润).dividedBy(data[i - 1].modelReportExt.利润).toString(), 8));
+                        if (data[i].planParams.modelPlanParamsAdvertising?.roi.toNumber() === 3.5) {
+                            console.log("ROI 3.5 Index", i);
+                            // 怎么算出来的400%呢好奇怪
+                            console.log("3.5", data[i].modelReportExt.利润.toNumber())
+                            console.log("3.4", data[i - 1].modelReportExt.利润.toNumber())
+                            console.log("3.5 - 3.4", data[i].modelReportExt.利润.minus(data[i - 1].modelReportExt.利润).toNumber())
+                            console.log("/ 3.4", data[i].modelReportExt.利润.minus(data[i - 1].modelReportExt.利润).dividedBy(data[i - 1].modelReportExt.利润).toNumber())
+                        }
+                    }
+                }
+
                 // 获取要计算的数据列，这里是利润
                 data.EchartsExt.Profit = data.map(item => item.modelReportExt.利润);
+                console.log('抽样前的利润数据:', data.map(item => item.modelReportExt));
                 // 对原始数据进行抽取
                 data.EchartsExt.Profit = this.resampleToStep(data.EchartsExt.Profit, parseFloat(document.getElementById('roi-graph-step').value), 0.1);
                 console.log('抽样后的利润数据:', data.EchartsExt.Profit);
@@ -422,11 +441,17 @@ class PlanReportRoiGraphManager {
                 '利润',
                 '利润率',
                 '资本回报率',
+                '推广回报率',
+                '利润增长金额',
+                '利润增长率',
             ],
             selected: {
                 '利润': true,
                 '利润率': false,
                 '资本回报率': false,
+                '推广回报率': false,
+                '利润增长金额': false,
+                '利润增长率': true,
             }
         },
         legendAdd: function (data) {
@@ -489,6 +514,43 @@ class PlanReportRoiGraphManager {
                             return new Percentage(value).toPercentString(2);
                         },
                     },
+                },
+                {
+                    name: '推广回报率',
+                    type: 'line',
+                    smooth: true,
+                    data: data.map(item => item.modelReportExt.推广回报率.toNumber()),
+                    tooltip: { // 单独配置该系列的tooltip
+                        valueFormatter: function (value) {
+                            return new Percentage(value).toPercentString(2);
+                        },
+                    },
+                },
+                {
+                    name: '利润增长金额',
+                    type: 'line',
+                    smooth: true,
+                    data: data.map(item => item.modelReportExt.利润增长金额.toNumber()),
+                    tooltip: { // 单独配置该系列的tooltip
+                        valueFormatter: function (value) {
+                            const v = new Money(value, 4);
+                            v.options.suffix = ' 元';
+                            return v.toLocaleFixed(2) + v.options.suffix;
+                        },
+                    },
+                    yAxisIndex: 0, // 利润增长金额使用第二个y轴
+                },
+                {
+                    name: '利润增长率',
+                    type: 'line',
+                    smooth: true,
+                    data: data.map(item => item.modelReportExt.利润增长率.toNumber()),
+                    tooltip: { // 单独配置该系列的tooltip
+                        valueFormatter: function (value) {
+                            return new Percentage(value).toPercentString(2);
+                        },
+                    },
+                    yAxisIndex: 1, // 利润增长率使用第二个y轴
                 },
                 // {
                 //     name: '运费',
@@ -635,10 +697,18 @@ class PlanReportRoiGraphManager {
                     type: 'category',
                     data: data.map(item => item.planParams.modelPlanParamsAdvertising.roi.toFixed(4)),
                 },
-                yAxis: {
-                    type: 'value',
-                    scale: true,
-                },
+                yAxis: [
+                    {
+                        type: 'value',
+                        scale: true,
+                        position: 'left',
+                    },
+                    {
+                        type: 'value',
+                        scale: true,
+                        position: 'right',
+                    }
+                ],
                 series: this.series(data),
                 visualMap: this.visualMap(data),
             };

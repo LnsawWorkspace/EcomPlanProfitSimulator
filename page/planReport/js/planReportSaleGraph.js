@@ -261,11 +261,84 @@ class PlanReportSaleGraphManager {
                 const planReport = Entity_PlanReport.parse(resultData);
                 results.push(planReport);
             }
-            console.log('计算完成，结果：', results);
+            this.Echarts.ExtendedAnalysis.intervalOrderProfitDemandDecrease(results);
             this.Echarts.init(results);
         };
     }
     Echarts = {
+        ExtendedAnalysis: {
+            intervalOrderProfitDemandDecrease: function (data) {
+                // 先创建一个EchartsExt对象，用于存放扩展分析的结果
+                data.EchartsExt = {};
+                // 初始化利润增长率区间的下标，-1表示还没有找到这个区间的下标
+                data.EchartsExt.intervalOrderProfitDemandDecrease = {
+                    利润增长率0: -1,
+                    利润增长率2: -1,
+                    利润增长率4: -1,
+                    利润增长率6: -1,
+                    利润增长率8: -1,
+                    利润增长率10: -1,
+                };
+                for (let i = 0; i < data.length; i++) {
+                    if (i === 0) {
+                        data[i].modelReportExt.利润增长金额 = new Money(0, 4);
+                        data[i].modelReportExt.利润增长率 = new Percentage(0, 8);
+                    } else {
+                        data[i].modelReportExt.利润增长金额 = data[i].modelReportExt.利润.minus(data[i - 1].modelReportExt.利润);
+                        data[i].modelReportExt.利润增长率 = new Percentage(Math.abs(data[i].modelReportExt.利润.minus(data[i - 1].modelReportExt.利润).dividedBy(data[i - 1].modelReportExt.利润).toString(), 8));
+                    }
+                }
+            },
+            /**
+             * 将数组重采样，使得结果看起来像是用 targetStep 步进生成的
+             * @param {Array<number>} arr - 原始数组
+             * @param {number} start - 起始值
+             * @param {number} end - 结束值
+             * @param {number} step - 原始步进 (0.0001 ~ 1)
+             * @param {number} targetStep - 目标步进，默认 0.1
+             * @returns {Array<number>} 重采样后的数组
+             */
+            resampleToStep: function (arr, step, targetStep = 0.1) {
+                if (!Array.isArray(arr) || arr.length === 0) {
+                    return [];
+                }
+
+                const n = arr.length;
+                if (n === 1) {
+                    return [arr[0]];
+                }
+
+                // 假设开始0，结束9.9，步进0.1，理论上是100个点，也就是100个下标。
+                // 假设实际步进是0.03，那么理论上一共是300个点，也就是300个下标。
+                // 相当于 300/100=3，也就是每3个点取一个点，取300个点中的第0、3、6、9...这些点，直到300这个点。
+                // 那么，同时也相当于是 0.03/0.01=3，那么相当于我们不需要开始和结束这俩个参数。
+                // 但假如实际步进是0.033，那么0.033/0.01=3.3。
+                // 但是下标都是整数,所以，使用四舍五入取整，也就是 Math.round(3.3)=3，那么相当于每3个点取一个点，取300个点中的第0、3、6、9...这些点，直到300这个点。
+                // 但是如果实际步进是0.037，那么0.037/0.01=3.7，那么 Math.round(3.7)=4，那么相当于每4个点取一个点，取300个点中的第0、4、8、12...这些点，直到300这个点。
+                // 这样就能保证不管实际步进是多少，我们都能大致按照目标步进来取点了。
+                // 最后一个点，一定是结束点，也就是下标为n-1的点，无论步进如何，都要取这个点。
+                const stepRatio = Math.round(targetStep / step);
+                console.log(`resampleToStep: step=${step}, targetStep=${targetStep}, stepRatio=${stepRatio}, originalLength=${n}`);
+                if (stepRatio <= 1) {
+                    // 如果步进已经小于等于目标步进了，就不需要重采样了，直接返回原数组，并且把每个点都加上它的下标，变成二维数组，这样在visualMap中就能用到这些下标来设置颜色了。
+                    const resampled = [];
+                    for (let i = 0; i < n; i++) {
+                        resampled.push([arr[i], i]);
+                    }
+                    return resampled;
+                }
+
+                // resampled是二维数组，除了要记录取的点的值，还要记录取的点的下标，这样才能在visualMap中用到这些下标来设置颜色。
+                const resampled = [];
+                for (let i = 0; i < n; i += stepRatio) {
+                    resampled.push([arr[i], i]);
+                }
+                if (resampled[resampled.length - 1][0] !== arr[n - 1]) {
+                    resampled.push([arr[n - 1], n - 1]);
+                }
+                return resampled;
+            }
+        },
         ECharts: null,
         // 这个方法是干嘛的，忘记了？
         // 计算R平方，oldY是真实值，newY是预测值
@@ -298,11 +371,17 @@ class PlanReportSaleGraphManager {
                 '利润',
                 '利润率',
                 '资本回报率',
+                '推广回报率',
+                '利润增长金额',
+                '利润增长率',
             ],
             selected: {
                 '利润': true,
                 '利润率': false,
                 '资本回报率': false,
+                '推广回报率': false,
+                '利润增长金额': false,
+                '利润增长率': true,
             }
         },
         legendAdd: function (data) {
@@ -310,7 +389,7 @@ class PlanReportSaleGraphManager {
             const adName = "广告：" + data[0].modelReportAdvertising.广告名称;
             if (!this.legend.data.includes(adName)) {
                 this.legend.data.push(adName);
-                this.legend.selected[adName] = true;
+                this.legend.selected[adName] = false; // 默认不选中
             }
         },
         series: function (data) {
@@ -360,6 +439,42 @@ class PlanReportSaleGraphManager {
                     tooltip: { // 单独配置该系列的tooltip
                         valueFormatter: function (value) {
                             return new Percentage(value).toPercentString(2);
+                        },
+                    },
+                },
+                {
+                    name: '推广回报率',
+                    type: 'line',
+                    smooth: true,
+                    data: data.map(item => item.modelReportExt.推广回报率.toNumber()),
+                    tooltip: { // 单独配置该系列的tooltip
+                        valueFormatter: function (value) {
+                            return new Percentage(value).toPercentString(2);
+                        },
+                    },
+                },
+                {
+                    name: '利润增长率',
+                    type: 'line',
+                    smooth: true,
+                    data: data.map(item => item.modelReportExt.利润增长率.toNumber()),
+                    tooltip: { // 单独配置该系列的tooltip
+                        valueFormatter: function (value) {
+                            return new Percentage(value).toPercentString(2);
+                        },
+                    },
+                    yAxisIndex: 1, // 使用右侧的Y轴
+                },
+                {
+                    name: '利润增长金额',
+                    type: 'line',
+                    smooth: true,
+                    data: data.map(item => item.modelReportExt.利润增长金额.toNumber()),
+                    tooltip: { // 单独配置该系列的tooltip
+                        valueFormatter: function (value) {
+                            const v = new Money(value, 4);
+                            v.options.suffix = ' 元';
+                            return v.toLocaleFixed(2) + v.options.suffix;
                         },
                     },
                 },
@@ -436,10 +551,17 @@ class PlanReportSaleGraphManager {
                     type: 'category',
                     data: data.map(item => item.planParams.modelPlanParamsSale.salePrice.toFixed(4)),
                 },
-                yAxis: {
-                    type: 'value',
-                    scale: true,
-                },
+                yAxis: [
+                    {
+                        type: 'value',
+                        scale: true,
+                        position: 'left',
+                    }, {
+                        type: 'value',
+                        scale: true,
+                        position: 'right',
+                    }
+                ],
                 series: this.series(data),
             };
 
