@@ -68,6 +68,7 @@ class PlanReportManager {
             viewVolumeGraphButton: 'viewVolumeGraphButton',
             viewSaleVolumeGraphButton: 'viewSaleVolumeGraphButton',
             viewRoiSaleGraphButton: 'viewRoiSaleGraphButton',
+            viewRoiVolumeGraphButton: 'viewRoiVolumeGraphButton',
 
         };
         const element_class = {
@@ -104,10 +105,19 @@ class PlanReportManager {
                 window.open(`planReportSaleVolumeGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank');
             }],
             ['viewRoiSaleGraphButton', () => {
-                window.open(`planReportRoiSaleGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank');
+                if (this.#reportData.modelReportAdvertising?.广告名称) {
+                    window.open(`planReportRoiSaleGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank');
+                } else {
+                    this.#showToast.info('该方案未设置广告投放，无法查看ROI-销量图表');
+                }
             }],
-
-
+            ['viewRoiVolumeGraphButton', () => {
+                if (this.#reportData.modelReportAdvertising?.广告名称) {
+                    window.open(`planReportRoiVolumeGraph.html?workspaceId=${this.#workspace.id}&groupId=${this.#planGroup.id}&planId=${this.#planMeta.id}`, '_blank');
+                } else {
+                    this.#showToast.info('该方案未设置广告投放，无法查看ROI-销量图表');
+                }
+            }],
         ]);
 
         for (const [elementKey, handler] of clickListeners) {
