@@ -5,16 +5,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="canonical" href="https://www.lnsaw.com/index.html">
-    <meta name="description" content="电商商品利润计算器，帮助您快速计算商品利润，优化电商业务。">
-    <title>电商商品利润计算器 - 首页</title>
+    <meta name="description" content="全场景单品利润沙盘推演工具，支持电商/直播/外卖/零售，自定义成本拆解、全周期边界测算，算清每一步经营选择的真实代价。">
+    <title>全场景单品推演 - 首页</title>
     <style>
+        :root {
+            --primary: #1976d2;
+            --primary-hover: #1565c0;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --text-main: #2c3e50;
+            --text-light: #546e7a;
+        }
+
         body {
             min-height: 100vh;
             margin: 0;
             display: flex;
             flex-direction: column;
-            font-family: Arial, Helvetica, 'PingFang SC', '微软雅黑', sans-serif;
-            background: #f5f7fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
         }
 
         .container {
@@ -23,48 +32,147 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .hero-section {
+            max-width: 900px;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #1976d2, #64b5f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+
+        .slogans {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            width: 100%;
+            max-width: 1100px;
+            margin-top: 40px;
+        }
+
+        .slogan-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .slogan-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .slogan-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .slogan-text {
+            font-size: 1rem;
+            color: var(--text-light);
+            line-height: 1.6;
         }
 
         .goto-btn {
-            padding: 12px 32px;
-            background-color: #1976d2;
+            padding: 16px 48px;
+            background-color: var(--primary);
             color: #fff;
             border: none;
-            border-radius: 6px;
-            font-size: 18px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 40px;
-            transition: background 0.2s;
+            margin-top: 60px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .goto-btn:hover {
-            background: #0d47a1;
+            background: var(--primary-hover);
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
         }
 
         footer {
             text-align: center;
-            padding: 20px 0 15px 0;
-            background: #fff;
-            font-size: 14px;
-            color: #888;
-            letter-spacing: 1px;
+            padding: 30px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            color: #7f8c8d;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        footer a {
+            color: inherit;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        footer a:hover {
+            color: var(--primary);
+        }
+
+        @media (max-width: 600px) {
+            .slogans {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>欢迎使用 电商商品利润计算器</h1>
-        <button class="goto-btn" onclick="location.href='page/workbench/workbench.html'">
-            开始使用
-        </button>
+        <div class="hero-section">
+            <h1>全场景 · 单品 · 沙盘推演<br>利润目标模型</h1>
+
+            <div class="slogans">
+                <div class="slogan-card">
+                    <span class="slogan-title">【自定义成本引擎】</span>
+                    <span class="slogan-text">无限维度拆解每一笔显性 / 隐性成本，算到真实净利润</span>
+                </div>
+                <div class="slogan-card">
+                    <span class="slogan-title">【全场景适配】</span>
+                    <span class="slogan-text">电商 / 外卖 / 零售通用，一套模型跑所有生意</span>
+                </div>
+                <div class="slogan-card">
+                    <span class="slogan-title">【全周期沙盘推演】</span>
+                    <span class="slogan-text">从冷启动到清仓，提前算清每一条路的边界</span>
+                </div>
+            </div>
+
+            <button class="goto-btn" onclick="location.href='page/workbench/workbench.html'">
+                开启推演
+            </button>
+        </div>
     </div>
     <footer>
-        © 2025 Lnsaw 版权所有
-        <a href="https://beian.miit.gov.cn/" target="_blank">ICP备案号：冀ICP备2025139791号-1</a>
-        <img src="https://beian.mps.gov.cn/web/assets/logo01.6189a29f.png"  alt="备案图标" style="width:16px; height:16px; vertical-align:middle; margin:0 4px;">
-        <a href="https://beian.mps.gov.cn/#/query/webSearch?code=13100202000895" rel="noreferrer"
-            target="_blank">冀公网安备13100202000895号</a>
+        <div style="margin-bottom: 8px;">
+            © 2025-2026 Lnsaw 独立开发 All rights reserved.
+        </div>
+        <div>
+            <a href="https://beian.miit.gov.cn/" target="_blank">冀ICP备2025139791号-1</a>
+            <img src="https://beian.mps.gov.cn/web/assets/logo01.6189a29f.png" alt="备案图标"
+                style="width:14px; height:14px; vertical-align:middle; margin-top:-2px;">
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=13100202000895" rel="noreferrer"
+                target="_blank">冀公网安备13100202000895号</a>
+        </div>
     </footer>
 </body>
 
