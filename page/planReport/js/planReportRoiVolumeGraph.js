@@ -288,7 +288,7 @@ class PlanReportSaleGraphManager {
                 tooltip: {
                     position: 'top',
                     formatter: function (params) {
-                        return `售价：${params.value[0]} - roi：${params.value[1]} : 利润：${params.value[2]}`;
+                        return `单量：${params.value[1]} - roi：${params.value[0]} : 利润：${params.value[2]}`;
                     }
                 },
                 xAxis: {
