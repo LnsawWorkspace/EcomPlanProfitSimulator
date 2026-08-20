@@ -166,6 +166,7 @@ class PlanReportManager {
                         this.#simulationCore = new SimulationCore();
                         this.#reportData = this.#simulationCore.runSimulation(this.#planParams);
                         console.log("可读性报表：", this.#reportData.toSerializable());
+                        console.log("JSON报表：", JSON.stringify(this.#reportData.toSerializable()));
                         this.#showReport();
                     } else {
                         this.#hidePage();

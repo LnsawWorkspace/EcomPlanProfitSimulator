@@ -38,7 +38,10 @@ agent_created: false
 + **维护脚本：** `scripts/plan_params_ops.js`——list/get/raw/check/set：读走 IndexedDB，写走参数页 UI（复用站点校验）。命令见文档。
 ### 报告页
 + **页面地址：** https://ecomplanprofitsimulator.lnsaw.com/page/planReport/planReport.html
-+ **说明：** 查看利润报告、6 个敏感性分析图，由参数页"保存并查看报告"按钮打开新标签。
++ **说明：** 查看利润报告、6 个敏感性分析图，由参数页"保存并查看报告"按钮打开新标签。**纯展示页**，所有数字都是打开后现场计算渲染（不落库），读报告必须打开页面等计算完成再抓。
++ **⚠ 读取规则：** 一律用 DOM 读取（`plan_report_ops.js read/json` 抓指标卡+明细表）；**除非特别必要，不得使用读取控制台 JSON 的方式**（控制台完整 JSON 60~70KB，仅深度调试才用，见 planReport.md §6.0）。
++ **维护文档：** `references/planReport.md`——报告页结构、13 个核心指标含义、4 张明细表、真实行为（计算耗时/除法 bug 影响/对比按钮未完成）、SOP 与红线。
++ **维护脚本：** `scripts/plan_report_ops.js`——read/json/shot：定位方案 → 打开报告页等计算 → 抓指标与明细表并保存全页截图（只读）。
 ### 敏感性分析图
 **注意：** 敏感性分析图需要大量计算，因此打开后可能需要耐心等待，尤其是双变量扫描图（ROI+销售额、ROI+销售量）。另外在调整敏感性分析的参数时，**必须预估计算量，尽可能的将计算量控制在10000内。**，否则图表不会更新。
 #### Roi 敏感性分析图
@@ -72,5 +75,5 @@ agent_created: false
 | 参数维护 | `references/planParams.md` | 方案参数（售价/单量/退款/商品/赠品/费用/广告）数据模型、真实行为、除法 bug、SOP，配套脚本 `scripts/plan_params_ops.js` |
 | 数据空间维护 | `references/workspace.md` | 数据空间底层机制、UI 行为真相、体检/修复 SOP（备份由用户自行负责），配套脚本 `scripts/workspace_ops.js` |
 | 参数页 | `references/planParams.md` | 方案参数填写 |
-| 报告页 | `references/planReport.md` | 利润报告解读 |
+| 报告页 | `references/planReport.md` | 利润报告解读，配套脚本 `scripts/plan_report_ops.js` |
 | 分析图 | `references/graphs.md` | 6 个敏感性分析图 |

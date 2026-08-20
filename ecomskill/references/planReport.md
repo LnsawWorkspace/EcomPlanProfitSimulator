@@ -1,0 +1,124 @@
+# 方案报告（PlanReport）页（逻辑子模块）
+
+> 本模块是 ecomskill 的逻辑子模块之一，公共规则见根目录 `Skill.md`；参数填写见 `planParams.md`，参数脚本见 `scripts/plan_params_ops.js`。
+> 本文所有结论均来自 2026-08-20 对线上页面（拼多多推广方案，售价99.9/1000单/退款8-4-5/推广ROI2.5/睡衣+睡裤+包装袋/快递+花呗+月租）的真机实测。
+
+---
+
+## 1. 心智模型：报告页是**纯展示页**，所有数字都是现场算出来的
+
+- 报告页**没有任何表单输入**，只有展示内容 + 一排按钮。全部指标/表格/图表都是页面加载后根据 `?workspaceId=&groupId=&planId=` 三参数读取参数并**现场计算**渲染的。
+- 因此报告**不能**直连 IndexedDB 拿数字——没有"存储的报告"，只有"算出来的报告"。读报告 = 打开页面等它算完再抓取。
+- 页面地址：`https://ecomplanprofitsimulator.lnsaw.com/page/planReport/planReport.html`
+- 必须带 URL 三参数 `?workspaceId=&groupId=&planId=`，缺一或无效 → 页面隐藏显示"方案不存在"。
+
+## 1.5 进入报告页的 3 种方式（都要会）
+
+| # | 方式 | 操作 | 特点 |
+|---|------|------|------|
+| 1 | **URL 直连** | 拼 `planReport.html?workspaceId=&groupId=&planId=` 直接打开 | 最快最稳，脚本默认（`--via url`） |
+| 2 | **参数页** | 参数页点「保存并查看报告」按钮（`#goReport`） | **会先保存参数**再 window.open 开报告；适合"改完参数立即看"（`--via params`） |
+| 3 | **工作台** | 先激活方案所在方案组，点方案卡片「查看报告」按钮（`.plan-view-btn`，title=查看报告） | 人工习惯路径；方案卡片结构 `.plan-item > .plan-item-header > h3.plan-item-name` + 操作按钮（`--via workbench`） |
+
+**共同点（重要）**：报告数据**不落库**，是每次打开时根据方案参数现场计算的——**每次刷新/查看都要重新计算**。通常打开后 10 秒内出全（指标卡先出、图表表格随后）。如果长时间只有标题/按钮、没有任何数字：
+- 先怀疑**网络问题**（相关 JS 文件没加载到 → 刷新重试）；
+- 再怀疑目标单量为 3/33/333 等全 3 数触发的除法 bug（参数页正常但报告一直加载）。
+
+脚本三入口都用同一套就绪判据（`.stat-card ≥ 5`），`--via` 指定：`plan_report_ops.js read <方案> --group <组> --via url|params|workbench`。
+
+## 2. 页面结构（实测从上到下）
+
+```
+┌ 紫色横幅：方案报告 + 面包屑（数据空间 -> 方案组 -> 方案）
+├ 一排蓝色按钮（8 个，只读入口）：
+│   ROI分析图 / 售价分析图 / 单量分析图 / 售价和单量分析图 / ROI和售价分析图 / ROI和单量分析图
+│   添加到对比（未完成）/ 查看对比（未完成）
+├ 核心指标卡（.stat-card × 13，见 §3）
+│   按边框颜色分两类：primary（蓝/紫，常规）+ negative（红，负值——3 个回报率卡：推广回报率/资本回报率/利润率）
+├ 收入-利润瀑布图（svg #revenueAndCostWaterfallChart，D3 渲染）
+│   横向柱状：收入 → 商品:睡衣 → 商品:睡裤 → 赠品 → 广告 → 各费用 → 利润（广告段通常最长）
+├ 成本结构 + 退款损失（两个矩形树图 treemap，ECharts canvas 渲染，容器 #costStructureChart / #refundCostStructureChart）
+│   矩形分块表示各项占比（左：成本结构 / 右：退款损失），**不是饼图**
+└ 明细表（table.data-table × 4，但页面实际只显示 3 张——见 §4）
+    页面显示：商品成本明细 / 赠品成本明细 / 运营成本明细
+    弃用残留：「收入明细」（tbody#Report_Container_Revenue）DOM 存在但被 CSS 隐藏，tbody/tfoot 永远空——历史遗留物，**不是 bug**
+```
+
+## 3. 核心指标卡（13 个，元素 .stat-card > .stat-label）
+
+| 指标 | 含义 |
+|------|------|
+| 付款单量 | 目标单量（方案参数） |
+| 有效单量 | 付款单量 × (1 − 总退款率) 之后的单量（830 = 1000 × 83%） |
+| 付款金额 | 付款单量 × 售价（标价口径，含税） |
+| 销售额 | 有效订单的标价销售额（含税口径） |
+| 收入 | **销售额剔除 13% 销项税后的净收入（= 销售额 ÷ 1.13）**，即"真到手"的钱 |
+| 广告费 | 推广投放金额（按 ROI 从销售额推算） |
+| 总成本 | 商品/赠品/广告/三项支出的有效成本合计（**= 投入资本，资本回报率的分母**） |
+| 利润 | 收入 − 总成本（**负值=亏损**，红色） |
+| 推广回报率 | 利润 ÷ 广告费 |
+| 资本回报率 | **利润 ÷ 总成本（投入资本）** |
+| 利润率 | **利润 ÷ 收入（净收入口径，不是销售额）** |
+| 成本损失 | **退款了也要花出去的成本**：退款订单已发生的成本（已发出商品/运费/赠品/手续费等）中收不回来的部分（= 成本端因退款白花的钱） |
+| 利润损失 | **当前利润 相对「0 退款率」的利润差额**：假设完全没退款，利润能再多多少 |
+
+## 4. 明细表（DOM 4 张，页面实际显示 3 张）
+
+页面真正展示的 3 张：
+
+| 表 | tbody id | 说明 |
+|----|---------|------|
+| 商品成本明细 | `#Report_Container_Goods` | 11 列（商品名称 / 有效成本 / 销售成本 / 损失金额 / 售前/售中/售后金额 + 占比），tfoot 合计 |
+| 赠品成本明细 | `#Report_Container_Gift` | 12 列（赠品名称 / 有效成本 / 额外缴税 / 销售成本 / 退款损失 / 售前/售中/售后损失 + 损失率），tfoot 合计；额外缴税=视同销售等场景 |
+| 运营成本明细 | `#Report_Container_Expense` | 11 列（支出名称 / 有效成本 / 销售成本 / 退款损失 / 售前/售中/售后损失 + 损失率），无 tfoot；**固定支出行的退款列全 `-`**（固定支出无退款字段） |
+
+**DOM 里的第 4 张：「收入明细」（表头：商品名称 \| GMV \| 收入 \| 有效成本 \| 毛利润 \| 毛利率，tbody `#Report_Container_Revenue`）—— 弃用残留**：
+
+- DOM 完整存在（thead + tbody + tfoot 三段都有），但 **tbody/tfoot 永远空**（HTML 注释"数据将由JavaScript渲染"，从未渲染），且**被 CSS 隐藏**，页面根本看不到这张表。
+- **不是 bug**，是历史残留。读报告时**忽略**它，以另外 3 张表 + 指标卡为准。
+- 脚本 `extractReport` 用 `getComputedStyle.display + offsetParent` 判断可见性，弃用表会带 `abandoned: true` 标记（即使隐藏 DOM 也在，脚本不丢信息但明确标记）。
+
+## 5. 真实行为 / 坑（实测）
+
+1. **计算有耗时，且每次重算**：打开后先出标题/按钮，指标卡随后才渲染；报告不落库，每次刷新/查看都是重新计算（见 §1.5）。单量 1000 实测约 10~13 秒出全；数据越多越慢。就绪判据：`.stat-card` 数量 ≥ 5（脚本 `openReportVia` 用这个轮询 60s）。若长时间无数字，先排查**网络**（JS 未加载到），再排查除法 bug。
+2. **除法 bug 会让报告页一直加载**：目标单量 = 3/33/333/3333 等全 3 数时计算卡死（参数页正常）。遇到"打开后长时间只有按钮没有数字"，先查目标单量。写单量建议 ≥10 且为 10 的倍数。
+3. **报告不落库**：每次打开都是重新计算。参数改了 → 报告数字自动变，不需要"刷新报告"动作。
+4. **按钮全是入口**：6 个分析图按钮 window.open 新标签打开对应图页面（见 Skill.md「敏感性分析图」节）；「添加到对比/查看对比」标注"未完成"（站点未实现，点了也没用）。
+5. **数字格式**：金额 4 位小数（99,900.0000），百分比保留 4 位（-35.7557%）。负利润/负回报率页面用红色标出。
+6. **面包屑**：页面顶部"数据空间 -> 方案组 -> 方案"，快速确认当前报告是哪个方案。
+7. **「收入明细」表（商品GMV）是弃用残留，**不是站点缺陷**（实测确认）**：DOM 里完整存在（`table.data-table` + `tbody#Report_Container_Revenue` + `tfoot#Report_Container_Revenue_Foot` 三段都在），但 tbody/tfoot 永远空（注释"数据将由JavaScript渲染"，从未渲染），且被 CSS 隐藏，**页面根本不显示这张表**。读报告时以其余 3 张表（商品成本/赠品成本/运营成本）+ 13 个指标卡为准；脚本 `extractReport` 用可见性判断，给弃用表加 `abandoned: true` 标记。
+8. **「利润损失」的 0 退款率计算漏了部分订单支出的行内退款率（源码级坑，2026-08-20 发现）**：`SimulationCore.#run0Refund()` 计算"0 退款率"时，只把**方案级退款**置 0，但**部分订单支出（ExpenseMNPerOrder）的退款率是行内单独填的**（每行自带 `refundBefPer/refundIngPer/refundAftPer`，计算时用 `goodsItem.refundTotalPer`，不走方案级退款）——**没有一并归 0**。
+   → 对读报告的影响：0 退款率场景下部分订单支出仍按原行内退款率计算，理想利润偏小 → **利润损失指标被低估**（行内退款率越高偏差越大）。**解读「利润损失」时把它当下限值看待**。修复由用户维护源码时处理，本技能不涉及项目改动。
+
+## 6. 维护 SOP（用 `scripts/plan_report_ops.js`）
+
+运行前提：浏览器常驻模式（见 planGroups.md §4）。
+
+### 6.0 读取策略（重要，2026-08-20 用户确立）
+
+- **🚫 除非特别必要，禁止使用"读取控制台 JSON"的方式获取报告数据；一律用 DOM 读取。**（控制台完整 JSON 60~70KB，上下文开销大、收益低。）
+- **日常看报告 → DOM 读取（默认）**：`plan_report_ops.js` 的 `read`/`json` 抓 `.stat-card` 指标 + `.data-table` 明细表，几 KB 就够用，体积小、信息足。**这是唯一默认方式。**
+- **控制台日志（CDP 捕获）→ 仅深度调试用**：站点源码 `planReport.js` 会 `console.log("可读性报表", reportData.toSerializable())`（对象，给人看）和 `console.log("JSON报表", JSON.stringify(reportData.toSerializable()))`（纯文本，可喂给 AI）。只有当需要 DOM 拿不到的全量内部数据、且确认必须时，才用 CDP 捕获（方法：connectOverCDP → 报告页 reload → 监听 `page.on('console')` → 提取文本），且**优先按需提取关键模型**（如 `modelReportSalesRevenue` / 各 `明细` 数组），不要整份搬运。
+- 判定标准：拿不到、或需要跨模块交叉核对内部字段时才考虑控制台；否则 DOM 够用。
+
+```bash
+cd C:/Users/wamzm/.workbuddy/skills/ecomskill/scripts
+export NODE_PATH="C:/Users/wamzm/.workbuddy/binaries/node/workspace/node_modules"
+N="C:/Users/wamzm/.workbuddy/binaries/node/versions/22.22.2/node.exe"
+
+"$N" plan_report_ops.js read  "拼多多推广" --group "睡衣+睡裤"    # 打开报告页 → 输出指标/表格摘要 + 保存全页截图
+"$N" plan_report_ops.js json "拼多多推广" --group "睡衣+睡裤"    # 同上但只输出机器可读 RESULT（metrics/tables 数组）
+"$N" plan_report_ops.js shot "拼多多推广" --group "睡衣+睡裤"    # 只截图
+# 通用开关：--workspace <名称|ID>（默认当前启用） --out <截图目录>（默认 ECOMPLAN_REPORT_DIR 或 D:/wokrbudd/ecomplan-reports）
+```
+
+- 截图默认存 `D:/wokrbudd/ecomplan-reports/report-<方案名>-<时间戳>.png`（全页）。
+- `json` 输出结构：`metrics: [{label,value}×13]`、`tables: [{title,head,rows}]`、`charts: {waterfall,costStructure,refundCostStructure}`、`breadcrumb`。
+- 所有命令只读、不改数据；截图是唯一落盘产物。
+
+## 7. 红线
+
+- **不要**把报告页当"数据源"直连 IndexedDB——数字是计算产物，直接读库读不到报告口径。
+- **不要**在目标单量为全 3 数（3/33/333/3333）时依赖报告页结果，页面可能永远加载不出来。
+- **不要**点「添加到对比/查看对比」（未完成功能）。
+- 报告页截图/读数用于给用户展示结论，判断盈亏要回到指标数字本身（尤其看 利润 与 利润率 是否为正）。
