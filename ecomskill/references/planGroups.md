@@ -2,7 +2,7 @@
 
 > 本模块是 ecomskill 的逻辑子模块之一，公共规则见根目录 `Skill.md`；数据空间的增删改查见 `workspace.md`，方案/参数的日常 CRUD 见 `workbench.md`。
 > 本文所有结论均来自 2026-08-20 对线上源码的逐行核对（PlanGroupManager.js / Repository_PlanGroup.js / Entity_PlanGroup.js / workbench.js / workbench.html）+ 真机实测。
-> 配套脚本：`scripts/plan_group_ops.js`（站点自身只有方案组 CRUD 的 UI，没有批量/查找/备份能力，脚本把"查找/列全量"做成直连 IndexedDB，"新建/修改/删除"驱动真实 UI）。
+> 配套脚本：`scripts/plan_group_ops.js`（站点自身只有方案组 CRUD 的 UI，没有批量/查找能力，脚本把"查找/列全量"做成直连 IndexedDB，"新建/修改/删除"驱动真实 UI）。
 
 ---
 
@@ -122,7 +122,7 @@ N="C:/Users/wamzm/.workbuddy/binaries/node/versions/22.22.2/node.exe"
    → 但如果你**绕过 UI**直接删 `planGroups` 记录（比如手动清 IndexedDB），方案不会跟着删，会留下孤儿方案（其 `groupId` 指向已删的组）——`workspace_ops.js doctor` 的 `orphan-plan` 即检测这个。
    → 结论：删组请走 UI/脚本（带级联），不要直删记录。
 
-4. **时间格式**：方案组 `createdAt/updatedAt` 与工作区一样都是 `YYYY-MM-DD HH:mm:ss`——别被 `DateTimeUtils.to_yyyymmdd_hhmmss` 这个 misleading 的函数名骗了，它实际输出带分隔符。备份/比对脚本按统一格式处理即可。
+4. **时间格式**：方案组 `createdAt/updatedAt` 与工作区一样都是 `YYYY-MM-DD HH:mm:ss`——别被 `DateTimeUtils.to_yyyymmdd_hhmmss` 这个 misleading 的函数名骗了，它实际输出带分隔符。比对脚本按统一格式处理即可。
 
 5. **planCount 是对象不是数字**：存储形态约为 `{value: N, options: {...}}`，显示用 `.value`。脚本读全量时会归一化成数字方便看，但**不要**手动改它——它由站点在新建/删除方案时自维护（`updatePlanCount`）。
 

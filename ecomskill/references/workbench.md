@@ -3,13 +3,12 @@
 
 ## 数据空间维护（重要）
 数据空间是浏览器 IndexedDB 的物理库（一个空间 = 一个库，库名 = 空间 UUID），由系统目录库 `profitSimulation_systemDB` 登记。
-站点本身**没有**备份 / 导入 / 体检能力，且存在多个源码级坑（如"备份时间"不可信、删除需双重确认、删库会被其他标签页阻塞等）。
+站点本身**没有**体检能力，且存在多个源码级坑（如删除需双重确认、删库会被其他标签页阻塞等）。**数据备份由用户自行负责**（手动复制浏览器 IndexedDB 目录），脚本不提供备份能力。
 
-- **机制与 SOP 详见：** `references/workspace.md`（含 list/doctor/create/rename/activate/export/import/delete/repair 命令示例、10 条源码级坑、红线）。
-- **自动化脚本：** `scripts/workspace_ops.js`（Playwright 驱动真实 UI 做写操作、直连 IndexedDB 做备份/恢复/体检）。常用：
+- **机制与 SOP 详见：** `references/workspace.md`（含 list/doctor/create/rename/activate/delete/repair 命令示例、9 条源码级坑、红线）。
+- **自动化脚本：** `scripts/workspace_ops.js`（Playwright 驱动真实 UI 做写操作、直连 IndexedDB 做体检）。常用：
   - 体检：`node scripts/workspace_ops.js doctor`
   - 列表：`node scripts/workspace_ops.js list`
-  - 备份：`node scripts/workspace_ops.js export --name "默认工作区"`
   - 修复：`node scripts/workspace_ops.js repair --confirm`（谨慎使用）
 
 > 涉及数据空间的任何"非常规"操作（批量删除、跨设备迁移、损坏修复）前，先读 `references/workspace.md`，不要凭直觉在 UI 上直接点。

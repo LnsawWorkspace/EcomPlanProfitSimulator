@@ -5,8 +5,8 @@
  *
  * 设计原则
  *   1) 写操作（新建/改名/激活/删除）一律走**真实 UI**，复用站点的名称唯一校验、激活互斥、双重确认；
- *   2) 站点**没有**备份/导出/导入/体检功能，这些只能由本脚本直接读写 IndexedDB 实现；
- *   3) 删除前默认自动备份；所有破坏性动作必须显式 --confirm。
+ *   2) 体检（站点没有体检功能）由本脚本直接读 IndexedDB 实现；
+ *   3) 所有破坏性动作必须显式 --confirm。
  *
  * 运行（Windows / Git Bash）：
  *   NODE_PATH="C:/Users/wamzm/.workbuddy/binaries/node/workspace/node_modules" \
@@ -18,21 +18,18 @@
  *   create  <名称> [描述]                     新建数据空间（不会自动激活）
  *   rename  <名称|ID> <新名称> [新描述]        修改名称/描述
  *   activate <名称|ID>                        激活（切换当前空间；页面会自动 reload）
- *   delete  <名称|ID> --confirm [--no-backup] 删除（高危，默认先自动备份）
- *   export  <名称|ID|all> [--out 目录] [--no-stamp]   备份为 JSON（默认回写 backupAt）
- *   import  <备份文件> [--name 新名称]         从备份恢复为一个新数据空间（不覆盖现有）
+ *   delete  <名称|ID> --confirm               删除（高危）
  *   repair  --fix <项,项> --confirm           修复：multi-enabled | no-enabled | orphan-register | clear-deleting | request-persist
  *
  * 通用开关：--json（只输出机器可读结果）  --close（结束关闭浏览器）  --site=<url>
  * 浏览器：常驻模式。首次运行自动启动带调试端口(9222)的 Edge 并保持打开，后续命令直接连接复用，
  *         默认不关闭浏览器；需要收尾时加 --close。若已有 Edge 带 --remote-debugging-port=9222 在跑，
  *         脚本会直接连进去操作（无需关闭用户浏览器）。
- * 环境变量：ECOMPLAN_BROWSER_DIR / ECOMPLAN_BROWSER_EXE / ECOMPLAN_BACKUP_DIR / ECOMPLAN_SITE / ECOMPLAN_HEADLESS=1 / ECOMPLAN_CDP_PORT
+ * 环境变量：ECOMPLAN_BROWSER_DIR / ECOMPLAN_BROWSER_EXE / ECOMPLAN_SITE / ECOMPLAN_HEADLESS=1 / ECOMPLAN_CDP_PORT
  */
 'use strict';
 
 const fs = require('fs');
-const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
 const { chromium } = require('playwright');
@@ -42,12 +39,11 @@ const CFG = {
 	browserDir: process.env.ECOMPLAN_BROWSER_DIR || 'C:/Users/wamzm/AppData/Local/Microsoft/Edge SXS/User Data',
 	browserExe: process.env.ECOMPLAN_BROWSER_EXE || 'C:/Users/wamzm/AppData/Local/Microsoft/Edge SXS/Application/msedge.exe',
 	site: process.env.ECOMPLAN_SITE || 'https://ecomplanprofitsimulator.lnsaw.com',
-	backupDir: process.env.ECOMPLAN_BACKUP_DIR || 'D:/wokrbudd/ecomplan-backups',
 	headless: process.env.ECOMPLAN_HEADLESS === '1',
 	cdpPort: Number(process.env.ECOMPLAN_CDP_PORT || 9222),
 	cdpHost: process.env.ECOMPLAN_CDP_HOST || '127.0.0.1',
 };
-const SYSTEM_DB = 'profitSimulation_systemDB'; // 系统目录库（类比 SQL Server 的 master）：站点内置、内部使用、不面向用户，只登记各用户工作区的元信息。它不是"数据空间"，脚本永不把它当工作区导出/删除；isSystemOwnedDb() 也靠它来排除枚举。
+const SYSTEM_DB = 'profitSimulation_systemDB'; // 系统目录库（类比 SQL Server 的 master）：站点内置、内部使用、不面向用户，只登记各用户工作区的元信息。它不是"数据空间"，脚本永不把它当工作区删除；isSystemOwnedDb() 也靠它来排除枚举。
 const WS_STORE = 'workspaces';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -73,15 +69,10 @@ const log = (...a) => { if (!QUIET) console.log(...a); };
 const result = (obj) => console.log('RESULT: ' + JSON.stringify(obj));
 const fail = (msg, extra = {}) => { result({ ok: false, cmd: CMD, error: msg, ...extra }); process.exit(2); };
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-const stamp = () => {
-	const d = new Date(), p = n => String(n).padStart(2, '0');
-	return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
-};
 const nowText = () => {
 	const d = new Date(), p = n => String(n).padStart(2, '0');
 	return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 };
-const safeName = s => String(s).replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60);
 // 中文按 2 列宽对齐，避免表格错位
 const dispLen = s => [...String(s)].reduce((n, c) => n + (c.codePointAt(0) > 0x2e80 ? 2 : 1), 0);
 const padTo = (s, w) => {
@@ -116,7 +107,7 @@ const INIT_SCRIPT = `
   if (document.documentElement) startObserver();
   else document.addEventListener('DOMContentLoaded', startObserver);
 
-  // 2) IndexedDB 直连工具（站点无导出/导入/体检能力，只能自己读写）
+  // 2) IndexedDB 直连工具（站点无体检能力，只能自己读写）
   const req = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
   const listDbs = async () => (await indexedDB.databases()).map(d => ({ name: d.name, version: d.version }));
   const exists = async (name) => (await listDbs()).some(d => d.name === name);
@@ -183,57 +174,6 @@ const INIT_SCRIPT = `
         r.onerror = () => res({ ok: false, reason: 'error' });
         r.onblocked = () => res({ ok: false, reason: 'blocked' });
       });
-    },
-    // 整库快照：结构（stores/indexes/version）+ 全量数据，供备份与跨库恢复
-    async dump(dbName) {
-      const db = await openExisting(dbName);
-      try {
-        const out = { dbName, version: db.version, stores: [], data: {} };
-        for (const s of Array.from(db.objectStoreNames)) {
-          const tx = db.transaction(s, 'readonly');
-          const os = tx.objectStore(s);
-          const meta = { name: s, keyPath: os.keyPath, autoIncrement: os.autoIncrement, indexes: [] };
-          for (const ixName of Array.from(os.indexNames)) {
-            const ix = os.index(ixName);
-            meta.indexes.push({ name: ix.name, keyPath: ix.keyPath, unique: ix.unique, multiEntry: ix.multiEntry });
-          }
-          out.stores.push(meta);
-          out.data[s] = await req(os.getAll());
-        }
-        return out;
-      } finally { db.close(); }
-    },
-    // 按快照结构重建一个新库并灌数据
-    async restore(newDbName, snap) {
-      if (await exists(newDbName)) throw new Error('DB_EXISTS:' + newDbName);
-      const db = await new Promise((res, rej) => {
-        const r = indexedDB.open(newDbName, snap.version || 1);
-        r.onupgradeneeded = () => {
-          const d = r.result;
-          for (const s of (snap.stores || [])) {
-            const os = d.createObjectStore(s.name, { keyPath: s.keyPath, autoIncrement: !!s.autoIncrement });
-            for (const ix of (s.indexes || [])) os.createIndex(ix.name, ix.keyPath, { unique: !!ix.unique, multiEntry: !!ix.multiEntry });
-          }
-        };
-        r.onsuccess = () => res(r.result);
-        r.onerror = () => rej(r.error);
-        r.onblocked = () => rej(new Error('DB_BLOCKED:' + newDbName));
-      });
-      try {
-        let rows = 0;
-        for (const s of (snap.stores || [])) {
-          const list = (snap.data && snap.data[s.name]) || [];
-          if (!list.length) continue;
-          await new Promise((res, rej) => {
-            const tx = db.transaction(s.name, 'readwrite');
-            const os = tx.objectStore(s.name);
-            for (const rec of list) os.put(rec);
-            tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
-          });
-          rows += list.length;
-        }
-        return { ok: true, rows };
-      } finally { db.close(); }
     },
   };
 })();
@@ -327,21 +267,8 @@ async function waitToast(page, sinceIdx, timeout = 8000) {
 	return [];
 }
 
-// ─────────────────── 本地备份索引（可靠的"最近备份时间"） ───────────────────
-// 为什么需要它：站点记录里的 backupAt 不可靠 —— Repository_Workspace.getAllWorkspaces()
-// 映射实体时漏掉了 backupAt，而"激活"会遍历回写所有空间记录，于是 backupAt 被抹成 null。
-// 因此真实备份台账由本脚本在备份目录维护。
-const backupIndexPath = dir => path.join(dir, '_index.json');
-function readBackupIndex(dir) {
-	try { return JSON.parse(fs.readFileSync(backupIndexPath(dir), 'utf8')); } catch (_) { return {}; }
-}
-function writeBackupIndex(dir, idx) {
-	fs.mkdirSync(dir, { recursive: true });
-	fs.writeFileSync(backupIndexPath(dir), JSON.stringify(idx, null, 2), 'utf8');
-}
-
 // ────────────────────────── 数据读取 ──────────────────────────
-// 读 systemDB.workspaces 原始记录（不经过站点实体层，避免 backupAt/deleteing 被丢字段）
+// 读 systemDB.workspaces 原始记录（不经过站点实体层，避免 deleteing 被丢字段）
 async function readWorkspaces(page) {
 	return await page.evaluate(async ({ db, store }) => {
 		if (!(await window.__ws.exists(db))) return [];
@@ -349,9 +276,8 @@ async function readWorkspaces(page) {
 	}, { db: SYSTEM_DB, store: WS_STORE });
 }
 
-// 汇总视图：记录 + 库是否已初始化 + 组/方案计数 + 本地备份台账
-async function inspect(page, backupDir = flags.out || CFG.backupDir) {
-	const bidx = readBackupIndex(backupDir);
+// 汇总视图：记录 + 库是否已初始化 + 组/方案计数
+async function inspect(page) {
 	const records = await readWorkspaces(page);
 	const dbs = await page.evaluate(() => window.__ws.listDbs());
 	const dbNames = new Set(dbs.map(d => d.name));
@@ -371,9 +297,7 @@ async function inspect(page, backupDir = flags.out || CFG.backupDir) {
 			id: r.id, name: r.name, description: r.description || '',
 			enabled: r.enabled === true || r.enabled === 'true',
 			createdAt: r.createdAt, updatedAt: r.updatedAt,
-			backupAt: r.backupAt || null, deleting: r.deleteing === true || r.deleteing === 'true',
-			lastBackup: (bidx[r.id] && bidx[r.id].lastBackupAt) || null,
-			lastBackupFile: (bidx[r.id] && bidx[r.id].lastFile) || null,
+			deleting: r.deleteing === true || r.deleteing === 'true',
 			hasDb, groups, plans, params,
 		});
 	}
@@ -381,7 +305,7 @@ async function inspect(page, backupDir = flags.out || CFG.backupDir) {
 	const orphanDbs = unlinked.filter(d => UUID_RE.test(d.name)).map(d => ({ name: d.name, version: d.version, looksLikeWorkspace: true }));
 	const otherDbs = unlinked.filter(d => !UUID_RE.test(d.name)).map(d => ({ name: d.name, version: d.version, looksLikeWorkspace: false }));
 	const quota = await page.evaluate(() => window.__ws.quota());
-	return { rows, orphanDbs, otherDbs, quota, dbs, backupDir, backupIndex: bidx };
+	return { rows, orphanDbs, otherDbs, quota, dbs };
 }
 
 function pick(rows, key) {
@@ -391,76 +315,27 @@ function pick(rows, key) {
 		rows.filter(r => r.name.includes(k))[0] || null;
 }
 
-function printTable(rows, backupDir) {
+function printTable(rows) {
 	log('');
 	log('数据空间列表：（★=当前空间）');
-	log('  ' + ['启用', padTo('名称', 26), '组/方案', '库', padTo('最近备份', 19), 'ID'].join(' | '));
-	log('  ' + '-'.repeat(104));
+	log('  ' + ['启用', padTo('名称', 26), '组/方案', '库', 'ID'].join(' | '));
+	log('  ' + '-'.repeat(76));
 	for (const r of rows) {
 		log('  ' + [
 			(r.enabled ? ' ★  ' : '    '),
 			padTo(r.name, 26),
 			padTo(r.hasDb ? `${r.groups}/${r.plans}` : '-', 7),
 			(r.hasDb ? '有' : '无'),
-			padTo(r.lastBackup || '从未备份', 19),
 			r.id,
 		].join(' | '));
 	}
-	if (backupDir) log(`  备份台账：${backupIndexPath(backupDir)}（站点自身的 backupAt 字段会被"激活"操作抹掉，不可信）`);
 	log('');
-}
-
-// ─────────────────────────── 备份 / 恢复 ───────────────────────────
-async function exportOne(page, row, outDir, doStamp) {
-	fs.mkdirSync(outDir, { recursive: true });
-	const payload = {
-		kind: 'ecomplan-workspace-backup',
-		formatVersion: 1,
-		exportedAt: nowText(),
-		site: CFG.site,
-		workspace: {
-			id: row.id, name: row.name, description: row.description,
-			createdAt: row.createdAt, updatedAt: row.updatedAt,
-		},
-		counts: { groups: row.groups, plans: row.plans, params: row.params },
-		db: null,
-	};
-	if (row.hasDb) {
-		payload.db = await page.evaluate(id => window.__ws.dump(id), row.id);
-	}
-	const file = path.join(outDir, `ws-${safeName(row.name)}-${stamp()}.json`);
-	fs.writeFileSync(file, JSON.stringify(payload, null, 2), 'utf8');
-	const bytes = fs.statSync(file).size;
-
-	// 更新本地备份台账（真实可信的备份时间来源）
-	const idx = readBackupIndex(outDir);
-	const entry = idx[row.id] || { files: [] };
-	entry.name = row.name;
-	entry.lastBackupAt = nowText();
-	entry.lastFile = path.basename(file);
-	entry.files = [...(entry.files || []), { file: path.basename(file), at: entry.lastBackupAt, bytes, groups: row.groups, plans: row.plans }].slice(-30);
-	idx[row.id] = entry;
-	writeBackupIndex(outDir, idx);
-
-	let stamped = false;
-	if (doStamp) {
-		// 回写 backupAt（站点 Repository 读取时会丢掉该字段、UI 暂时显示不出来，但数据是真的，站点修复后即可显示）
-		stamped = await page.evaluate(async ({ db, store, id, at }) => {
-			const all = await window.__ws.getAll(db, store);
-			const rec = all.find(r => r.id === id);
-			if (!rec) return false;
-			rec.backupAt = at;
-			await window.__ws.put(db, store, rec);
-			return true;
-		}, { db: SYSTEM_DB, store: WS_STORE, id: row.id, at: nowText() });
-	}
-	return { file, bytes, hasDb: row.hasDb, stamped };
 }
 
 // ──────────────────────────── 命令实现 ────────────────────────────
 async function cmdList(page) {
 	const info = await inspect(page);
-	printTable(info.rows, info.backupDir);
+	printTable(info.rows);
 	if (info.orphanDbs.length) log('  ⚠ 存在孤儿库（IndexedDB 里有库但 systemDB 无记录）：', info.orphanDbs.map(d => d.name).join(', '));
 	result({ ok: true, cmd: 'list', total: info.rows.length, workspaces: info.rows, orphanDbs: info.orphanDbs });
 }
@@ -474,7 +349,6 @@ async function cmdDoctor(page) {
 	for (const r of info.rows) {
 		if (r.deleting) issues.push({ level: 'error', code: 'clear-deleting', msg: `空间"${r.name}"带 deleteing=true（上次删除被阻塞/失败，数据可能已损坏）`, id: r.id });
 		if (!r.hasDb) issues.push({ level: 'info', code: 'db-not-initialized', msg: `空间"${r.name}"还没有 IndexedDB 库（新建后从未激活过，属正常）`, id: r.id });
-		if (r.hasDb && !r.lastBackup) issues.push({ level: 'warn', code: 'never-backup', msg: `空间"${r.name}"在本地备份台账里没有任何备份记录，建议 export`, id: r.id });
 	}
 	for (const d of info.orphanDbs) {
 		issues.push({
@@ -490,7 +364,7 @@ async function cmdDoctor(page) {
 		});
 	}
 	if (info.quota && info.quota.quota && info.quota.usage / info.quota.quota > 0.8) {
-		issues.push({ level: 'warn', code: 'quota-high', msg: '存储使用率超过 80%，建议清理或备份后删除无用空间' });
+		issues.push({ level: 'warn', code: 'quota-high', msg: '存储使用率超过 80%，建议清理无用空间' });
 	}
 	// 引用完整性：planMetas.groupId 指向不存在的组；planParams 没有对应 planMeta
 	for (const r of info.rows.filter(x => x.hasDb)) {
@@ -509,7 +383,7 @@ async function cmdDoctor(page) {
 		if (ref.orphanParams.length) issues.push({ level: 'warn', code: 'orphan-params', msg: `空间"${r.name}"有 ${ref.orphanParams.length} 条参数记录没有对应方案（删方案时残留）`, id: r.id, detail: ref.orphanParams });
 	}
 
-	printTable(info.rows, info.backupDir);
+	printTable(info.rows);
 	if (info.quota) {
 		const mb = n => (n / 1024 / 1024).toFixed(2) + ' MB';
 		log(`  存储：已用 ${mb(info.quota.usage)} / 配额 ${mb(info.quota.quota)}，持久化=${info.quota.persisted ? '已启用' : '未启用'}`);
@@ -614,7 +488,7 @@ async function cmdActivate(page) {
 
 async function cmdDelete(page) {
 	const key = args[0];
-	if (!key) fail('用法：delete <名称|ID> --confirm [--no-backup]');
+	if (!key) fail('用法：delete <名称|ID> --confirm');
 	const info = await inspect(page);
 	const row = pick(info.rows, key);
 	if (!row) fail(`未找到数据空间：${key}`, { candidates: info.rows.map(r => r.name) });
@@ -625,13 +499,6 @@ async function cmdDelete(page) {
 		log(`   内容：${row.hasDb ? `${row.groups} 个方案组 / ${row.plans} 个方案` : '尚未初始化（无库）'}`);
 		log('   确认无误后加 --confirm 重新执行。');
 		return result({ ok: false, cmd: 'delete', needConfirm: true, target: row });
-	}
-
-	// 默认先自动备份（站点自身没有任何备份能力）
-	let backup = null;
-	if (!flags['no-backup'] && row.hasDb) {
-		backup = await exportOne(page, row, flags.out || CFG.backupDir, false);
-		log(`📦 已自动备份：${backup.file}`);
 	}
 
 	await openPanel(page);
@@ -651,80 +518,12 @@ async function cmdDelete(page) {
 	const dbGone = !after.dbs.some(d => d.name === row.id);
 	if (recordGone && dbGone) {
 		log(`✅ 已删除："${row.name}"（记录与 IndexedDB 库均已清除）`);
-		return result({ ok: true, cmd: 'delete', id: row.id, name: row.name, backup, toasts: tl });
+		return result({ ok: true, cmd: 'delete', id: row.id, name: row.name, toasts: tl });
 	}
 	log(`❌ 删除未完全成功：记录${recordGone ? '已删' : '仍在'}，库${dbGone ? '已删' : '仍在'}`);
 	log('   最常见原因：还有别的标签页/窗口打开着该空间的页面，deleteDatabase 被 blocked。');
 	log('   处理：关闭其它所有标签页与浏览器窗口后重试；再用 doctor 检查 deleteing 标记与孤儿库。');
-	result({ ok: false, cmd: 'delete', id: row.id, name: row.name, recordGone, dbGone, backup, toasts: tl });
-}
-
-async function cmdExport(page) {
-	const key = args[0] || 'all';
-	const outDir = flags.out || CFG.backupDir;
-	const doStamp = !flags['no-stamp'];
-	const info = await inspect(page);
-	const targets = (key === 'all' || key === '--all')
-		? info.rows
-		: [pick(info.rows, key)].filter(Boolean);
-	if (!targets.length) fail(`未找到数据空间：${key}`, { candidates: info.rows.map(r => r.name) });
-
-	const files = [];
-	for (const row of targets) {
-		const r = await exportOne(page, row, outDir, doStamp);
-		files.push({ name: row.name, id: row.id, ...r });
-		log(`📦 ${row.name} → ${r.file}  (${(r.bytes / 1024).toFixed(1)} KB${r.hasDb ? '' : '，空间未初始化，仅备份记录'})`);
-	}
-	result({ ok: true, cmd: 'export', outDir, count: files.length, files });
-}
-
-async function cmdImport(page) {
-	const file = args[0];
-	if (!file) fail('用法：import <备份文件.json> [--name 新名称]');
-	if (!fs.existsSync(file)) fail('文件不存在：' + file);
-	const snap = JSON.parse(fs.readFileSync(file, 'utf8'));
-	if (snap.kind !== 'ecomplan-workspace-backup') fail('不是本脚本导出的备份文件（kind 不匹配）');
-
-	const info = await inspect(page);
-	const name = flags.name && flags.name !== true ? String(flags.name) : `${snap.workspace.name}-恢复${stamp().slice(-6)}`;
-	const desc = `从备份恢复：${path.basename(file)}（原空间：${snap.workspace.name} / ${snap.exportedAt}）`;
-	if (info.rows.some(r => r.name === name)) fail(`名称已存在："${name}"，请用 --name 指定别的名称`);
-
-	// 1) 先用 UI 建一个空空间（走站点校验，拿到站点生成的 id）
-	await openPanel(page);
-	const t0 = await toastCount(page);
-	await page.click('#create-space-btn');
-	await page.waitForSelector('#workspace-edit-modal.show', { timeout: 10000 });
-	await page.fill('#workspace-name-input', name);
-	await page.fill('#workspace-description-input', desc);
-	await page.click('#save-workspace-btn');
-	const tl = await waitToast(page, t0);
-	const err = tl.find(t => t.type === 'danger');
-	if (err) fail('创建目标空间失败：' + err.text);
-	await page.waitForTimeout(600);
-	const created = (await readWorkspaces(page)).find(r => r.name === name);
-	if (!created) fail('创建目标空间后未找到记录');
-
-	// 2) 按快照结构重建库（库名 = 新 workspaceId），数据原样灌回
-	if (!snap.db) {
-		log(`ℹ️ 该备份不含库数据（原空间未初始化），已只创建空空间 "${name}"`);
-		return result({ ok: true, cmd: 'import', id: created.id, name, restored: false });
-	}
-	let restored;
-	try {
-		restored = await page.evaluate(({ id, snapDb }) => window.__ws.restore(id, snapDb), { id: created.id, snapDb: snap.db });
-	} catch (e) {
-		fail('恢复库失败：' + e.message + '（空空间已创建，可手动 delete 后重试）', { id: created.id });
-	}
-	const counts = await page.evaluate(async id => ({
-		groups: await window.__ws.count(id, 'planGroups'),
-		plans: await window.__ws.count(id, 'planMetas'),
-		params: await window.__ws.count(id, 'planParams'),
-	}), created.id);
-	log(`✅ 已恢复为新空间 "${name}"  id=${created.id}`);
-	log(`   写入 ${restored.rows} 条记录 → 方案组 ${counts.groups} / 方案 ${counts.plans} / 参数 ${counts.params}`);
-	log('   用 activate 切换过去即可查看（切换会刷新页面）。');
-	result({ ok: true, cmd: 'import', id: created.id, name, restored: true, rows: restored.rows, counts, sourceFile: file });
+	result({ ok: false, cmd: 'delete', id: row.id, name: row.name, recordGone, dbGone, toasts: tl });
 }
 
 async function cmdRepair(page) {
@@ -768,10 +567,10 @@ async function cmdRepair(page) {
 		for (const d of info.orphanDbs.filter(x => x.looksLikeWorkspace)) {
 			const rec = {
 				id: d.name,
-				name: `恢复空间-${d.name.slice(0, 8)}`,
+				name: `注册空间-${d.name.slice(0, 8)}`,
 				description: `repair 自动注册的孤儿库（${nowText()}）`,
 				createdAt: nowText(), updatedAt: nowText(),
-				backupAt: null, enabled: false,
+				enabled: false,
 			};
 			await page.evaluate(async ({ db, store, rec }) => window.__ws.put(db, store, rec), { db: SYSTEM_DB, store: WS_STORE, rec });
 			done.push({ fix: 'orphan-register', action: 'register', id: rec.id, name: rec.name });
@@ -807,11 +606,11 @@ async function cmdRepair(page) {
 (async () => {
 	const handlers = {
 		list: cmdList, doctor: cmdDoctor, create: cmdCreate, rename: cmdRename,
-		activate: cmdActivate, delete: cmdDelete, export: cmdExport, import: cmdImport, repair: cmdRepair,
+		activate: cmdActivate, delete: cmdDelete, repair: cmdRepair,
 	};
 	if (!handlers[CMD]) {
 		console.log('未知命令：' + CMD);
-		console.log('可用：list | doctor | create | rename | activate | delete | export | import | repair');
+		console.log('可用：list | doctor | create | rename | activate | delete | repair');
 		process.exit(1);
 	}
 	const b = await openWorkbench();

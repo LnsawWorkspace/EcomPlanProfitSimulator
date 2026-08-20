@@ -1,6 +1,6 @@
 ---
 name: ecomskill
-description: "全场景单品推演"网站（https://ecomplanprofitsimulator.lnsaw.com）的总入口 SKILL。当用户要求使用/操作该网站（利润推演、建方案、填参数、看报告、敏感性分析），或提到 ecomplan、利润推演、单品利润模拟、方案组/方案/工作区/数据空间，或需要对数据空间做新建、切换、重命名、备份、恢复、体检、修复等维护操作，或对方案组/方案/参数做新建/删除/修改/查找等管理操作时，使用本技能。
+description: "全场景单品推演"网站（https://ecomplanprofitsimulator.lnsaw.com）的总入口 SKILL。当用户要求使用/操作该网站（利润推演、建方案、填参数、看报告、敏感性分析），或提到 ecomplan、利润推演、单品利润模拟、方案组/方案/工作区/数据空间，或需要对数据空间做新建、切换、重命名、体检、修复等维护操作，或对方案组/方案/参数做新建/删除/修改/查找等管理操作时，使用本技能。
 agent_created: false
 ---
 
@@ -21,8 +21,8 @@ agent_created: false
 + **说明：** 数据空间/方案组/方案的增删改查，是核心页面。
 ### 数据空间（概念 + 维护）
 + **不是独立页面**，而是浏览器 IndexedDB 的物理库：一个空间 = 一个 IndexedDB 库（库名 = 空间 UUID），由系统目录库 `profitSimulation_systemDB` 登记元信息。
-+ **维护文档：** `references/workspace.md`——底层机制、UI 行为真相（如备份时间不可信、删除需双重确认、删库会被其他标签页阻塞等 10 个源码级坑）、以及 list/doctor/create/rename/activate/export/import/delete/repair 的 SOP。
-+ **维护脚本：** `scripts/workspace_ops.js`——用 Playwright 驱动真实 UI 做写操作，直接读 IndexedDB 做备份/恢复/体检，规避站点缺失的导入/导出/体检能力。命令见文档。
++ **维护文档：** `references/workspace.md`——底层机制、UI 行为真相（如删除需双重确认、删库会被其他标签页阻塞等 9 个源码级坑）、以及 list/doctor/create/rename/activate/delete/repair 的 SOP。
++ **维护脚本：** `scripts/workspace_ops.js`——用 Playwright 驱动真实 UI 做写操作，直接读 IndexedDB 做体检，规避站点缺失的体检能力。命令见文档。
 ### 方案（概念 + 维护）
 + **业务语义：一个方案 = 一条逻辑渠道（流量/销售渠道）**，如 自然流量、京东快车、汇川、淘宝客、XX直播、YY直播。各渠道的退款率/售价/发货/赠品/费用支出都不同，**不能混在一个方案里**——宁可多建方案，不要混渠道（参数一对一的，混了报告就失真）。
 + **不是独立页面**，而是工作台里的数据对象：一个方案属于某个**方案组**（靠 `groupId` 关联），存于当前工作区库的 `planMetas` store；其参数存于同库的 `planParams` store（keyPath=方案 id，一对一，是方案的"兄弟"而非子表）。
@@ -69,7 +69,7 @@ agent_created: false
 | 方案组维护 | `references/planGroups.md` | 方案组 新建/删除/修改/查找 的真实行为、源码级坑、SOP，配套脚本 `scripts/plan_group_ops.js` |
 | 方案维护 | `references/planMetas.md` | 方案 新建/删除/修改/查找 的真实行为、源码级坑、SOP，配套脚本 `scripts/plan_meta_ops.js` |
 | 参数维护 | `references/planParams.md` | 方案参数（售价/单量/退款/商品/赠品/费用/广告）数据模型、真实行为、除法 bug、SOP，配套脚本 `scripts/plan_params_ops.js` |
-| 数据空间维护 | `references/workspace.md` | 数据空间底层机制、UI 行为真相、备份/恢复/体检/修复 SOP，配套脚本 `scripts/workspace_ops.js` |
+| 数据空间维护 | `references/workspace.md` | 数据空间底层机制、UI 行为真相、体检/修复 SOP（备份由用户自行负责），配套脚本 `scripts/workspace_ops.js` |
 | 参数页 | `references/planParams.md` | 方案参数填写 |
 | 报告页 | `references/planReport.md` | 利润报告解读 |
 | 分析图 | `references/graphs.md` | 6 个敏感性分析图 |
