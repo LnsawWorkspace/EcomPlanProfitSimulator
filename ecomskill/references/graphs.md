@@ -165,11 +165,260 @@
 
 ---
 
-## 3. 其他分析图（待补）
+## 3. 单量分析图（`planReportVolumeGraph.html`）
 
-- 单量分析图（`planReportVolumeGraph.html`）— 单变量扫描单量
-- 售价+单量分析图（`planReportSaleVolumeGraph.html`）— 双变量，慢
-- ROI+售价分析图（`planReportRoiSaleGraph.html`）— 双变量，慢
-- ROI+单量分析图（`planReportRoiVolumeGraph.html`）— 双变量，慢
+### 3.1 怎么进去
 
-按需按 ROI/售价图的套路补：DOM 探查 → 看 JS 计算/图表配置 → 写文档 + 扩脚本命令（`GRAPHS` 配置里加一行即可）。
+- 报告页「单量分析图」按钮 → `window.open('planReportVolumeGraph.html?workspaceId=&groupId=&planId=')`；URL 直连也可。
+- 广告依赖同售价图：无广告时 ROI 输入框 disabled（图无意义）；设了广告则 ROI 预填方案值且可临时改。
+
+### 3.2 页面结构（实测）
+
+```
+┌ header：单量分析图 + 面包屑
+├ 控制栏：
+│   ROI #volume-graph-roi（预填方案广告 ROI，可临时改；没广告=disabled）
+│   售价 #volume-graph-salePrice（预填方案售价）
+│   开始 #volume-graph-start（默认 10）  步进 #volume-graph-step（默认 1）  结束 #volume-graph-end（默认 1000）
+│   [重新生成分析图] #volume-graph-generate-btn
+├ 图例（4 条：利润/利润率/资本回报率 + 动态"广告:XX"）——**没有增长率序列**（与 ROI/售价图不同）
+├ 双 y 轴 ECharts 图（#volume-graph-container）：x=单量，左 y=元/%（利润、利润率、资本回报率）
+└ **无 markArea 色带**（实测确认）
+```
+
+### 3.3 真实行为 / 怎么算
+
+- **固定 ROI（可临时改）、固定售价（可临时改），扫描单量**：默认 start=10、step=1、end=1000。
+- **步进最小 1（整数）**：源码 `if (saleStep.lt(1)) saleStep = 1`（213-216 行强制），单量没有小数步进。
+- 计算逻辑同其他图：每个单量点 `SimulationCore.runSimulation()` 重算；序列只有 利润/利润率/资本回报率 + 广告（无利润增长率——源码 series 里没有）。
+
+### 3.4 怎么读
+
+- x=单量、y 左=利润/利润率/资本回报率；**找利润=0 的单量 = 保本单量**。
+- 曲线一般单调上升（固定 ROI/售价下，规模效应：固定支出如店铺月租被摊薄，单量越大利润越高）。
+- **用途**：看"卖多少单才能保本/达到目标利润"，验证目标单量是否合理。
+
+### 3.5 实测（拼多多推广，ROI=4/139.9）
+
+- 991 点：单量 10 → 1000，步长 1
+- **保本单量 = 15 单**（利润 9.64）——极低，说明 ROI 4 下该定价几乎卖一单赚一单（固定月租 300 被快速摊薄）
+- 利润序列：10 单 → −154，1000 单 → +27,203（当前方案 1000 单利润 27,203，与报告页一致，闭环）
+- 资本回报率：10 单 → −15%，1000 单 → +31.4%（与报告页 31.38% 一致）
+
+### 3.6 坑
+
+1. **无增长率序列、无 markArea**：不要期待 ROI/售价图那些曲线。
+2. **步进最小 1**：填 0.5 会被页面强制回 1。
+3. 输入框 id 前缀 `volume-graph-`。
+
+### 3.7 DOM 速查
+
+| 元素 | id | 说明 |
+|------|----|------|
+| ROI | `#volume-graph-roi` | 预填方案广告 ROI，可临时改；没广告 disabled |
+| 售价 | `#volume-graph-salePrice` | 预填方案售价 |
+| 单量 开始/步进/结束 | `#volume-graph-start` / `#volume-graph-step` / `#volume-graph-end` | 默认 10 / 1 / 1000，步进最小 1 |
+| 重新生成 | `#volume-graph-generate-btn` | 改参数后必点 |
+| 图表容器 | `#volume-graph-container` | ECharts canvas |
+
+---
+
+## 4. 售价×单量分析图（`planReportSaleVolumeGraph.html`，双变量 heatmap）
+
+### 4.1 怎么进去
+
+- 报告页「售价和销量分析图」按钮 → `window.open(...)`；URL 直连。
+- 双变量图，依赖广告（无广告时 ROI 锁定）；计算量 = 售价点数 × 单量点数，**点位密集**。
+
+### 4.2 页面结构（实测）
+
+```
+┌ header：售价和销量分析图 + 面包屑
+├ 控制栏（9 个输入框 + 重新生成）：
+│   ROI         #sale-graph-roi           预填方案 ROI
+│   最小利润    #min-profit               利润过滤下界（默认 0）
+│   最大利润    #max-profit               利润过滤上界（默认 10000）
+│   售价开始    #sale-graph-start         默认 initialSale*0.5（用户改过：缩小）
+│   售价步进    #sale-graph-step          默认 adjustedStep（1/2/5×10ⁿ）
+│   售价结束    #sale-graph-end           默认 initialSale*1.5（用户改过：缩小）
+│   单量开始    #volume-graph-start       默认 payOrderQuantity-500（用户改过）
+│   单量步进    #volume-graph-step         默认 100（用户改过：减少节点）
+│   单量结束    #volume-graph-end         默认 payOrderQuantity+500
+│   [重新生成分析图] #saleAndVolume-graph-generate-btn
+│   [显示选择的利润范围]（按钮，联动 min/max-profit）
+├ 图表：ECharts **heatmap**（不是折线！）—— 容器 #saleAndVolume-graph-container
+│   x 轴=售价、y 轴=单量、色块=利润
+│   左下角 visualMap 色阶（蓝→紫→红→黄，从低到高利润）
+│   **无 dataZoom 滑条**（与单变量图不同）——用户改默认参数就是为了减少节点
+└ （无其他控件）
+```
+
+### 4.3 真实行为 / 怎么算
+
+- 用户修改的默认参数（2026-08-20 实测）：售价范围 `initialSale*0.5 ~ initialSale*1.5`、单量 `±500 步长 100`。相比原先的"售价 0~×2、单量大范围步长 10"，**默认从可能上万节点降到 ~300**，代价是首次打开范围较窄。
+- 调整参数按需**主动调大范围**重新计算（如 `--sale-start 0 --sale-end 300 --vol-start 0 --vol-end 3000`）；脚本就是干这事的。
+- 步进：售价同售价图（1/2/5×10ⁿ 归一）、单量同单量图（最小 1，默认 100）。
+- 数据是 `[[x, y, profit]...]` 矩阵。
+- **利润范围过滤（用户惯用操作，不是缩放）**：`min-profit` / `max-profit` + 「显示选择的利润范围」按钮（`#saleAndVolume-graph-show-selected-btn`）——点击后直接 `setOption({visualMap: {range:[min,max]}})`，**把不在该利润区间的格子变成没有颜色**，**不重新计算、不放大/缩小可视化区域**（改动瞬间生效）。改售价/单量范围才需要点「重新生成分析图」。
+- 脚本配合：只传 `--min-profit/--max-profit` 时自动点「显示选择的利润范围」（不重算、快速）；同时传了售价/单量参数则走重新生成。
+
+### 4.4 怎么读
+
+- **色块颜色**=利润高低（visualMap 左下色阶）；**位置**=（售价, 单量）组合。
+- **核心读法**：找"最大利润点"（色最暖/最深红）和"保本边界"（色块从蓝/紫过渡到红的等高线，即利润=0 的轨迹）；**盈利区域占比** 量化"多大范围能盈利"。
+- **过滤操作**：用 `min-profit/max-profit` + 「显示选择的利润范围」只看目标利润区间的格子（如只看 3万~6万 利润的组合），范围外格子无色。它**不是区域缩放**，不能放大缩小可视化坐标区。
+
+### 4.5 实测
+
+**默认范围（售价 69.95~204.95×单量 500~1500, 28×11=308 点）**：
+- 最大利润：售价 204.95 × 单量 1500 = **+98,131**
+- 最小利润：售价 69.95 × 单量 1500 = **−20,547**
+- 盈利占比：**82.1%（253/308）**
+- 结论：当前方案（ROI 4）在用户默认范围内大部分组合可盈利，亏损只在低价区（< ~90 元）
+
+**自定义聚焦（售价 99.9~179.9 步长 10 / 单量 800~1200 步长 100, 9×5=45 点）**：
+- 全部 45 点都盈利，**最低 2,952 / 最高 60,831**
+- 结论：聚焦到合理定价+合理单量区间，纯盈利且利润 3k~60k 区间
+
+### 4.6 坑
+
+1. **首次打开范围可能不够**（用户为减少节点改了默认），需要**主动调参**重新计算——这是本脚本最常见的用途。
+2. **"显示利润范围"不是缩放**：`min-profit/max-profit` + 按钮只把范围外的格子变无色（visualMap range），**不重新计算、不能放大缩小坐标区**。想看更广/更细的坐标区域必须改售价/单量范围 + 重新生成。
+3. **输入框 id 不统一**：售价/ROI 用 `sale-graph-*` 前缀，单量用 `volume-graph-*` 前缀（不是 bug，是历史遗留）；脚本 GRAPHS.salevolume 用显式 `idMap` 处理。
+4. 计算量 = 售价步数 × 单量步数；308 点实测 ~10s；**>1 万点要警示**。
+
+### 4.7 DOM 速查
+
+| 元素 | id | 说明 |
+|------|----|------|
+| ROI | `#sale-graph-roi` | 预填方案 ROI |
+| 利润过滤 | `#min-profit` / `#max-profit` | 视觉过滤；可用 `--min-profit/--max-profit` 改 |
+| 售价 | `#sale-graph-start` / `-step` / `-end` | 默认 ×0.5~×1.5 |
+| 单量 | `#volume-graph-start` / `-step` / `-end` | 默认 ±500 步长 100 |
+| 重新生成 | `#saleAndVolume-graph-generate-btn` | 改售价/单量范围后必点（重算） |
+| 显示选择的利润范围 | `#saleAndVolume-graph-show-selected-btn` | 改 min/max-profit 后点（只过滤格子，不重算） |
+| 图表容器 | `#saleAndVolume-graph-container` | ECharts canvas（heatmap） |
+
+---
+
+## 5. 售价×ROI 分析图（`planReportRoiSaleGraph.html`，双变量 heatmap）
+
+### 5.1 怎么进去
+
+- 报告页「ROI和售价分析图」按钮 → `window.open(...)`；URL 直连。
+- 双变量 heatmap，依赖广告；计算量 = 售价点数 × ROI 点数。
+
+### 5.2 页面结构（实测）
+
+```
+┌ header：ROI和售价分析图 + 面包屑
+├ 控制栏：
+│   单量        #volume-graph         预填方案单量（⚠ 命名是历史遗留，这是单量不是单量图）
+│   最小/最大利润 #min-profit / #max-profit   利润过滤
+│   售价        #sale-graph-start / -step / -end   默认 ×0.5~×1.5（用户改过）
+│   ROI         #roi-graph-start / -step / -end    默认 ×0.5~×1.5 步长 0.1（用户改过）
+│   [重新生成分析图] #saleAndVolume-graph-generate-btn（与 salevolume 复用同一 id）
+│   [显示选择的利润范围] #saleAndVolume-graph-show-selected-btn（复用）
+├ 图表：ECharts heatmap，容器 #saleAndVolume-graph-container（复用）
+│   x 轴=ROI、y 轴=售价、色块=利润；左下 visualMap 色阶；无 dataZoom
+└ 利润过滤操作同 salevolume（visualMap range，范围外无色，不缩放区域）
+```
+
+### 5.3 真实行为 / 怎么算
+
+- 用户改的默认参数（2026-08-20 实测）：售价 `×0.5~×1.5`（step 1/2/5 制）、ROI `×0.5~×1.5`（step 0.1）。当前方案（139.9/ROI4/1000单）默认 = 售价 70~210 step 5 × ROI 1.82~5.45 step 0.1 → **29×37=1073 点**（比 salevolume 的 308 多，用户说"变快但效果有限"——因为 ROI 步长 0.1 点数仍多）。
+- 双变量 heatmap，数据 `[[x=ROI, y=售价, profit]...]`；利润过滤同 salevolume（`--min-profit/--max-profit` → 点「显示选择的利润范围」，不重算）。
+
+### 5.4 怎么读
+
+- x=ROI、y=售价：看"什么 ROI 配什么售价"组合的利润；**盈利占比** 衡量组合空间。
+- 实测默认范围：盈利 **73.4%**（787/1073）；最大 X=ROI 5.42 × Y=售价 210 → +80,743；最小 ROI 1.82 × 70 → −32,747。ROI ≥ ~2.5 且售价 ≥ ~120 基本盈利。
+- 自定义聚焦（售价 100~180 step 10 / ROI 2~6 step 0.2）：189 点，盈利 89.4%，利润 −18,823 ~ +64,289。
+
+### 5.5 坑
+
+1. **输入框命名混乱**：单量输入框 id 是 `#volume-graph`（沿用单量图命名）；按钮/容器 id 与 salevolume **完全相同**（`#saleAndVolume-graph-*`）——**同页面对应不同的业务图**，脚本按 GRAPHS 配置区分，不要凭 id 猜。
+2. **ROI 步长 0.1 让点数仍多**：想快就加大 ROI 步长（0.2/0.5）或缩 ROI 范围；网格 >1 万警示。
+3. 利润过滤不重算（同 salevolume）。
+
+### 5.6 DOM 速查
+
+| 元素 | id | 说明 |
+|------|----|------|
+| 单量 | `#volume-graph` | 预填方案单量（命名历史遗留） |
+| 利润过滤 | `#min-profit` / `#max-profit` | `--min-profit/--max-profit` |
+| 售价 | `#sale-graph-start/-step/-end` | `--sale-start/--sale-end/--sale-step` |
+| ROI | `#roi-graph-start/-step/-end` | `--roi-start/--roi-end/--roi-step`（步进可 0.0001） |
+| 重新生成 | `#saleAndVolume-graph-generate-btn` | 改售价/ROI 后重算 |
+| 显示利润范围 | `#saleAndVolume-graph-show-selected-btn` | 只过滤格子，不重算 |
+| 图表容器 | `#saleAndVolume-graph-container` | heatmap |
+
+---
+
+## 6. ROI×单量分析图（`planReportRoiVolumeGraph.html`，双变量 heatmap）
+
+### 6.1 怎么进去
+
+- 报告页「ROI和销量分析图」按钮 → `window.open(...)`；URL 直连。
+- 双变量 heatmap，依赖广告；计算量 = ROI 点数 × 单量点数。
+
+### 6.2 页面结构（实测）
+
+```
+┌ header：ROI和销量分析图 + 面包屑
+├ 控制栏：
+│   售价        #sale-graph         预填方案售价（固定，可临时改；⚠ id 是历史遗留命名）
+│   最小/最大利润 #min-profit / #max-profit   利润过滤
+│   ROI         #roi-graph-start / -step / -end    默认 ×0.5~×1.5 步长 0.1（用户改过，2026-08-20 部署）
+│   单量        #volume-graph-start / -step / -end  默认 ±500 步长 100（用户改过）
+│   [重新生成分析图] #saleAndVolume-graph-generate-btn（复用 id）
+│   [显示选择的利润范围] #saleAndVolume-graph-show-selected-btn（复用）
+├ 图表：ECharts heatmap，容器 #saleAndVolume-graph-container（复用）
+│   x 轴=ROI、y 轴=单量、色块=利润；左下 visualMap；无 dataZoom
+└ 利润过滤操作同 §4（visualMap range，范围外无色，不缩放区域）
+```
+
+### 6.3 真实行为 / 怎么算
+
+- **默认参数（用户 2026-08-20 改后部署）**：ROI `×0.5~×1.5`（step 0.1）、单量 `±500`（step 100）→ 当前方案（139.9/ROI4/1000单）默认 = ROI 1.82~5.45 × 单量 500~1500 → **37×11=407 点**。
+- 改参数前默认是 ROI 0~10 × 单量 0~1000（步长 0.1/10）= **1 万点**（最慢的图，实测要 30~40s+）；用户改后首次打开快很多。
+- 数据 `[[x=ROI, y=单量, profit]...]`；利润过滤同 salevolume。
+
+### 6.4 怎么读
+
+- x=ROI、y=单量：看"什么 ROI 配什么单量"的利润；盈利占比衡量组合空间。
+- 实测默认范围：盈利 **89.2%**（363/407）；最大 ROI 5.42 × 单量 1500 → +53,394；最小 ROI 1.82 × 单量 1500 → −15,966。**单量 500 时 ROI ≥ 3 就盈利**（角落采样 X=5.42/Y=500 → +17,610），ROI 低时必须靠大单量对冲。
+- 与报告页闭环：ROI 4 × 单量 1000（当前方案）落在盈利区（报告页利润 +27,203）。
+
+### 6.5 坑
+
+1. **这是最慢的图**（默认曾 1 万点）：脚本默认等 120s；建议按需缩小范围/加大步长（如 ROI 步长 0.2、单量步长 200）。
+2. 输入框 id 复用/历史遗留同 §5（售价输入框 `#sale-graph`）；按钮/容器与 salevolume/roisale 完全相同，脚本按 GRAPHS 配置区分。
+3. 利润过滤不重算（同 §4）。
+
+### 6.6 DOM 速查
+
+| 元素 | id | 说明 |
+|------|----|------|
+| 售价 | `#sale-graph` | 固定，预填方案售价（命名历史遗留） |
+| 利润过滤 | `#min-profit` / `#max-profit` | `--min-profit/--max-profit` |
+| ROI | `#roi-graph-start/-step/-end` | `--roi-start/--roi-end/--roi-step` |
+| 单量 | `#volume-graph-start/-step/-end` | `--vol-start/--vol-end/--vol-step` |
+| 重新生成 | `#saleAndVolume-graph-generate-btn` | 改 ROI/单量后重算 |
+| 显示利润范围 | `#saleAndVolume-graph-show-selected-btn` | 只过滤格子，不重算 |
+| 图表容器 | `#saleAndVolume-graph-container` | heatmap |
+
+---
+
+## 7. 总览（6 个图全部支持，2026-08-20）
+
+| 图 | 页面 | 类型 | 扫描变量 | 默认范围（当前方案） | 命令 |
+|----|------|------|---------|---------------------|------|
+| ROI 曲线图 | `planReportRoiGraph.html` | line | ROI | 1~10 步长 0.1（91 点） | `roi` |
+| 售价分析图 | `planReportSaleGraph.html` | line | 售价 | 0~售价×2 步长 1/2/5 制 | `sale` |
+| 单量分析图 | `planReportVolumeGraph.html` | line | 单量 | 10~1000 步长 1（991 点） | `volume` |
+| 售价×单量 | `planReportSaleVolumeGraph.html` | heatmap | 售价×单量 | ×0.5~×1.5 / ±500（308 点） | `salevolume` |
+| 售价×ROI | `planReportRoiSaleGraph.html` | heatmap | 售价×ROI | ×0.5~×1.5 / ×0.5~×1.5（1073 点） | `roisale` |
+| ROI×单量 | `planReportRoiVolumeGraph.html` | heatmap | ROI×单量 | ×0.5~×1.5 / ±500（407 点） | `roivolume` |
+
+- 公共：依赖广告（ROI 系列）、输入框=临时沙盒、dataZoom（单变量）/利润范围过滤（heatmap）、计算量估算警示、只读+截图。

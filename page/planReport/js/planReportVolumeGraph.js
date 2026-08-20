@@ -22,6 +22,7 @@ import { SimulationCore } from "../../../service/SimulationCore.js";
 
 import Percentage from '../../../infrastructure/Percentage.js';
 import Money from '../../../infrastructure/Money.js';
+import Integer from '../../../infrastructure/Integer.js';
 class PlanReportSaleGraphManager {
     #showToast = {};
     #elements = {};
@@ -140,10 +141,11 @@ class PlanReportSaleGraphManager {
                         }
                         document.getElementById('volume-graph-salePrice').value = this.#planParams.modelPlanParamsSale.salePrice.toString();
                         // 单量的步进必须是整数
-                        document.getElementById('volume-graph-step').value = '1';
-                        // 默认开始是1，结束是1000
-                        document.getElementById('volume-graph-start').value = '10';
-                        document.getElementById('volume-graph-end').value = '1000';
+                        document.getElementById('volume-graph-step').value = '10';
+                        // 开始的单量是原先的单量-500
+                        document.getElementById('volume-graph-start').value = this.#planParams.modelPlanParamsSale.payOrderQuantity.minus(new Integer(500)).toString();
+                        // 结束的单量是原先的单量+500
+                        document.getElementById('volume-graph-end').value = this.#planParams.modelPlanParamsSale.payOrderQuantity.plus(new Integer(500)).toString();
 
                         this.#simulationCore = new SimulationCore();
                         this.#showReport();

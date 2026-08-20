@@ -22,6 +22,7 @@ import { SimulationCore } from "../../../service/SimulationCore.js";
 
 import Percentage from '../../../infrastructure/Percentage.js';
 import Money from '../../../infrastructure/Money.js';
+import Integer from '../../../infrastructure/Integer.js';
 class PlanReportSaleGraphManager {
     #showToast = {};
     #elements = {};
@@ -140,10 +141,10 @@ class PlanReportSaleGraphManager {
                             document.getElementById('sale-graph-roi').disabled = false;
                             document.getElementById('sale-graph-roi').value = this.#planParams.modelPlanParamsAdvertising.roi.toString();
                         }
-                        // 售价从1开始，结束值为最初售价的2倍
                         const initialSale = this.#planParams.modelPlanParamsSale.salePrice.toNumber();
-                        document.getElementById('sale-graph-start').value = 0;
-                        document.getElementById('sale-graph-end').value = Math.max(0.01, initialSale * 2).toString();
+                        // 售价从原先售价的0.5倍开始，从原先的1.5倍结束
+                        document.getElementById('sale-graph-start').value = Math.max(0.01, initialSale * 0.5).toString();
+                        document.getElementById('sale-graph-end').value = Math.max(0.01, initialSale * 1.5).toString();
                         let saleStep = 0.01;
                         // 根据结束售价的大小调整步长，确保图表有足够的点，但又不会过多导致计算过慢，通常控制在1000个点以内
                         // 另外售价通常大于1元，然后结束的售价可能是几百元甚至几千元，所以步长不能太小，否则点太多了
@@ -173,9 +174,9 @@ class PlanReportSaleGraphManager {
                         document.getElementById('sale-graph-step').value = adjustedStep.toString();
 
                         // 设置销量相关数据
-                        // 销量默认从0开始，步进是100，最大值是1000
-                        document.getElementById('volume-graph-start').value = 0;
-                        document.getElementById('volume-graph-end').value = 1000;
+                        // 销量开始=原先销量-500，结束=原先销量+500，步长=100
+                        document.getElementById('volume-graph-start').value = this.#planParams.modelPlanParamsSale.payOrderQuantity.minus(new Integer(500)).toString();
+                        document.getElementById('volume-graph-end').value = this.#planParams.modelPlanParamsSale.payOrderQuantity.plus(new Integer(500)).toString();
                         document.getElementById('volume-graph-step').value = 100;
 
                         this.#simulationCore = new SimulationCore();

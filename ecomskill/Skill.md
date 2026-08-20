@@ -48,8 +48,8 @@ agent_created: false
 ### 敏感性分析图
 + **页面：** 6 个（`planReportRoiGraph.html` / `SaleGraph` / `VolumeGraph` / `SaleVolumeGraph` / `RoiSaleGraph` / `RoiVolumeGraph`），由报告页按钮进入。所有图都是**固定其他参数、单/双变量扫描**后现场渲染，纯展示、不落库。
 + **⚠ 依赖广告：** ROI 系列图（ROI/RoiSale/RoiVolume）要求方案设了广告投放（`planParams.advertising.name` 非空），否则站点 toast「无法查看」+ 脚本会 fail-fast。
-+ **维护文档：** `references/graphs.md`——分析图总览 + ROI 曲线图/售价分析图详解（结构/计算/读法/保本点/色带/SOP），其他图按需补。
-+ **维护脚本：** `scripts/plan_report_graph_ops.js`——`roi`（扫 ROI）/ `sale`（扫售价）命令：`roi <方案> [--sale-price] [--order-quantity] [--start] [--end] [--step]`、`sale <方案> [--roi] [--order-quantity] [--start] [--end] [--step]`；页面输入框=临时沙盒（只影响本次图不落库）；自动找保本点 + 估算计算量（>1万警示）+ 截图（只读）。
++ **维护文档：** `references/graphs.md`——分析图总览 + 6 个图全部详解（ROI/售价/单量 折线 + 售价×单量/售价×ROI/ROI×单量 heatmap），含总览表（§7）。
++ **维护脚本：** `scripts/plan_report_graph_ops.js`——`roi` / `sale` / `volume` / `salevolume` / `roisale` / `roivolume` 命令；页面输入框=临时沙盒（只影响本次图不落库）；自动找保本点 / heatmap 利润分析 + 估算计算量（>1万警示）+ dataZoom 主动缩放（单变量有效）+ 利润范围过滤（--min-profit/--max-profit，不重算）+ 截图（只读）。
 ### 敏感性分析图
 **注意：** 敏感性分析图需要大量计算，因此打开后可能需要耐心等待，尤其是双变量扫描图（ROI+销售额、ROI+销售量）。另外在调整敏感性分析的参数时，**必须预估计算量，尽可能的将计算量控制在10000内。**，否则图表不会更新。
 #### Roi 敏感性分析图

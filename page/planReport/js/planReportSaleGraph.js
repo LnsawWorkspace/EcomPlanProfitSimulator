@@ -139,10 +139,11 @@ class PlanReportSaleGraphManager {
                             document.getElementById('sale-graph-roi').value = this.#planParams.modelPlanParamsAdvertising.roi.toString();
                         }
                         document.getElementById('sale-graph-orderQuantity').value = this.#planParams.modelPlanParamsSale.payOrderQuantity.toString();
-                        // 售价从1开始，结束值为最初售价的2倍
+                        
                         const initialSale = this.#planParams.modelPlanParamsSale.salePrice.toNumber();
-                        document.getElementById('sale-graph-start').value = 0;
-                        document.getElementById('sale-graph-end').value = Math.max(0.01, initialSale * 2).toString();
+                        // 开始 = 原先售价的0.5倍，结束 = 原先售价的1.5倍
+                        document.getElementById('sale-graph-start').value = Math.max(0.01, initialSale * 0.5).toString();
+                        document.getElementById('sale-graph-end').value = Math.max(0.01, initialSale * 1.5).toString();
                         let saleStep = 0.01;
                         // 根据结束售价的大小调整步长，确保图表有足够的点，但又不会过多导致计算过慢，通常控制在1000个点以内
                         // 另外售价通常大于1元，然后结束的售价可能是几百元甚至几千元，所以步长不能太小，否则点太多了

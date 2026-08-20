@@ -22,6 +22,7 @@ import { SimulationCore } from "../../../service/SimulationCore.js";
 
 import Percentage from '../../../infrastructure/Percentage.js';
 import Money from '../../../infrastructure/Money.js';
+import Integer from '../../../infrastructure/Integer.js';
 class PlanReportSaleGraphManager {
     #showToast = {};
     #elements = {};
@@ -135,13 +136,15 @@ class PlanReportSaleGraphManager {
                         // 设置页面售价
                         document.getElementById('sale-graph').value = this.#planParams.modelPlanParamsSale.salePrice.toString();
 
-                        document.getElementById('roi-graph-start').value = 0;
-                        document.getElementById('roi-graph-end').value = 10;
+                        // 初始ROI = 原先的ROI*0.5，结束ROI = 原先的ROI*1.5，步长 = 0.1
+                        document.getElementById('roi-graph-start').value = Math.max(0, this.#planParams.modelPlanParamsAdvertising.roi.times(0.5)).toFixed(2);
+                        document.getElementById('roi-graph-end').value = Math.max(0, this.#planParams.modelPlanParamsAdvertising.roi.times(1.5)).toFixed(2);
                         document.getElementById('roi-graph-step').value = 0.1;
 
-                        document.getElementById('volume-graph-start').value = 0;
-                        document.getElementById('volume-graph-end').value = 1000
-                        document.getElementById('volume-graph-step').value = 10;
+                        // 初始销量 = 原始销量-500，结束销量 = 原始销量+500，步长 = 100
+                        document.getElementById('volume-graph-start').value = this.#planParams.modelPlanParamsSale.payOrderQuantity.minus(new Integer(500)).toString();
+                        document.getElementById('volume-graph-end').value = this.#planParams.modelPlanParamsSale.payOrderQuantity.plus(new Integer(500)).toString();
+                        document.getElementById('volume-graph-step').value = 100;
 
                         this.#simulationCore = new SimulationCore();
                         this.#showReport();
@@ -227,7 +230,7 @@ class PlanReportSaleGraphManager {
             document.getElementById('roi-graph-start').value = 0;
             RoiStart = new Decimal(0);
         }
-        RoiStart = RoiStart.toDecimalPlaces(0, Decimal.ROUND_DOWN);
+        RoiStart = RoiStart.toDecimalPlaces(4, Decimal.ROUND_DOWN);
         document.getElementById('roi-graph-start').value = RoiStart.toString();
         let RoiStep = new Decimal(document.getElementById('roi-graph-step').value);
         if (RoiStep.lte(0)) {
@@ -241,6 +244,8 @@ class PlanReportSaleGraphManager {
             this.#showToast.error('ROI结束值必须大于开始值');
             return;
         }
+        RoiEnd = RoiEnd.toDecimalPlaces(4, Decimal.ROUND_UP);
+        document.getElementById('roi-graph-end').value = RoiEnd.toString();
 
         const worker = new Worker('js/planReportRoiVolumeGraphWork.js', { type: 'module' });
         worker.postMessage({

@@ -6,13 +6,18 @@
  * 分析图是**纯展示页**：固定其他参数、把指定变量（ROI/售价/单量）从一段范围扫到另一段、每个点重算报告画曲线。
  * 全部基于 ECharts 6 + ecStat 渲染，**不能**直连 IndexedDB 读——必须打开页面、等它算完、通过 `window.echarts.getInstanceByDom` 拿实例 option。
  *
- * 已支持 2 个图（其余 4 个按同模式扩展）：
- *   roi    planReportRoiGraph.html   扫 ROI（固定售价/单量；--sale-price/--order-quantity 可临时改，不落库）
- *   sale   planReportSaleGraph.html  扫 售价（固定 ROI/单量；--roi/--order-quantity 可临时改，不落库）
+ * 已支持全部 6 个敏感性分析图：
+ *   roi     planReportRoiGraph.html          扫 ROI（固定售价/单量）
+ *   sale    planReportSaleGraph.html         扫 售价（固定 ROI/单量）
+ *   volume  planReportVolumeGraph.html       扫 单量（固定 ROI/售价；步进最小 1）
+ *   salevolume planReportSaleVolumeGraph.html 售价×单量 heatmap（固定 ROI）
+ *   roisale   planReportRoiSaleGraph.html     售价×ROI heatmap（固定 单量）
+ *   roivolume planReportRoiVolumeGraph.html   ROI×单量 heatmap（固定 售价）
+ * 双变量 heatmap 都用 min/max-profit + 「显示选择的利润范围」过滤（不重算）；改范围才重新生成。
  * 页面输入框 = 临时沙盒：改值只影响本次图，不改方案参数。
- * ROI/售价 的「开始/步进/结束」都是被扫变量的值；ROI 步进可细到 0.0001；售价步进按 1/2/5×10ⁿ 归一（0.1/0.2/0.5/1/2/5…），
- * 计算次数 = (结束−开始)/步长+1，建议 ≤1 万（页面自动控制在 1000 点左右），脚本会估算并警示。
- * 入口校验广告依赖：ROI 图必须有广告；售价图无广告时 ROI 输入框被站点禁用（图可开但 ROI 固定为方案值）。
+ * ROI/售价/单量 的「开始/步进/结束」都是被扫变量的值；ROI 步进可细到 0.0001；售价步进按 1/2/5×10ⁿ 归一；单量步进最小 1（整数）。
+ * 计算次数 = (结束−开始)/步长+1，建议 ≤1 万（页面自动控制点数），脚本会估算并警示。
+ * 入口校验广告依赖：ROI 图必须有广告；售价/单量图无广告时 ROI 输入框被站点禁用（图可开但 ROI 固定为方案值）。
  *
  * 设计原则
  *   1) 只读：本脚本不写任何数据（截图文件除外）；
@@ -24,12 +29,13 @@
  *   "<托管 node 可执行文件>" plan_report_graph_ops.js <命令> <方案名|ID> [--group <组名|ID>]
  *
  * 命令：
- *   roi  <方案名|ID> [--group] [--sale-price 售价] [--order-quantity 单量] [--start 1] [--end 10] [--step 0.1]
- *   sale <方案名|ID> [--group] [--roi 4] [--order-quantity 单量] [--start 0] [--end 300] [--step 0.5]
+ *   roi    <方案名|ID> [--group] [--sale-price 售价] [--order-quantity 单量] [--start 1] [--end 10] [--step 0.1]
+ *   sale   <方案名|ID> [--group] [--roi 4] [--order-quantity 单量] [--start 0] [--end 300] [--step 0.5]
+ *   volume <方案名|ID> [--group] [--roi 4] [--sale-price 售价] [--start 10] [--end 1000] [--step 1]
  *       打开对应分析图，输出摘要（序列首/中/尾 + 保本点 + markArea）+ 保存截图
  *       通用：--zoom-start 0 --zoom-end 40  主动缩放 ECharts dataZoom 滑条（百分比 0-100），
  *             先缩放再截图 —— 双变量图点位密集时用来放大看局部（只影响显示/截图，不改数据）
- *   shot roi|sale <方案名|ID> [...]   只截图不输出摘要
+ *   shot roi|sale|volume <方案名|ID> [...]   只截图不输出摘要
  *
  * 通用开关：--workspace <名称|ID>（默认当前启用工作区）  --out <截图目录>（默认 ECOMPLAN_REPORT_DIR 或相对目录）
  *           --json（只输出机器可读结果）  --close（结束关闭浏览器）  --site=<url>
@@ -58,19 +64,64 @@ const SYSTEM_DB = 'profitSimulation_systemDB';
 const WS_STORE = 'workspaces';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// 已支持的图：path / 输入框前缀 / 图表容器 / 扫描变量说明 / 固定变量 flag 映射
+// 已支持的图：path / 图表容器 / 扫描变量 / 输入框 idMap / flagMap（flag→idMap key）
 const GRAPHS = {
 	roi: {
 		path: '/page/planReport/planReportRoiGraph.html',
-		prefix: 'roi-graph', container: 'roi-graph-container',
-		scan: 'ROI', fixed: '售价/单量',
-		flags: { salePrice: 'sale-price', orderQuantity: 'order-quantity' },
+		container: 'roi-graph-container',
+		scan: 'ROI',
+		idMap: { roi: null, salePrice: 'roi-graph-salePrice', orderQuantity: 'roi-graph-orderQuantity', start: 'roi-graph-start', step: 'roi-graph-step', end: 'roi-graph-end', generate: 'roi-graph-generate-btn' },
+		flagMap: { roi: 'roi', salePrice: 'sale-price', orderQuantity: 'order-quantity', start: 'start', end: 'end', step: 'step' },
 	},
 	sale: {
 		path: '/page/planReport/planReportSaleGraph.html',
-		prefix: 'sale-graph', container: 'sale-graph-container',
-		scan: '售价', fixed: 'ROI/单量',
-		flags: { roi: 'roi', orderQuantity: 'order-quantity' },
+		container: 'sale-graph-container',
+		scan: '售价',
+		idMap: { roi: 'sale-graph-roi', salePrice: null, orderQuantity: 'sale-graph-orderQuantity', start: 'sale-graph-start', step: 'sale-graph-step', end: 'sale-graph-end', generate: 'sale-graph-generate-btn' },
+		flagMap: { roi: 'roi', orderQuantity: 'order-quantity', start: 'start', end: 'end', step: 'step' },
+	},
+	volume: {
+		path: '/page/planReport/planReportVolumeGraph.html',
+		container: 'volume-graph-container',
+		scan: '单量',
+		idMap: { roi: 'volume-graph-roi', salePrice: 'volume-graph-salePrice', orderQuantity: null, start: 'volume-graph-start', step: 'volume-graph-step', end: 'volume-graph-end', generate: 'volume-graph-generate-btn' },
+		flagMap: { roi: 'roi', salePrice: 'sale-price', start: 'start', end: 'end', step: 'step' },
+	},
+	salevolume: {
+		path: '/page/planReport/planReportSaleVolumeGraph.html',
+		container: 'saleAndVolume-graph-container',
+		scan: '售价×单量',
+		idMap: { roi: 'sale-graph-roi', saleStart: 'sale-graph-start', saleStep: 'sale-graph-step', saleEnd: 'sale-graph-end', volStart: 'volume-graph-start', volStep: 'volume-graph-step', volEnd: 'volume-graph-end', minProfit: 'min-profit', maxProfit: 'max-profit', generate: 'saleAndVolume-graph-generate-btn', showSelected: 'saleAndVolume-graph-show-selected-btn' },
+		flagMap: { roi: 'roi', saleStart: 'sale-start', saleEnd: 'sale-end', saleStep: 'sale-step', volStart: 'vol-start', volEnd: 'vol-end', volStep: 'vol-step', minProfit: 'min-profit', maxProfit: 'max-profit' },
+		heatmap: true,  // heatmap 图,数据是 [x,y,v] 矩阵,与单变量折线图分析不同
+		dims: [  // 两个扫描维度（heatmap 输出用）
+			{ label: '售价', start: 'saleStart', end: 'saleEnd', step: 'saleStep' },
+			{ label: '单量', start: 'volStart', end: 'volEnd', step: 'volStep' },
+		],
+	},
+	roisale: {
+		path: '/page/planReport/planReportRoiSaleGraph.html',
+		container: 'saleAndVolume-graph-container',
+		scan: '售价×ROI',
+		idMap: { orderQuantity: 'volume-graph', saleStart: 'sale-graph-start', saleStep: 'sale-graph-step', saleEnd: 'sale-graph-end', roiStart: 'roi-graph-start', roiStep: 'roi-graph-step', roiEnd: 'roi-graph-end', minProfit: 'min-profit', maxProfit: 'max-profit', generate: 'saleAndVolume-graph-generate-btn', showSelected: 'saleAndVolume-graph-show-selected-btn' },
+		flagMap: { orderQuantity: 'order-quantity', saleStart: 'sale-start', saleEnd: 'sale-end', saleStep: 'sale-step', roiStart: 'roi-start', roiEnd: 'roi-end', roiStep: 'roi-step', minProfit: 'min-profit', maxProfit: 'max-profit' },
+		heatmap: true,
+		dims: [
+			{ label: '售价', start: 'saleStart', end: 'saleEnd', step: 'saleStep' },
+			{ label: 'ROI', start: 'roiStart', end: 'roiEnd', step: 'roiStep' },
+		],
+	},
+	roivolume: {
+		path: '/page/planReport/planReportRoiVolumeGraph.html',
+		container: 'saleAndVolume-graph-container',
+		scan: 'ROI×单量',
+		idMap: { salePrice: 'sale-graph', roiStart: 'roi-graph-start', roiStep: 'roi-graph-step', roiEnd: 'roi-graph-end', volStart: 'volume-graph-start', volStep: 'volume-graph-step', volEnd: 'volume-graph-end', minProfit: 'min-profit', maxProfit: 'max-profit', generate: 'saleAndVolume-graph-generate-btn', showSelected: 'saleAndVolume-graph-show-selected-btn' },
+		flagMap: { salePrice: 'sale-price', roiStart: 'roi-start', roiEnd: 'roi-end', roiStep: 'roi-step', volStart: 'vol-start', volEnd: 'vol-end', volStep: 'vol-step', minProfit: 'min-profit', maxProfit: 'max-profit' },
+		heatmap: true,
+		dims: [
+			{ label: 'ROI', start: 'roiStart', end: 'roiEnd', step: 'roiStep' },
+			{ label: '单量', start: 'volStart', end: 'volEnd', step: 'volStep' },
+		],
 	},
 };
 
@@ -78,7 +129,7 @@ const GRAPHS = {
 const rawArgs = process.argv.slice(2);
 const flags = {};
 const args = [];
-const VALUE_FLAGS = new Set(['name', 'group', 'workspace', 'out', 'site', 'start', 'end', 'step', 'sale-price', 'order-quantity', 'roi', 'zoom-start', 'zoom-end']);
+const VALUE_FLAGS = new Set(['name', 'group', 'workspace', 'out', 'site', 'start', 'end', 'step', 'sale-price', 'order-quantity', 'roi', 'zoom-start', 'zoom-end', 'sale-start', 'sale-end', 'sale-step', 'vol-start', 'vol-end', 'vol-step', 'roi-start', 'roi-end', 'roi-step', 'min-profit', 'max-profit']);
 for (let i = 0; i < rawArgs.length; i++) {
 	const a = rawArgs[i];
 	if (!a.startsWith('--')) { args.push(a); continue; }
@@ -90,11 +141,11 @@ for (let i = 0; i < rawArgs.length; i++) {
 let CMD = (args.shift() || 'roi').toLowerCase();
 // shot 命令：第一个参数是图类型（shot roi <方案> / shot sale <方案>）
 let SHOT_TYPE = null;
-if (CMD === 'shot') {
-	SHOT_TYPE = (args.shift() || '').toLowerCase();
-	if (!GRAPHS[SHOT_TYPE]) { console.log('shot 用法：shot roi|sale <方案名|ID> [参数]'); process.exit(1); }
-	CMD = SHOT_TYPE;
-}
+	if (CMD === 'shot') {
+		SHOT_TYPE = (args.shift() || '').toLowerCase();
+		if (!GRAPHS[SHOT_TYPE]) { console.log('shot 用法：shot roi|sale|volume|salevolume <方案名|ID> [参数]'); process.exit(1); }
+		CMD = SHOT_TYPE;
+	}
 if (flags.site) CFG.site = flags.site;
 const WORKBENCH = CFG.site + '/page/workbench/workbench.html';
 const QUIET = !!flags.json;
@@ -292,35 +343,45 @@ async function openGraph(page, type, wsId, groupId, planId) {
 	await page.waitForTimeout(2000);
 }
 
-// 填输入框（前缀按图区分）+ 点"重新生成"；只影响本次图，不落库
+// 填输入框（用 GRAPHS.idMap + flagMap）+ 点"重新生成"；只影响本次图，不落库
+// 双变量 heatmap 特例：只改 min/max-profit 时点「显示选择的利润范围」（改 visualMap range，不重算），改售价/单量才重新生成
 async function applyGraphSettings(page, type, s) {
 	const g = GRAPHS[type];
-	const map = { start: 'start', end: 'end', step: 'step', ...g.flags };
-	const any = Object.keys(s).some(k => s[k] !== undefined);
-	if (!any) return;
-	for (const [key, flagName] of Object.entries(map)) {
+	const touched = Object.keys(g.flagMap).filter(k => s[g.flagMap[k]] !== undefined);
+	if (touched.length === 0) return;
+	const profitOnly = g.heatmap && touched.every(k => k === 'minProfit' || k === 'maxProfit');
+	for (const [idKey, flagName] of Object.entries(g.flagMap)) {
 		const v = s[flagName];
-		if (v !== undefined && v !== true) await page.fill(`#${g.prefix}-${key}`, String(v));
+		if (v === undefined || v === true) continue;
+		const elId = g.idMap[idKey];
+		if (elId) await page.fill(`#${elId}`, String(v));
 	}
-	await page.click(`#${g.prefix}-generate-btn`);
-	const ok = await page.waitForFunction(cid => !!document.querySelector('#' + cid + ' canvas'), g.container, { timeout: 90000 }).then(() => true).catch(() => false);
-	if (!ok) fail('自定义参数后重算超时');
+	if (profitOnly && g.idMap.showSelected) {
+		// 只缩利润显示范围：直接改 visualMap range，不重新计算（瞬间生效）
+		await page.click(`#${g.idMap.showSelected}`);
+		await page.waitForTimeout(800);
+		return;
+	}
+	if (g.idMap.generate) await page.click(`#${g.idMap.generate}`);
+	const ok = await page.waitForFunction(cid => !!document.querySelector('#' + cid + ' canvas'), g.container, { timeout: 120000 }).then(() => true).catch(() => false);
+	if (!ok) fail('自定义参数后重算超时（双变量图可达 120s）');
 	await page.waitForTimeout(2000);
 }
 
 async function readGraphInputs(page, type) {
 	const g = GRAPHS[type];
-	return await page.evaluate((prefix) => {
+	return await page.evaluate((idMap) => {
 		const out = {};
-		for (const id of ['roi', 'salePrice', 'orderQuantity', 'start', 'step', 'end']) {
-			const el = document.getElementById(prefix + '-' + id);
-			out[id] = el ? el.value : null;
+		for (const [key, elId] of Object.entries(idMap)) {
+			if (key === 'generate' || !elId) continue;
+			const el = document.getElementById(elId);
+			out[key] = el ? el.value : null;
 		}
 		return out;
-	}, g.prefix);
+	}, g.idMap);
 }
 
-// 提取 ECharts option：序列（首/中/尾 + 保本点）、x 轴、markArea 色带
+// 提取 ECharts option：单变量走 series 折线(首/中/尾 + 保本点)，双变量 heatmap 走矩阵分析
 // canvas 出现 ≠ 数据就绪（计算是同步的，会阻塞主线程），轮询等 xAxis/series 有数据
 async function readGraphOption(page, type) {
 	const g = GRAPHS[type];
@@ -335,21 +396,7 @@ async function readGraphOption(page, type) {
 			await new Promise(r => setTimeout(r, 500));
 		}
 		const xArr = (o.xAxis && o.xAxis[0] && o.xAxis[0].data) || [];
-		const series = (o.series || []).map(s => {
-			const arr = s.data || [];
-			let breakEven = null;
-			if (s.name === '利润' && arr.length > 0) {
-				for (let i = 0; i < arr.length; i++) {
-					if ((arr[i] || 0) >= 0) { breakEven = { index: i, x: xArr[i], profit: arr[i] }; break; }
-				}
-			}
-			return {
-				name: s.name, type: s.type,
-				count: arr.length,
-				first: arr[0], middle: arr[Math.floor(arr.length / 2)], last: arr[arr.length - 1],
-				breakEven,
-			};
-		});
+		const yArr = (o.yAxis && o.yAxis[0] && o.yAxis[0].data) || [];
 		const markAreas = [];
 		(o.series || []).forEach(s => {
 			const ma = s.markArea && s.markArea.data;
@@ -361,17 +408,63 @@ async function readGraphOption(page, type) {
 				});
 			}
 		});
-		// dataZoom：图上可拖动的区间缩放滑条（拖动看局部区间）
 		const dz = (o.dataZoom && o.dataZoom[0]) || null;
 		const dataZoom = dz ? { type: dz.type || '', start: dz.start, end: dz.end, startValue: dz.startValue !== undefined ? dz.startValue : null, endValue: dz.endValue !== undefined ? dz.endValue : null } : null;
-		return {
-			xAxis: { count: xArr.length, first: xArr[0], last: xArr[xArr.length - 1] },
-			series, markAreas, dataZoom,
-		};
+		const vm = o.visualMap && o.visualMap[0];
+		// range = 当前过滤区间（「显示选择的利润范围」按钮改的就是它，范围外的格子无色）
+		const visualMap = vm ? { min: vm.min, max: vm.max, range: Array.isArray(vm.range) ? vm.range : null } : null;
+
+		// heatmap 双变量：series[0].data = [[x, y, value]...]，找极值与盈利占比
+		if (Array.isArray(yArr) && yArr.length > 0 && o.series && o.series[0] && o.series[0].data && Array.isArray(o.series[0].data) && (o.series[0].data[0] || []).length >= 3) {
+			const arr = o.series[0].data;
+			let maxP = arr[0], minP = arr[0], posCount = 0;
+			for (const p of arr) {
+				const v = p[2];
+				if (v > maxP[2]) maxP = p;
+				if (v < minP[2]) minP = p;
+				if (v >= 0) posCount++;
+			}
+			// 角落采样
+			const corners = {
+				lowXLowY: arr[0],
+				lowXHighY: arr[(arr.length - 1) - (xArr.length - 1) < arr.length ? 0 : 0],  // 占位,实际见角点计算
+			};
+			// 简单输出:四角 + 极值 + 盈利占比
+			const get = (xi, yi) => arr[xi + yi * xArr.length];
+			return {
+				kind: 'heatmap',
+				xAxis: { name: o.xAxis[0].name || 'X', count: xArr.length, first: xArr[0], last: xArr[xArr.length - 1] },
+				yAxis: { name: o.yAxis[0].name || 'Y', count: yArr.length, first: yArr[0], last: yArr[yArr.length - 1] },
+				points: arr.length,
+				visualMap, markAreas, dataZoom,
+				max: { x: maxP[0], y: maxP[1], profit: maxP[2] },
+				min: { x: minP[0], y: minP[1], profit: minP[2] },
+				positiveCount: posCount, total: arr.length, positiveRatio: +(posCount / arr.length).toFixed(4),
+				corners: {
+					minXminY: get(0, 0),
+					minXmaxY: get(0, yArr.length - 1),
+					maxXminY: get(xArr.length - 1, 0),
+					maxXmaxY: get(xArr.length - 1, yArr.length - 1),
+				},
+			};
+		}
+
+		// 单变量折线：保本点 = 利润序列第一个 ≥0 的点
+		const series = (o.series || []).map(s => {
+			const arr = s.data || [];
+			let breakEven = null;
+			if (s.name === '利润' && arr.length > 0) {
+				for (let i = 0; i < arr.length; i++) {
+					if ((arr[i] || 0) >= 0) { breakEven = { index: i, x: xArr[i], profit: arr[i] }; break; }
+				}
+			}
+			return { name: s.name, type: s.type, count: arr.length, first: arr[0], middle: arr[Math.floor(arr.length / 2)], last: arr[arr.length - 1], breakEven };
+		});
+		return { kind: 'line', xAxis: { count: xArr.length, first: xArr[0], last: xArr[xArr.length - 1] }, series, markAreas, dataZoom, visualMap };
 	}, g.container);
 }
 
-// 主动缩放 dataZoom（百分比 0-100）——只影响显示/截图，不改底层数据；双变量图点位密集时用来放大看局部
+// 主动缩放 dataZoom（百分比 0-100）——只影响显示/截图，不改底层数据；双变量图若无 dataZoom 组件则跳过
 async function applyDataZoom(page, type) {
 	const g = GRAPHS[type];
 	const zs = flags['zoom-start'], ze = flags['zoom-end'];
@@ -379,11 +472,16 @@ async function applyDataZoom(page, type) {
 	const start = zs !== undefined && zs !== true ? Number(zs) : 0;
 	const end = ze !== undefined && ze !== true ? Number(ze) : 100;
 	if (!(start >= 0 && end <= 100 && start < end)) fail('--zoom-start/--zoom-end 需为 0~100 百分比且 start < end');
-	await page.evaluate(({ container, start, end }) => {
+	const ok = await page.evaluate(({ container, start, end }) => {
 		const inst = window.echarts.getInstanceByDom(document.getElementById(container));
-		if (inst) inst.dispatchAction({ type: 'dataZoom', start, end });
+		if (!inst) return false;
+		const dz = inst.getOption().dataZoom;
+		if (!dz || dz.length === 0) return false;  // 本图无 dataZoom 组件（双变量 heatmap 实测无）
+		inst.dispatchAction({ type: 'dataZoom', start, end });
+		return true;
 	}, { container: g.container, start, end });
 	await page.waitForTimeout(800);
+	if (!ok) log('  ⚠ 本图无 dataZoom 组件，--zoom-start/--zoom-end 跳过（可用 --min-profit/--max-profit 缩利润显示范围）');
 }
 
 async function saveShot(page, planName, kind) {
@@ -399,7 +497,7 @@ async function saveShot(page, planName, kind) {
 async function cmdGraph(page, type) {
 	const g = GRAPHS[type];
 	const key = args[0];
-	if (!key) fail(`用法：${type} <方案名|ID> [--group] [${Object.keys(g.flags).join(' ')}] [--start] [--end] [--step]`);
+	if (!key) fail(`用法：${type} <方案名|ID> [--group] [--${Object.keys(g.flagMap).join('] [--')}]`);
 	const groups = await listGroups(page, wsIdRef);
 	const plan = await resolvePlan(page, wsIdRef, key, flags.group);
 	const group = plan.groupId ? groups.find(x => x.id === plan.groupId) : null;
@@ -420,37 +518,81 @@ async function cmdGraph(page, type) {
 	const shot = await saveShot(page, plan.name, type);
 
 	if (SHOT_TYPE === null) {
-		const points = Math.round((parseFloat(inputs.end) - parseFloat(inputs.start)) / parseFloat(inputs.step) + 1);
-		const heavy = points > 10000;
-		log(`${type === 'roi' ? 'ROI 图' : '售价图'}：${wsNameRef} -> ${group ? group.name : '?'} -> ${plan.name}${adName ? `（广告：${adName}）` : '（未设广告，ROI 锁定）'}`);
+		const scanLabel = { roi: 'ROI', sale: '售价', volume: '单量' }[type] || type;
+		const fixedLabel = type === 'roi' ? `售价=${inputs.salePrice} 单量=${inputs.orderQuantity}`
+			: type === 'sale' ? `ROI=${inputs.roi} 单量=${inputs.orderQuantity}`
+			: type === 'volume' ? `ROI=${inputs.roi} 售价=${inputs.salePrice}`
+			: type === 'salevolume' ? `ROI=${inputs.roi}`
+			: type === 'roivolume' ? `售价=${inputs.salePrice}`
+			: `单量=${inputs.orderQuantity}`;
+		const title = { roi: 'ROI 图', sale: '售价图', volume: '单量图', salevolume: '售价×单量图', roisale: '售价×ROI图', roivolume: 'ROI×单量图' }[type] || (type + '图');
+		log(`${title}：${wsNameRef} -> ${group ? group.name : '?'} -> ${plan.name}${adName ? `（广告：${adName}）` : '（未设广告，ROI 锁定）'}`);
 		log(`截图：${shot}`);
 		log('');
-		log('【输入】');
-		log(`  ${type === 'roi' ? '售价=' + inputs.salePrice : 'ROI=' + inputs.roi}  单量=${inputs.orderQuantity}  ${g.scan}范围=${inputs.start}~${inputs.end} 步长=${inputs.step}`);
-		log(`  计算次数≈${points} 点（=(结束-开始)/步长+1）${heavy ? '  ⚠ 超过 1 万：精度越高算力越高，建议缩小区间或加大步长' : ''}`);
-		log('');
-		log('【X 轴】');
-		log(`  ${g.scan}: ${opt.xAxis.count} 个点  ${opt.xAxis.first} → ${opt.xAxis.last}`);
-		log('');
-		log('【序列】（首/中/尾）');
-		for (const s of opt.series) {
-			log(`  ${s.name}（${s.count} 点）: ${fmtNum(s.first)} / ${fmtNum(s.middle)} / ${fmtNum(s.last)}${s.breakEven ? `  → 保本${g.scan}=${s.breakEven.x}（利润 ${fmtNum(s.breakEven.profit)}）` : ''}`);
+
+		// heatmap 双变量图：完全不同的输出格式（两个扫描维度由 GRAPHS.dims 定义）
+		if (opt.kind === 'heatmap') {
+			const dimDesc = g.dims.map(d => `${d.label} ${inputs[d.start]}~${inputs[d.end]} 步长 ${inputs[d.step]}`).join('  ');
+			const total = Math.round(g.dims.reduce((acc, d) => acc * ((parseFloat(inputs[d.end]) - parseFloat(inputs[d.start])) / parseFloat(inputs[d.step]) + 1), 1));
+			const heavy = total > 10000;
+			log('【输入】');
+			log(`  ${fixedLabel}  ${dimDesc}  利润过滤 ${inputs.minProfit}~${inputs.maxProfit}`);
+			log(`  网格=${g.dims.map(d => Math.round((parseFloat(inputs[d.end]) - parseFloat(inputs[d.start])) / parseFloat(inputs[d.step]) + 1)).join('×')}=${total} 点${heavy ? '  ⚠ 超过 1 万：建议缩范围或加步长' : ''}`);
+			log('');
+			log('【坐标】');
+			log(`  X：${opt.xAxis.count} 个点  ${opt.xAxis.first} → ${opt.xAxis.last}`);
+			log(`  Y：${opt.yAxis.count} 个点  ${opt.yAxis.first} → ${opt.yAxis.last}`);
+			log('');
+			log('【利润分析】');
+			log(`  最大利润：X=${fmtNum(opt.max.x)} × Y=${fmtNum(opt.max.y)} = ${fmtNum(opt.max.profit)}`);
+			log(`  最小利润：X=${fmtNum(opt.min.x)} × Y=${fmtNum(opt.min.y)} = ${fmtNum(opt.min.profit)}`);
+			log(`  盈利点数：${opt.positiveCount}/${opt.total}（占比 ${(opt.positiveRatio * 100).toFixed(1)}%）`);
+			log('  角落采样（X/Y 轴最小值/最大值组合）：');
+			log(`    [X=${fmtNum(opt.corners.minXminY[0])} / Y=${fmtNum(opt.corners.minXminY[1])}] → ${fmtNum(opt.corners.minXminY[2])}`);
+			log(`    [X=${fmtNum(opt.corners.maxXmaxY[0])} / Y=${fmtNum(opt.corners.maxXmaxY[1])}] → ${fmtNum(opt.corners.maxXmaxY[2])}`);
+			log(`    [X=${fmtNum(opt.corners.minXmaxY[0])} / Y=${fmtNum(opt.corners.minXmaxY[1])}] → ${fmtNum(opt.corners.minXmaxY[2])}`);
+			log(`    [X=${fmtNum(opt.corners.maxXminY[0])} / Y=${fmtNum(opt.corners.maxXminY[1])}] → ${fmtNum(opt.corners.maxXminY[2])}`);
+			log('【visualMap 色阶】');
+			if (opt.visualMap) {
+				log(`  数据利润范围 ${fmtNum(opt.visualMap.min)} ~ ${fmtNum(opt.visualMap.max)}`);
+				log(`  当前过滤区间 ${opt.visualMap.range ? fmtNum(opt.visualMap.range[0]) + ' ~ ' + fmtNum(opt.visualMap.range[1]) : '(未过滤)'}（「显示选择的利润范围」控制，范围外格子无色，不缩放区域）`);
+			} else log('  (无 visualMap)');
+			log('【dataZoom】');
+			if (opt.dataZoom) log(`  ${opt.dataZoom.type}：${fmtNum(opt.dataZoom.start)}%~${fmtNum(opt.dataZoom.end)}%`);
+			else log('  (本图无 dataZoom 组件；调 min-profit/max-profit 缩利润显示范围)');
+		} else {
+			// 单变量折线
+			const points = Math.round((parseFloat(inputs.end) - parseFloat(inputs.start)) / parseFloat(inputs.step) + 1);
+			const heavy = points > 10000;
+			log('【输入】');
+			log(`  ${fixedLabel}  ${scanLabel}范围=${inputs.start}~${inputs.end} 步长=${inputs.step}`);
+			log(`  计算次数≈${points} 点（=(结束-开始)/步长+1）${heavy ? '  ⚠ 超过 1 万：精度越高算力越高，建议缩小区间或加大步长' : ''}`);
+			log('');
+			log('【X 轴】');
+			log(`  ${g.scan}: ${opt.xAxis.count} 个点  ${opt.xAxis.first} → ${opt.xAxis.last}`);
+			log('');
+			log('【序列】（首/中/尾）');
+			for (const s of opt.series) {
+				log(`  ${s.name}（${s.count} 点）: ${fmtNum(s.first)} / ${fmtNum(s.middle)} / ${fmtNum(s.last)}${s.breakEven ? `  → 保本${g.scan}=${s.breakEven.x}（利润 ${fmtNum(s.breakEven.profit)}）` : ''}`);
+			}
+			log('');
+			log('【色带 markArea】');
+			if (opt.markAreas.length === 0) log('  (本图无 markArea 色带)');
+			for (const a of opt.markAreas) log(`  ${a.name}  ${g.scan} ${fmtNum(a.start)} ~ ${fmtNum(a.end)}  ${a.color || ''}`);
+			log('');
+			log('【dataZoom 缩放条】');
+			if (opt.dataZoom) log(`  ${opt.dataZoom.type}：显示 ${fmtNum(opt.dataZoom.start)}% ~ ${fmtNum(opt.dataZoom.end)}%（图上有滑条可拖动看局部区间）`);
+			else log('  (无 dataZoom)');
 		}
-		log('');
-		log('【色带 markArea】');
-		if (opt.markAreas.length === 0) log('  (本图无 markArea 色带)');
-		for (const a of opt.markAreas) log(`  ${a.name}  ${g.scan} ${fmtNum(a.start)} ~ ${fmtNum(a.end)}  ${a.color || ''}`);
-		log('');
-		log('【dataZoom 缩放条】');
-		if (opt.dataZoom) log(`  ${opt.dataZoom.type}：显示 ${fmtNum(opt.dataZoom.start)}% ~ ${fmtNum(opt.dataZoom.end)}%（图上有滑条可拖动看局部区间）`);
-		else log('  (无 dataZoom)');
 	}
 
 	result({
 		ok: true, cmd: type, workspace: wsNameRef, plan: plan.name, group: group ? group.name : null,
 		advertising: adName || null, inputs,
-		points: Math.round((parseFloat(inputs.end) - parseFloat(inputs.start)) / parseFloat(inputs.step) + 1),
-		xAxis: opt.xAxis, series: opt.series, markAreas: opt.markAreas, dataZoom: opt.dataZoom, screenshot: shot,
+		points: opt.kind === 'heatmap'
+			? g.dims.reduce((acc, d) => acc * ((parseFloat(inputs[d.end]) - parseFloat(inputs[d.start])) / parseFloat(inputs[d.step]) + 1), 1)
+			: Math.round((parseFloat(inputs.end) - parseFloat(inputs.start)) / parseFloat(inputs.step) + 1),
+		xAxis: opt.xAxis, yAxis: opt.yAxis, kind: opt.kind, series: opt.series, max: opt.max, min: opt.min, positiveRatio: opt.positiveRatio, markAreas: opt.markAreas, dataZoom: opt.dataZoom, visualMap: opt.visualMap, screenshot: shot,
 	});
 }
 
@@ -465,10 +607,10 @@ let wsIdRef = null, wsNameRef = null;
 
 // ──────────────────────────── 入口 ────────────────────────────
 (async () => {
-	const handlers = { roi: () => true, sale: () => true };
+	const handlers = { roi: () => true, sale: () => true, volume: () => true, salevolume: () => true, roisale: () => true, roivolume: () => true };
 	if (!handlers[CMD]) {
 		console.log('未知命令：' + CMD);
-		console.log('可用：roi | sale | shot roi | shot sale');
+		console.log('可用：roi | sale | volume | salevolume | roisale | roivolume | shot <图类型> <方案>');
 		process.exit(1);
 	}
 	const b = await openPage(WORKBENCH);

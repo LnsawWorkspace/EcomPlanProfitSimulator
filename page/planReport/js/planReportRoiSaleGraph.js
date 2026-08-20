@@ -135,10 +135,10 @@ class PlanReportSaleGraphManager {
                         // 设置页面销量
                         document.getElementById('volume-graph').value = this.#planParams.modelPlanParamsSale.payOrderQuantity.toString();
 
-                        // 售价从1开始，结束值为最初售价的2倍
+                        // 售价从原先的0.5开始，结束值为最初售价的1.5倍
                         const initialSale = this.#planParams.modelPlanParamsSale.salePrice.toNumber();
-                        document.getElementById('sale-graph-start').value = 0;
-                        document.getElementById('sale-graph-end').value = Math.max(0.01, initialSale * 2).toString();
+                        document.getElementById('sale-graph-start').value = Math.max(0.01, initialSale * 0.5).toFixed(0);
+                        document.getElementById('sale-graph-end').value = Math.max(0.01, initialSale * 1.5).toFixed(0);
                         let saleStep = 0.01;
                         // 根据结束售价的大小调整步长，确保图表有足够的点，但又不会过多导致计算过慢，通常控制在1000个点以内
                         // 另外售价通常大于1元，然后结束的售价可能是几百元甚至几千元，所以步长不能太小，否则点太多了
@@ -167,8 +167,9 @@ class PlanReportSaleGraphManager {
                         }
                         document.getElementById('sale-graph-step').value = adjustedStep.toString();
 
-                        document.getElementById('roi-graph-start').value = 0;
-                        document.getElementById('roi-graph-end').value = 10;
+                        // ROI的起始值为原先ROI的0.5，结束值为原先ROI的1.5，步长为0.1。
+                        document.getElementById('roi-graph-start').value = Math.max(0, this.#planParams.modelPlanParamsAdvertising.roi.times(0.5)).toFixed(2);
+                        document.getElementById('roi-graph-end').value = Math.max(0, this.#planParams.modelPlanParamsAdvertising.roi.times(1.5)).toFixed(2);
                         document.getElementById('roi-graph-step').value = 0.1;
 
                         this.#simulationCore = new SimulationCore();
@@ -232,7 +233,7 @@ class PlanReportSaleGraphManager {
             document.getElementById('sale-graph-start').value = 0;
             saleStart = new Decimal(0);
         }
-        saleStart = saleStart.toDecimalPlaces(4, Decimal.ROUND_DOWN);
+        saleStart = saleStart.toDecimalPlaces(2, Decimal.ROUND_DOWN);
         document.getElementById('sale-graph-start').value = saleStart.toString();
         // saleStep,最小0.01
         let saleStep = new Decimal(document.getElementById('sale-graph-step').value);
@@ -242,7 +243,7 @@ class PlanReportSaleGraphManager {
             this.#showToast.error('销售步长必须大于等于0.0001');
             return;
         }
-        saleStep = saleStep.toDecimalPlaces(4, Decimal.ROUND_DOWN);
+        saleStep = saleStep.toDecimalPlaces(2, Decimal.ROUND_DOWN);
         document.getElementById('sale-graph-step').value = saleStep.toString();
         // saleEnd,必须大于saleStart，
         let saleEnd = new Decimal(document.getElementById('sale-graph-end').value);
@@ -251,7 +252,7 @@ class PlanReportSaleGraphManager {
             this.#showToast.error('销售结束值必须大于开始值');
             return;
         }
-        saleEnd = saleEnd.toDecimalPlaces(4, Decimal.ROUND_DOWN);
+        saleEnd = saleEnd.toDecimalPlaces(2, Decimal.ROUND_UP);
         document.getElementById('sale-graph-end').value = saleEnd.toString();
 
         // 获取Roi相关数据
@@ -260,13 +261,14 @@ class PlanReportSaleGraphManager {
             document.getElementById('roi-graph-start').value = 0;
             RoiStart = new Decimal(0);
         }
-        RoiStart = RoiStart.toDecimalPlaces(0, Decimal.ROUND_DOWN);
+        RoiStart = RoiStart.toDecimalPlaces(4, Decimal.ROUND_DOWN);
         document.getElementById('roi-graph-start').value = RoiStart.toString();
         let RoiStep = new Decimal(document.getElementById('roi-graph-step').value);
         if (RoiStep.lte(0)) {
             document.getElementById('roi-graph-step').value = 0.1;
             RoiStep = new Decimal(0.1);
         }
+        RoiStep = RoiStep.toDecimalPlaces(4, Decimal.ROUND_CEIL);
         document.getElementById('roi-graph-step').value = RoiStep.toString();
         let RoiEnd = new Decimal(document.getElementById('roi-graph-end').value);
         if (RoiEnd.lte(RoiStart)) {
@@ -274,6 +276,7 @@ class PlanReportSaleGraphManager {
             this.#showToast.error('ROI结束值必须大于开始值');
             return;
         }
+        RoiEnd = RoiEnd.toDecimalPlaces(4, Decimal.ROUND_UP);
 
         const worker = new Worker('js/planReportRoiSaleGraphWork.js', { type: 'module' });
         worker.postMessage({

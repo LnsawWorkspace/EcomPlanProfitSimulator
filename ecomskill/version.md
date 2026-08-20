@@ -23,13 +23,12 @@
 | 方案维护 | `scripts/plan_meta_ops.js` | `references/planMetas.md` |
 | 参数维护 | `scripts/plan_params_ops.js` | `references/planParams.md` |
 | 报告页 | `scripts/plan_report_ops.js` | `references/planReport.md` |
-| 敏感性分析图 | `scripts/plan_report_graph_ops.js`（roi / sale） | `references/graphs.md` |
+| 敏感性分析图 | `scripts/plan_report_graph_ops.js`（roi / sale / volume / salevolume / roisale / roivolume） | `references/graphs.md` |
 | 工作台 | — | `references/workbench.md` |
 | 支出样例 | — | `extension/expense-checklist.md` |
 
 ## 待办
 
-- 分析图：Volume（单变量）、SaleVolume / RoiSale / RoiVolume（双变量，点位密集，配合 dataZoom）尚未接入。
 - 站点已知问题（供参考，修复在站点源码侧，不由本技能处理）：报告页「收入明细」表为弃用残留；0退款率计算未含部分订单支出行内退款率 → 利润损失被低估。
 
 ---
