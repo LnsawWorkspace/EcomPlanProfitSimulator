@@ -34,6 +34,7 @@ agent_created: false
 + **说明：** 填参数（售价/单量/退款率/商品/赠品/支出），由工作台"调整方案"按钮打开新标签。**必须带 URL 参数 `?workspaceId=&groupId=&planId=` 才能加载**（缺一页面隐藏显示"方案不存在"）。
 + **注意：** 因涉及到各种除法，可能存在某种参数组合下，导致出现因除法出现bug的情况导致UI一直加载不出来。目前发现主要受到方案参数中的目标单量字段影响，比如当目标单量=3、33、333、3333等之类的时候发生的概率非常大，其他参数目前还没发现。另外目标单量尽可能的大于10，最好是10的倍数。
 + **维护文档：** `references/planParams.md`——数据模型（8 个模型字段、`{value,options}` 包装、百分比存 0-1）、真实行为（保存/加载/校验/除法 bug）、SOP 与红线。
++ **支出项目样例：** `extension/expense-checklist.md`——每单/部分订单/固定支出的常见项目、成本类型与税率速查（填参数时参考）。
 + **维护脚本：** `scripts/plan_params_ops.js`——list/get/raw/check/set：读走 IndexedDB，写走参数页 UI（复用站点校验）。命令见文档。
 ### 报告页
 + **页面地址：** https://ecomplanprofitsimulator.lnsaw.com/page/planReport/planReport.html
