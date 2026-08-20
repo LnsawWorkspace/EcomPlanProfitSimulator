@@ -269,7 +269,7 @@ class PlanParamsManager {
                     await this.#repositoryPlanParams.getPlanParamsById(this.#planMeta.id)
                         .then((planParams) => {
                             // 修改 .main-title 下的H1的内容
-                            const titleElement = document.querySelector('.main-title h1 span');
+                            const titleElement = document.querySelector('.main-title');
                             if (titleElement) {
                                 titleElement.textContent = `${this.#workspace.name} -> ${this.#planGroup.name} -> ${this.#planMeta.name}`;
                             }
