@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+# AI agents: full usage guide at /AIREADME.md
