@@ -70,14 +70,25 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const rawArgs = process.argv.slice(2);
 const flags = {};
 const args = [];
-// 带值的标志：workspace/group/site + set 的参数（--sale-price 99 等）
-const VALUE_FLAGS = new Set(['workspace', 'group', 'site', 'sale-price', 'quantity', 'method', 'refund-bef', 'refund-ing', 'refund-aft', 'ad-name', 'ad-roi', 'ad-rate']);
+// 带值的标志：workspace/group/site + set 的参数（--sale-price 99 等）；--goods 可重复（多条商品）
+const VALUE_FLAGS = new Set(['workspace', 'group', 'site', 'sale-price', 'quantity', 'method', 'refund-bef', 'refund-ing', 'refund-aft', 'ad-name', 'ad-roi', 'ad-rate', 'ad-refund-bef', 'ad-refund-ing', 'ad-refund-aft', 'goods', 'gift', 'goods-del', 'gift-del', 'expense', 'expense-del', 'expense-mn', 'expense-mn-del', 'expense-fixed', 'expense-fixed-del']);
+// 收集可重复标志（--goods / --gift / --goods-del / --gift-del / --expense / --expense-del 支持多条）
+const REPEAT_FLAGS = new Set(['goods', 'gift', 'goods-del', 'gift-del', 'expense', 'expense-del', 'expense-mn', 'expense-mn-del', 'expense-fixed', 'expense-fixed-del']);
 for (let i = 0; i < rawArgs.length; i++) {
 	const a = rawArgs[i];
 	if (!a.startsWith('--')) { args.push(a); continue; }
 	const [k, v] = a.slice(2).split('=');
-	if (v !== undefined) { flags[k] = v; continue; }
-	if (VALUE_FLAGS.has(k) && rawArgs[i + 1] && !rawArgs[i + 1].startsWith('--')) { flags[k] = rawArgs[++i]; continue; }
+	if (v !== undefined) {
+		if (REPEAT_FLAGS.has(k)) (flags[k] = flags[k] || []).push(v);
+		else flags[k] = v;
+		continue;
+	}
+	if (VALUE_FLAGS.has(k) && rawArgs[i + 1] && !rawArgs[i + 1].startsWith('--')) {
+		const val = rawArgs[++i];
+		if (REPEAT_FLAGS.has(k)) (flags[k] = flags[k] || []).push(val);
+		else flags[k] = val;
+		continue;
+	}
 	flags[k] = true;
 }
 const CMD = (args.shift() || 'list').toLowerCase();
@@ -204,8 +215,21 @@ async function openWorkbench() {
 	if (!page || page.isClosed()) page = await ctx.newPage();
 	page.on('dialog', d => d.dismiss().catch(() => { }));
 
-	await page.goto(WORKBENCH, { waitUntil: 'domcontentloaded', timeout: 60000 });
-	await waitReady(page);
+	// 智能就绪：若当前标签页已是本站页面（参数页/工作台等），直接复用，不重新导航。
+	// （参数页的 openParamsPage 会再判断"是否同一方案"，是则 reload 复用。）
+	const onSite = await page.evaluate(() => {
+		try {
+			return location.hostname.includes('ecomplanprofitsimulator');
+		} catch (e) { return false; }
+	}).catch(() => false);
+	if (!onSite) {
+		await page.goto(WORKBENCH, { waitUntil: 'domcontentloaded', timeout: 60000 });
+		await waitReady(page);
+	} else {
+		// 复用已打开的页面：addInitScript 只对之后的导航生效，需手动执行一次注入工具集
+		await page.evaluate(INIT_SCRIPT).catch(() => { });
+		await page.bringToFront().catch(() => { });
+	}
 	return { ctx, page, browser };
 }
 
@@ -264,6 +288,12 @@ async function ensureWorkspace(page, nameOrId) {
 	const isActive = target.enabled === true || target.enabled === 'true';
 	if (isActive) return target;
 
+	// 需要切换工作区（依赖工作台 UI）：若当前不在工作台，先导航过去
+	const onWorkbench = await page.evaluate(() => !!document.getElementById('current-workspace-name')).catch(() => false);
+	if (!onWorkbench) {
+		await page.goto(WORKBENCH, { waitUntil: 'domcontentloaded', timeout: 60000 });
+		await waitReady(page);
+	}
 	await openPanel(page);
 	const idx = await rowIndex(page, target.name);
 	if (idx < 0) fail('面板表格中未找到该行：' + target.name);
@@ -398,9 +428,21 @@ function quantityRisk(q) {
 
 // ────────────────────────── 参数页导航 ──────────────────────────
 // 参数页必须带 workspaceId/groupId/planId 三参数，缺一页面隐藏。
+// 智能复用：若当前标签页就是目标方案的参数页（URL 三参数一致），直接 reload 刷新数据即可，不必从工作台重新导航。
 async function openParamsPage(page, wsId, groupId, planId) {
 	const url = `${CFG.site}/page/planParams/planParams.html?workspaceId=${encodeURIComponent(wsId)}&groupId=${encodeURIComponent(groupId)}&planId=${encodeURIComponent(planId)}`;
-	await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+	// 判断当前页是否已是同一参数页
+	const samePage = await page.evaluate(({ ws, g, p }) => {
+		if (!location.pathname.endsWith('/page/planParams/planParams.html')) return false;
+		const q = new URLSearchParams(location.search);
+		return q.get('workspaceId') === ws && q.get('groupId') === g && q.get('planId') === p;
+	}, { ws: wsId, g: groupId, p: planId });
+	if (samePage) {
+		// 已在该方案参数页：刷新确保数据最新（用户建议：直接复用 + 刷新防过时）
+		await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
+	} else {
+		await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+	}
 	// 等表单关键元素出现（页面加载成功标志），或判定"方案不存在"
 	await page.waitForTimeout(1500);
 	const ok = await page.evaluate(() => !!document.getElementById('savePlanParams'));
@@ -494,7 +536,7 @@ async function cmdCheck(page, wsId, wsName) {
 // 写参数：导航到参数页 → 填表单 → 点保存 → 读回校验
 async function cmdSet(page, wsId, wsName) {
 	const key = args[0];
-	if (!key) fail('用法：set <方案名|ID> --sale-price <售价> --quantity <单量> [--method cost|fair] [--refund-bef <售前%> --refund-ing <售中%> --refund-aft <售后%>] [--group <名称|ID>]');
+	if (!key) fail('用法：set <方案名|ID> --sale-price <售价> --quantity <单量> [--method cost|fair] [--refund-bef <售前%> --refund-ing <售中%> --refund-aft <售后%>] [--ad-name <推广名> --ad-roi <ROI> --ad-rate <税率%>] [--goods "名称,件数,含税,公允,进%销%,前回收%,中回收%,后回收%"] [--gift "名称,...,视同销售|销售费用"] [--expense "名称,金额,num|per,进%[,回收%]"] [--expense-mn "名称,金额,num|per,订单%,进%,前退%,中退%,后退%[,回收%]"] [--expense-fixed "名称,金额,num|per,进%"] [--*-del "名称"] [--group <名称|ID>]');
 	const plan = await resolvePlan(page, wsId, key, flags.group);
 	const salePrice = flags['sale-price'];
 	const quantity = flags.quantity;
@@ -511,16 +553,393 @@ async function cmdSet(page, wsId, wsName) {
 	if ([rb, ri, ra].some(x => x !== null && !(x >= 0 && x <= 100))) fail('退款比例需在 0-100 之间（页面输入%）');
 	const sum = (rb ?? 0) + (ri ?? 0) + (ra ?? 0);
 	if (sum > 100) fail(`退款比例总和 ${sum}% 超过 100%（站点校验：总和≤100%）`);
+	// 推广（按业务红线：要做推广 → ad-name 与 ad-roi 一起填；不做 → 都不填，绝不能只填 name）
+	const adName = flags['ad-name'];
+	const adRoi = flags['ad-roi'];
+	const adRate = flags['ad-rate'];
+	const adRefB = flags['ad-refund-bef'];
+	const adRefI = flags['ad-refund-ing'];
+	const adRefA = flags['ad-refund-aft'];
+	if (adName !== undefined && adRoi === undefined) fail('要做推广必须同时给 --ad-name 和 --ad-roi（不做推广就都不要填，绝不只填推广名称）');
+	if (adName === undefined && (adRoi !== undefined || adRate !== undefined || adRefB !== undefined || adRefI !== undefined || adRefA !== undefined)) fail('--ad-roi/--ad-rate/--ad-refund-* 必须配合 --ad-name 一起使用');
+	if (adName !== undefined && adRoi !== undefined && !(Number(adRoi) > 0)) fail('广告 ROI 必须是正数（ROI=GMV/推广成本）');
+	if (adRate !== undefined && !(Number(adRate) >= 0 && Number(adRate) <= 100)) fail('广告税率需在 0-100 之间（页面输入%）');
+	if ([adRefB, adRefI, adRefA].some(x => x !== undefined && !(Number(x) >= 0 && Number(x) <= 100))) fail('广告回收率需在 0-100 之间（页面输入%）');
 
 	await openParamsPage(page, wsId, plan.groupId, plan.id);
 
-	// 填表单
+	// 单条删除：--goods-del <名称> / --gift-del <名称>（可多条，走表格行 .remove 按钮）
+	for (const dn of (flags['goods-del'] || [])) {
+		const ok = await page.evaluate(name => {
+			const rows = Array.from(document.querySelectorAll('#goodsContainer tr'));
+			for (const tr of rows) {
+				const td0 = tr.querySelector('td.item-name');
+				if (td0 && td0.textContent.trim() === name) { const b = tr.querySelector('.remove'); if (b) { b.click(); return true; } }
+			}
+			return false;
+		}, dn);
+		if (!ok) log(`⚠️ 未找到要删除的商品行：${dn}`);
+		await page.waitForTimeout(300);
+	}
+	for (const dn of (flags['gift-del'] || [])) {
+		const ok = await page.evaluate(name => {
+			const rows = Array.from(document.querySelectorAll('#giftContainer tr'));
+			for (const tr of rows) {
+				const td0 = tr.querySelector('td.item-name');
+				if (td0 && td0.textContent.trim() === name) { const b = tr.querySelector('.remove'); if (b) { b.click(); return true; } }
+			}
+			return false;
+		}, dn);
+		if (!ok) log(`⚠️ 未找到要删除的赠品行：${dn}`);
+		await page.waitForTimeout(300);
+	}
+	for (const dn of (flags['expense-del'] || [])) {
+		const ok = await page.evaluate(name => {
+			const rows = Array.from(document.querySelectorAll('#expensePerOrderContainer tr'));
+			for (const tr of rows) {
+				const td0 = tr.querySelector('td.item-name');
+				if (td0 && td0.textContent.trim() === name) { const b = tr.querySelector('.remove'); if (b) { b.click(); return true; } }
+			}
+			return false;
+		}, dn);
+		if (!ok) log(`⚠️ 未找到要删除的每单支出行：${dn}`);
+		await page.waitForTimeout(300);
+	}
+	for (const dn of (flags['expense-mn-del'] || [])) {
+		const ok = await page.evaluate(name => {
+			const rows = Array.from(document.querySelectorAll('#expenseMNPerOrderContainer tr'));
+			for (const tr of rows) {
+				const td0 = tr.querySelector('td.item-name');
+				if (td0 && td0.textContent.trim() === name) { const b = tr.querySelector('.remove'); if (b) { b.click(); return true; } }
+			}
+			return false;
+		}, dn);
+		if (!ok) log(`⚠️ 未找到要删除的部分订单支出行：${dn}`);
+		await page.waitForTimeout(300);
+	}
+	for (const dn of (flags['expense-fixed-del'] || [])) {
+		const ok = await page.evaluate(name => {
+			const rows = Array.from(document.querySelectorAll('#expenseFixedContainer tr'));
+			for (const tr of rows) {
+				const td0 = tr.querySelector('td.item-name');
+				if (td0 && td0.textContent.trim() === name) { const b = tr.querySelector('.remove'); if (b) { b.click(); return true; } }
+			}
+			return false;
+		}, dn);
+		if (!ok) log(`⚠️ 未找到要删除的固定支出行：${dn}`);
+		await page.waitForTimeout(300);
+	}
+
+	// 填表单（radio 是隐藏 btn-check，点对应的 label 而不是 input 本身）
 	await page.fill('#sale_price', String(salePrice));
 	await page.fill('#sale_Number', String(quantity));
-	await page.check(method === 'cost' ? '#sale_method_cost' : '#sale_method_fair');
+	await page.click(method === 'cost' ? 'label[for="sale_method_cost"]' : 'label[for="sale_method_fair"]');
 	if (rb !== null) await page.fill('#refund_bef_per', String(rb));
 	if (ri !== null) await page.fill('#refund_ing_per', String(ri));
 	if (ra !== null) await page.fill('#refund_aft_per', String(ra));
+	// 推广（ad-name 与 ad-roi 必须成对填；ad-rate 可选默认 6；ad-refund-* 可选广告回收率）
+	if (adName !== undefined && adRoi !== undefined) {
+		await page.fill('#advertising_name', adName);
+		await page.fill('#advertising_roi', String(adRoi));
+		if (adRate !== undefined) await page.fill('#advertising_rate', String(adRate));
+		if (adRefB !== undefined) await page.fill('#advertising_refund_bef_rec', String(adRefB));
+		if (adRefI !== undefined) await page.fill('#advertising_refund_ing_rec', String(adRefI));
+		if (adRefA !== undefined) await page.fill('#advertising_refund_aft_rec', String(adRefA));
+	}
+	// 商品信息（--goods "名称,件数,含税成本,公允价值,进项税率%,销项税率%,售前回收%,售中回收%,售后回收%" 可多条）
+	// 改名语法：--goods "旧名>新名,件数,..." —— 用旧名定位行（modify），弹窗名称填新名。
+	// 按名称匹配：同名行存在 → 点该行 .modify 回填修改（不新增）；不存在 → 走"新增商品"。
+	const goodsList = flags.goods || [];
+	if (method === 'fair' && goodsList.length === 0) fail('分摊方式为公允(fair)时，必须提供 --goods 且每行填写公允价值（见文档：公允法每行必填公允价值）');
+	for (const g of goodsList) {
+		const parts = String(g).split(',').map(x => x.trim());
+		if (parts.length < 4) fail('--goods 格式：名称,件数,含税成本,公允价值[,进项税率%,销项税率%,售前回收%,售中回收%,售后回收%]（最少 4 项）');
+		// 支持"旧名>新名"改名语法：定位键 = 旧名，弹窗名称 = 新名
+		let matchKey = parts[0];
+		let newName = parts[0];
+		if (parts[0].includes('>')) {
+			const [oldN, newN] = parts[0].split('>').map(x => x.trim());
+			matchKey = oldN; newName = newN;
+			if (!oldN || !newN) fail('改名语法：--goods "旧名>新名,件数,..."');
+		}
+		const [gName, gNum, gCost, gFair, gInRate, gOutRate, gRefB, gRefI, gRefA] = parts;
+		if (!gName) fail('商品名称不能为空');
+		// 判断匹配键（旧名/原名）对应行是否已存在
+		const rowInfo = await page.evaluate(name => {
+			const rows = Array.from(document.querySelectorAll('#goodsContainer tr'));
+			for (let i = 0; i < rows.length; i++) {
+				const td0 = rows[i].querySelector('td.item-name');
+				if (td0 && td0.textContent.trim() === name) return { exists: true, index: i };
+			}
+			return { exists: false };
+		}, matchKey);
+		if (rowInfo.exists) {
+			// 修改单条：点该行 .modify 回填弹窗 → 改值 → 确认（走 editingRow 分支更新，不新增）
+			await page.evaluate(name => {
+				const rows = Array.from(document.querySelectorAll('#goodsContainer tr'));
+				for (const tr of rows) {
+					const td0 = tr.querySelector('td.item-name');
+					if (td0 && td0.textContent.trim() === name) { const b = tr.querySelector('.modify'); if (b) b.click(); return; }
+				}
+			}, matchKey);
+			await page.waitForSelector('#paramsModal_Goods.show', { timeout: 8000 });
+		} else {
+			// 新增：点列表区"新增商品"按钮打开弹窗
+			await page.click('button[data-bs-target="#paramsModal_Goods"]');
+			await page.waitForSelector('#paramsModal_Goods.show', { timeout: 8000 });
+		}
+		// 填弹窗：名称用 newName（改名场景=新名，普通场景=原名），其余覆盖传入字段
+		await page.fill('#goods-name', newName);
+		if (gNum !== undefined && gNum !== '') await page.fill('#goods-num', gNum);
+		if (gCost !== undefined && gCost !== '') await page.fill('#goods-cost_withtax', gCost);
+		if (gFair !== undefined && gFair !== '') await page.fill('#goods-fair_value', gFair);
+		if (gInRate !== undefined && gInRate !== '') await page.fill('#goods-input_rate', gInRate);
+		if (gOutRate !== undefined && gOutRate !== '') await page.fill('#goods-output_rate', gOutRate);
+		if (gRefB !== undefined && gRefB !== '') await page.fill('#goods-refund_bef_rec', gRefB);
+		if (gRefI !== undefined && gRefI !== '') await page.fill('#goods-refund_ing_rec', gRefI);
+		if (gRefA !== undefined && gRefA !== '') await page.fill('#goods-refund_aft_rec', gRefA);
+		// 确认（弹窗 footer"确认添加"按钮 #addGoodsBtn）
+		await page.click('#paramsModal_Goods .modal-footer #addGoodsBtn');
+		await page.waitForTimeout(500);
+	}
+
+	// 赠品（--gift "名称,件数,含税成本,公允价值,进项税率%,销项税率%,售前回收%,售中回收%,售后回收%,视同销售|销售费用" 可多条；subjectType 默认销售费用）
+	// 改名语法同商品：--gift "旧名>新名,..."
+	const giftList = flags.gift || [];
+	for (const g of giftList) {
+		const parts = String(g).split(',').map(x => x.trim());
+		if (parts.length < 4) fail('--gift 格式：名称,件数,含税成本,公允价值[,进项税率%,销项税率%,售前回收%,售中回收%,售后回收%,视同销售|销售费用]（最少 4 项）');
+		let matchKey = parts[0];
+		let newName = parts[0];
+		if (parts[0].includes('>')) {
+			const [oldN, newN] = parts[0].split('>').map(x => x.trim());
+			matchKey = oldN; newName = newN;
+			if (!oldN || !newN) fail('改名语法：--gift "旧名>新名,..."');
+		}
+		const [gName, gNum, gCost, gFair, gInRate, gOutRate, gRefB, gRefI, gRefA, gSubj] = parts;
+		if (!gName) fail('赠品名称不能为空');
+		// 判断匹配键（旧名/原名）对应行是否已存在
+		const rowInfo = await page.evaluate(name => {
+			const rows = Array.from(document.querySelectorAll('#giftContainer tr'));
+			for (let i = 0; i < rows.length; i++) {
+				const td0 = rows[i].querySelector('td.item-name');
+				if (td0 && td0.textContent.trim() === name) return { exists: true, index: i };
+			}
+			return { exists: false };
+		}, matchKey);
+		if (rowInfo.exists) {
+			// 修改单条
+			await page.evaluate(name => {
+				const rows = Array.from(document.querySelectorAll('#giftContainer tr'));
+				for (const tr of rows) {
+					const td0 = tr.querySelector('td.item-name');
+					if (td0 && td0.textContent.trim() === name) { const b = tr.querySelector('.modify'); if (b) b.click(); return; }
+				}
+			}, matchKey);
+			await page.waitForSelector('#paramsModal_Gift.show', { timeout: 8000 });
+		} else {
+			// 新增
+			await page.click('button[data-bs-target="#paramsModal_Gift"]');
+			await page.waitForSelector('#paramsModal_Gift.show', { timeout: 8000 });
+		}
+		await page.fill('#gift-name', newName);
+		if (gNum !== undefined && gNum !== '') await page.fill('#gift-num', gNum);
+		if (gCost !== undefined && gCost !== '') await page.fill('#gift-cost_withtax', gCost);
+		if (gFair !== undefined && gFair !== '') await page.fill('#gift-fair_value', gFair);
+		if (gInRate !== undefined && gInRate !== '') await page.fill('#gift-input_rate', gInRate);
+		if (gOutRate !== undefined && gOutRate !== '') await page.fill('#gift-output_rate', gOutRate);
+		if (gRefB !== undefined && gRefB !== '') await page.fill('#gift-refund_bef_rec', gRefB);
+		if (gRefI !== undefined && gRefI !== '') await page.fill('#gift-refund_ing_rec', gRefI);
+		if (gRefA !== undefined && gRefA !== '') await page.fill('#gift-refund_aft_rec', gRefA);
+		// 费用类型：视同销售（gift-deemedSale）或 销售费用（gift-salesExpense）
+		if (gSubj !== undefined && gSubj !== '') {
+			const deemed = gSubj === '视同销售';
+			await page.evaluate(d => {
+				document.getElementById(d ? 'gift-deemedSale' : 'gift-salesExpense').click();
+			}, deemed);
+		}
+		await page.click('#paramsModal_Gift .modal-footer #addGiftBtn');
+		await page.waitForTimeout(500);
+	}
+
+	// 每单支出（--expense "名称,金额,成本类型,进项税率%,售前回收%,售中回收%,售后回收%" 可多条；成本类型 num|per；可加第8项 含税|不含税 默认含税）
+	// 格式：--expense "名称,金额,成本类型,进项税率%,售前回收%,售中回收%,售后回收%[,含税|不含税]"
+	// 改名语法同商品：--expense "旧名>新名,..."
+	const expenseList = flags.expense || [];
+	for (const g of expenseList) {
+		const parts = String(g).split(',').map(x => x.trim());
+		if (parts.length < 7) fail('--expense 格式：名称,金额,成本类型(num|per),进项税率%,售前回收%,售中回收%,售后回收%[,含税|不含税]（最少 7 项）');
+		let matchKey = parts[0];
+		let newName = parts[0];
+		if (parts[0].includes('>')) {
+			const [oldN, newN] = parts[0].split('>').map(x => x.trim());
+			matchKey = oldN; newName = newN;
+			if (!oldN || !newN) fail('改名语法：--expense "旧名>新名,..."');
+		}
+		const [eName, eValue, eType, eInRate, eRefB, eRefI, eRefA, eTax] = parts;
+		if (!eName) fail('支出名称不能为空');
+		if (!['num', 'per'].includes(eType)) fail('成本类型只能是 num（金额）或 per（百分比）');
+		// 判断匹配键对应行是否已存在
+		const rowInfo = await page.evaluate(name => {
+			const rows = Array.from(document.querySelectorAll('#expensePerOrderContainer tr'));
+			for (let i = 0; i < rows.length; i++) {
+				const td0 = rows[i].querySelector('td.item-name');
+				if (td0 && td0.textContent.trim() === name) return { exists: true, index: i };
+			}
+			return { exists: false };
+		}, matchKey);
+		if (rowInfo.exists) {
+			// 修改单条
+			await page.evaluate(name => {
+				const rows = Array.from(document.querySelectorAll('#expensePerOrderContainer tr'));
+				for (const tr of rows) {
+					const td0 = tr.querySelector('td.item-name');
+					if (td0 && td0.textContent.trim() === name) { const b = tr.querySelector('.modify'); if (b) b.click(); return; }
+				}
+			}, matchKey);
+			await page.waitForSelector('#paramsModal_ExpensePerOrder.show', { timeout: 8000 });
+		} else {
+			// 新增
+			await page.click('button[data-bs-target="#paramsModal_ExpensePerOrder"]');
+			await page.waitForSelector('#paramsModal_ExpensePerOrder.show', { timeout: 8000 });
+		}
+		await page.fill('#expensePerOrder-name', newName);
+		if (eValue !== undefined && eValue !== '') await page.fill('#expensePerOrder-value', eValue);
+		// 成本类型：num→cost_type_money（默认勾选），per→cost_type_percent
+		if (eType === 'num') {
+			await page.evaluate(() => document.getElementById('expensePerOrder-cost_type_money').click());
+		} else {
+			await page.evaluate(() => document.getElementById('expensePerOrder-cost_type_percent').click());
+		}
+		if (eInRate !== undefined && eInRate !== '') await page.fill('#expensePerOrder-input_rate', eInRate);
+		if (eType === 'per') {
+			// 百分比必须选来源：base 选"售价"，来源类型按 eTax 或默认含税
+			await page.selectOption('#expensePerOrder-base', '售价');
+			const tax = eTax !== undefined && eTax !== '' ? eTax : '含税';
+			await page.evaluate(t => {
+				document.getElementById(t === '不含税' ? 'expensePerOrder-no_tax' : 'expensePerOrder-with_tax').click();
+			}, tax);
+		}
+		if (eRefB !== undefined && eRefB !== '') await page.fill('#expensePerOrder-refund_bef_rec', eRefB);
+		if (eRefI !== undefined && eRefI !== '') await page.fill('#expensePerOrder-refund_ing_rec', eRefI);
+		if (eRefA !== undefined && eRefA !== '') await page.fill('#expensePerOrder-refund_aft_rec', eRefA);
+		await page.click('#paramsModal_ExpensePerOrder .modal-footer #addexpensePerOrderBtn');
+		await page.waitForTimeout(500);
+	}
+
+	// 部分订单支出（--expense-mn "名称,金额,成本类型,订单比例%,进项税率%,售前退款%,售中退款%,售后退款%,售前回收%,售中回收%,售后回收%[,含税|不含税]" 可多条）
+	// 成本类型 num|per；退款率是行内单独填（区别于目标模块的退款）；固定支出无此结构。
+	const mnList = flags['expense-mn'] || [];
+	for (const g of mnList) {
+		const parts = String(g).split(',').map(x => x.trim());
+		if (parts.length < 8) fail('--expense-mn 格式：名称,金额,成本类型(num|per),订单比例%,进项税率%,售前退款%,售中退款%,售后退款%[,售前回收%,售中回收%,售后回收%[,含税|不含税]]（最少 8 项）');
+		let matchKey = parts[0];
+		let newName = parts[0];
+		if (parts[0].includes('>')) {
+			const [oldN, newN] = parts[0].split('>').map(x => x.trim());
+			matchKey = oldN; newName = newN;
+			if (!oldN || !newN) fail('改名语法：--expense-mn "旧名>新名,..."');
+		}
+		const [eName, eValue, eType, eOrderPer, eInRate, eRefB, eRefI, eRefA, eRecB, eRecI, eRecA, eTax] = parts;
+		if (!eName) fail('支出名称不能为空');
+		if (!['num', 'per'].includes(eType)) fail('成本类型只能是 num（金额）或 per（百分比）');
+		if (!(Number(eOrderPer) > 0 && Number(eOrderPer) <= 100)) fail('订单比例需在 0-100 之间（页面输入%）');
+		const rowInfo = await page.evaluate(name => {
+			const rows = Array.from(document.querySelectorAll('#expenseMNPerOrderContainer tr'));
+			for (let i = 0; i < rows.length; i++) {
+				const td0 = rows[i].querySelector('td.item-name');
+				if (td0 && td0.textContent.trim() === name) return { exists: true, index: i };
+			}
+			return { exists: false };
+		}, matchKey);
+		if (rowInfo.exists) {
+			await page.evaluate(name => {
+				const rows = Array.from(document.querySelectorAll('#expenseMNPerOrderContainer tr'));
+				for (const tr of rows) {
+					const td0 = tr.querySelector('td.item-name');
+					if (td0 && td0.textContent.trim() === name) { const b = tr.querySelector('.modify'); if (b) b.click(); return; }
+				}
+			}, matchKey);
+			await page.waitForSelector('#paramsModal_ExpenseMNPerOrder.show', { timeout: 8000 });
+		} else {
+			await page.click('button[data-bs-target="#paramsModal_ExpenseMNPerOrder"]');
+			await page.waitForSelector('#paramsModal_ExpenseMNPerOrder.show', { timeout: 8000 });
+		}
+		await page.fill('#expenseMNPerOrder-name', newName);
+		if (eValue !== undefined && eValue !== '') await page.fill('#expenseMNPerOrder-value', eValue);
+		if (eType === 'num') {
+			await page.evaluate(() => document.getElementById('expenseMNPerOrder-cost_type_money').click());
+		} else {
+			await page.evaluate(() => document.getElementById('expenseMNPerOrder-cost_type_percent').click());
+		}
+		if (eOrderPer !== undefined && eOrderPer !== '') await page.fill('#expenseMNPerOrder-order_per', eOrderPer);
+		if (eInRate !== undefined && eInRate !== '') await page.fill('#expenseMNPerOrder-input_rate', eInRate);
+		if (eRefB !== undefined && eRefB !== '') await page.fill('#expenseMNPerOrder-refund_bef_per', eRefB);
+		if (eRefI !== undefined && eRefI !== '') await page.fill('#expenseMNPerOrder-refund_ing_per', eRefI);
+		if (eRefA !== undefined && eRefA !== '') await page.fill('#expenseMNPerOrder-refund_aft_per', eRefA);
+		if (eRecB !== undefined && eRecB !== '') await page.fill('#expenseMNPerOrder-refund_bef_rec', eRecB);
+		if (eRecI !== undefined && eRecI !== '') await page.fill('#expenseMNPerOrder-refund_ing_rec', eRecI);
+		if (eRecA !== undefined && eRecA !== '') await page.fill('#expenseMNPerOrder-refund_aft_rec', eRecA);
+		if (eType === 'per') {
+			await page.selectOption('#expenseMNPerOrder-base', '售价');
+			const tax = eTax !== undefined && eTax !== '' ? eTax : '含税';
+			await page.evaluate(t => {
+				document.getElementById(t === '不含税' ? 'expenseMNPerOrder-no_tax' : 'expenseMNPerOrder-with_tax').click();
+			}, tax);
+		}
+		await page.click('#paramsModal_ExpenseMNPerOrder .modal-footer #addexpenseMNPerOrderBtn');
+		await page.waitForTimeout(500);
+	}
+
+	// 固定支出（--expense-fixed "名称,金额,成本类型,进项税率%" 可多条；成本类型 num|per）
+	// 固定支出无退款、无回收率、无含税/不含税来源类型（只有 base 来源字段，per 时选"售价"）。
+	const fixedList = flags['expense-fixed'] || [];
+	for (const g of fixedList) {
+		const parts = String(g).split(',').map(x => x.trim());
+		if (parts.length < 4) fail('--expense-fixed 格式：名称,金额,成本类型(num|per),进项税率%（最少 4 项）');
+		let matchKey = parts[0];
+		let newName = parts[0];
+		if (parts[0].includes('>')) {
+			const [oldN, newN] = parts[0].split('>').map(x => x.trim());
+			matchKey = oldN; newName = newN;
+			if (!oldN || !newN) fail('改名语法：--expense-fixed "旧名>新名,..."');
+		}
+		const [eName, eValue, eType, eInRate] = parts;
+		if (!eName) fail('支出名称不能为空');
+		if (!['num', 'per'].includes(eType)) fail('成本类型只能是 num（金额）或 per（百分比）');
+		const rowInfo = await page.evaluate(name => {
+			const rows = Array.from(document.querySelectorAll('#expenseFixedContainer tr'));
+			for (let i = 0; i < rows.length; i++) {
+				const td0 = rows[i].querySelector('td.item-name');
+				if (td0 && td0.textContent.trim() === name) return { exists: true, index: i };
+			}
+			return { exists: false };
+		}, matchKey);
+		if (rowInfo.exists) {
+			await page.evaluate(name => {
+				const rows = Array.from(document.querySelectorAll('#expenseFixedContainer tr'));
+				for (const tr of rows) {
+					const td0 = tr.querySelector('td.item-name');
+					if (td0 && td0.textContent.trim() === name) { const b = tr.querySelector('.modify'); if (b) b.click(); return; }
+				}
+			}, matchKey);
+			await page.waitForSelector('#paramsModal_ExpenseFixed.show', { timeout: 8000 });
+		} else {
+			await page.click('button[data-bs-target="#paramsModal_ExpenseFixed"]');
+			await page.waitForSelector('#paramsModal_ExpenseFixed.show', { timeout: 8000 });
+		}
+		await page.fill('#expenseFixed-name', newName);
+		if (eValue !== undefined && eValue !== '') await page.fill('#expenseFixed-value', eValue);
+		if (eType === 'num') {
+			await page.evaluate(() => document.getElementById('expenseFixed-cost_type_money').click());
+		} else {
+			await page.evaluate(() => document.getElementById('expenseFixed-cost_type_percent').click());
+		}
+		if (eInRate !== undefined && eInRate !== '') await page.fill('#expenseFixed-input_rate', eInRate);
+		if (eType === 'per') await page.selectOption('#expenseFixed-base', '售价');
+		await page.click('#paramsModal_ExpenseFixed .modal-footer #addexpenseFixedBtn');
+		await page.waitForTimeout(500);
+	}
 
 	const before = await toastCount(page);
 	await page.click('#savePlanParams');
@@ -540,6 +959,7 @@ async function cmdSet(page, wsId, wsName) {
 	log(`✅ 已保存方案参数："${plan.name}"（工作区：${wsName}）`);
 	log(`   售价 ¥${s.sale.price} / 单量 ${s.sale.quantity} / 分摊 ${s.sale.method}`);
 	if (rb !== null || ri !== null || ra !== null) log(`   退款%：售前 ${s.refund.befPer} / 售中 ${s.refund.ingPer} / 售后 ${s.refund.aftPer}`);
+	if (adName !== undefined) log(`   推广：${s.advertising ? `${s.advertising.name}（ROI=${s.advertising.roi}，税率%=${s.advertising.inputRate}）` : '(未保存成功)'}`);
 	log('');
 	result({ ok: true, cmd: 'set', workspace: wsName, planId: plan.id, planName: plan.name, groupId: plan.groupId, toasts: tl, params: s });
 }
