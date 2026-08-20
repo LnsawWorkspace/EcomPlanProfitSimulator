@@ -17,8 +17,8 @@
  *   3) 计算耗时与参数相关，等待用"stat-card 数量"做就绪判据，超时提示除法 bug 可能。
  *
  * 运行（Windows / Git Bash）：
- *   NODE_PATH="C:/Users/wamzm/.workbuddy/binaries/node/workspace/node_modules" \
- *   "C:/Users/wamzm/.workbuddy/binaries/node/versions/22.22.2/node.exe" plan_report_ops.js <命令> <方案名|ID> [--group <组名|ID>]
+ *   NODE_PATH="<托管 node workspace>/node_modules"  # 托管 node 路径见运行环境 \
+ *   "<托管 node 可执行文件>" plan_report_ops.js <命令> <方案名|ID> [--group <组名|ID>]
  *
  * 命令：
  *   read <方案名|ID> [--group]   打开报告页，输出人类可读摘要（指标/瀑布图/饼图/明细表）+ 保存截图
@@ -33,7 +33,7 @@
  * 若长时间无数字，先怀疑网络没加载到 JS 文件，再怀疑目标单量为 3/33/333 触发的除法 bug）。
  *
  * 通用开关：--workspace <名称|ID>（默认当前启用工作区）  --via <url|params|workbench>
- *           --out <截图目录>（默认 ECOMPLAN_REPORT_DIR 或 D:/wokrbudd/ecomplan-reports）
+ *           --out <截图目录>（默认 ECOMPLAN_REPORT_DIR 或相对目录）
  *           --json（只输出机器可读结果）  --close（结束关闭浏览器）  --site=<url>
  * 浏览器：常驻模式（与其它脚本一致，见 plan_meta_ops.js 头注释）。
  * 环境变量：ECOMPLAN_BROWSER_DIR / ECOMPLAN_BROWSER_EXE / ECOMPLAN_SITE / ECOMPLAN_HEADLESS=1 / ECOMPLAN_CDP_PORT / ECOMPLAN_REPORT_DIR
@@ -48,10 +48,10 @@ const { chromium } = require('playwright');
 
 // ───────────────────────────── 配置 ─────────────────────────────
 const CFG = {
-	browserDir: process.env.ECOMPLAN_BROWSER_DIR || 'C:/Users/wamzm/AppData/Local/Microsoft/Edge SXS/User Data',
-	browserExe: process.env.ECOMPLAN_BROWSER_EXE || 'C:/Users/wamzm/AppData/Local/Microsoft/Edge SXS/Application/msedge.exe',
+	browserDir: process.env.ECOMPLAN_BROWSER_DIR || '',
+	browserExe: process.env.ECOMPLAN_BROWSER_EXE || '',
 	site: process.env.ECOMPLAN_SITE || 'https://ecomplanprofitsimulator.lnsaw.com',
-	reportDir: process.env.ECOMPLAN_REPORT_DIR || 'D:/wokrbudd/ecomplan-reports',
+	reportDir: process.env.ECOMPLAN_REPORT_DIR || 'ecomplan-reports',
 	headless: process.env.ECOMPLAN_HEADLESS === '1',
 	cdpPort: Number(process.env.ECOMPLAN_CDP_PORT || 9222),
 	cdpHost: process.env.ECOMPLAN_CDP_HOST || '127.0.0.1',
@@ -136,6 +136,7 @@ function cdpAlive() {
 }
 async function ensureBrowser() {
 	if (await cdpAlive()) return;
+	if (!CFG.browserExe) fail('未配置浏览器可执行文件：请设置环境变量 ECOMPLAN_BROWSER_EXE（本技能为通用发布版，不内置本机路径）');
 	if (!fs.existsSync(CFG.browserExe)) fail('浏览器可执行文件不存在：' + CFG.browserExe);
 	const child = spawn(CFG.browserExe, [
 		`--remote-debugging-port=${CFG.cdpPort}`,

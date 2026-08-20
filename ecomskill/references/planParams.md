@@ -291,9 +291,9 @@
 运行前提：浏览器常驻模式（见 planGroups.md §4），命令默认操作**当前启用工作区**，`--workspace` 指定其他。
 
 ```bash
-cd C:/Users/wamzm/.workbuddy/skills/ecomskill/scripts
-export NODE_PATH="C:/Users/wamzm/.workbuddy/binaries/node/workspace/node_modules"
-N="C:/Users/wamzm/.workbuddy/binaries/node/versions/22.22.2/node.exe"
+cd <本技能目录>/scripts
+export NODE_PATH="<托管 node workspace>/node_modules"   # 托管 node 路径见脚本头注释（运行环境）
+N="<托管 node 可执行文件>"
 
 "$N" plan_params_ops.js list [--workspace <名称|ID>]                 # 参数记录清单（含孤儿标记）
 "$N" plan_params_ops.js get "<方案名|ID>" [--group <组名|ID>]          # 查看某方案参数（简化为可读值）

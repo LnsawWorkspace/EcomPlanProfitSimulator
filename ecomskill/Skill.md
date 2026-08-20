@@ -6,6 +6,8 @@ agent_created: false
 
 # Ecomplanprofitsimulator（全场景单品推演 · 总入口）
 
+> **版本记录：** `version.md`（由用户维护，功能迭代后更新版本历史与当前版本号）。
+
 ## 页面导航
 + workspaceId 是指**用户数据空间** ID，groupId 是指方案组 ID，planId 是指方案 ID。他们都是 GUID。
 + **数据空间 ≠ 系统库（极易混淆，先看清这层）**：本站点有两类"库"——
@@ -42,6 +44,12 @@ agent_created: false
 + **⚠ 读取规则：** 一律用 DOM 读取（`plan_report_ops.js read/json` 抓指标卡+明细表）；**除非特别必要，不得使用读取控制台 JSON 的方式**（控制台完整 JSON 60~70KB，仅深度调试才用，见 planReport.md §6.0）。
 + **维护文档：** `references/planReport.md`——报告页结构、13 个核心指标含义、4 张明细表、真实行为（计算耗时/除法 bug 影响/对比按钮未完成）、SOP 与红线。
 + **维护脚本：** `scripts/plan_report_ops.js`——read/json/shot：定位方案 → 打开报告页等计算 → 抓指标与明细表并保存全页截图（只读）。
+
+### 敏感性分析图
++ **页面：** 6 个（`planReportRoiGraph.html` / `SaleGraph` / `VolumeGraph` / `SaleVolumeGraph` / `RoiSaleGraph` / `RoiVolumeGraph`），由报告页按钮进入。所有图都是**固定其他参数、单/双变量扫描**后现场渲染，纯展示、不落库。
++ **⚠ 依赖广告：** ROI 系列图（ROI/RoiSale/RoiVolume）要求方案设了广告投放（`planParams.advertising.name` 非空），否则站点 toast「无法查看」+ 脚本会 fail-fast。
++ **维护文档：** `references/graphs.md`——分析图总览 + ROI 曲线图/售价分析图详解（结构/计算/读法/保本点/色带/SOP），其他图按需补。
++ **维护脚本：** `scripts/plan_report_graph_ops.js`——`roi`（扫 ROI）/ `sale`（扫售价）命令：`roi <方案> [--sale-price] [--order-quantity] [--start] [--end] [--step]`、`sale <方案> [--roi] [--order-quantity] [--start] [--end] [--step]`；页面输入框=临时沙盒（只影响本次图不落库）；自动找保本点 + 估算计算量（>1万警示）+ 截图（只读）。
 ### 敏感性分析图
 **注意：** 敏感性分析图需要大量计算，因此打开后可能需要耐心等待，尤其是双变量扫描图（ROI+销售额、ROI+销售量）。另外在调整敏感性分析的参数时，**必须预估计算量，尽可能的将计算量控制在10000内。**，否则图表不会更新。
 #### Roi 敏感性分析图
@@ -76,4 +84,4 @@ agent_created: false
 | 数据空间维护 | `references/workspace.md` | 数据空间底层机制、UI 行为真相、体检/修复 SOP（备份由用户自行负责），配套脚本 `scripts/workspace_ops.js` |
 | 参数页 | `references/planParams.md` | 方案参数填写 |
 | 报告页 | `references/planReport.md` | 利润报告解读，配套脚本 `scripts/plan_report_ops.js` |
-| 分析图 | `references/graphs.md` | 6 个敏感性分析图 |
+| 分析图 | `references/graphs.md` | 6 个敏感性分析图总览 + ROI 图详解，配套脚本 `scripts/plan_report_graph_ops.js` | |

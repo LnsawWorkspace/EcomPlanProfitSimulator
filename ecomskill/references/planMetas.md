@@ -79,10 +79,10 @@ profitSimulation_systemDB          ★系统目录库（system，站点内置、
 ## 4. 维护 SOP（bash 示例）
 
 ```bash
-# 路径
-NODE="C:/Users/wamzm/.workbuddy/binaries/node/versions/22.22.2/node.exe"
-MODS="C:/Users/wamzm/.workbuddy/binaries/node/workspace/node_modules"
-SK="$HOME/.workbuddy/skills/ecomskill/scripts"
+# 路径（托管 node / 本技能目录，具体见脚本头注释）
+NODE="<托管 node 可执行文件>"
+MODS="<托管 node workspace>/node_modules"
+SK="<本技能目录>/scripts"
 RUN="NODE_PATH=\"$MODS\" \"$NODE\" \"$SK/plan_meta_ops.js\""
 
 # 列举全部方案（跨方案组）；加 --group <名称|ID> 可限定某组

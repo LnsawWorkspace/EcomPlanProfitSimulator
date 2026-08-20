@@ -75,9 +75,9 @@
 运行前提：**浏览器常驻模式**——首次运行自动启动带调试端口(9222)的 Edge 并保持打开，后续命令直接连接复用（不反复开关浏览器）；需要收尾时加 `--close` 真正关闭。若已有 Edge 带 `--remote-debugging-port=9222` 在跑，脚本直接连进去操作。playwright 装在托管 node workspace 里。脚本默认操作**当前启用的工作区**，可用 `--workspace <名称|ID>` 指定别的工作区（非当前会先切换并 reload）。
 
 ```bash
-cd C:/Users/wamzm/.workbuddy/skills/ecomskill/scripts
-export NODE_PATH="C:/Users/wamzm/.workbuddy/binaries/node/workspace/node_modules"
-N="C:/Users/wamzm/.workbuddy/binaries/node/versions/22.22.2/node.exe"
+cd <本技能目录>/scripts
+export NODE_PATH="<托管 node workspace>/node_modules"   # 托管 node 路径见脚本头注释（运行环境）
+N="<托管 node 可执行文件>"
 
 "$N" plan_group_ops.js list                                  # 列出当前工作区全部方案组（绕过分页，读 IndexedDB 全量）
 "$N" plan_group_ops.js find "关键词"                           # 按名称/描述模糊查找

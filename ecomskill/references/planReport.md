@@ -102,17 +102,17 @@
 - 判定标准：拿不到、或需要跨模块交叉核对内部字段时才考虑控制台；否则 DOM 够用。
 
 ```bash
-cd C:/Users/wamzm/.workbuddy/skills/ecomskill/scripts
-export NODE_PATH="C:/Users/wamzm/.workbuddy/binaries/node/workspace/node_modules"
-N="C:/Users/wamzm/.workbuddy/binaries/node/versions/22.22.2/node.exe"
+cd <本技能目录>/scripts
+export NODE_PATH="<托管 node workspace>/node_modules"   # 托管 node 路径见脚本头注释（运行环境）
+N="<托管 node 可执行文件>"
 
 "$N" plan_report_ops.js read  "拼多多推广" --group "睡衣+睡裤"    # 打开报告页 → 输出指标/表格摘要 + 保存全页截图
 "$N" plan_report_ops.js json "拼多多推广" --group "睡衣+睡裤"    # 同上但只输出机器可读 RESULT（metrics/tables 数组）
 "$N" plan_report_ops.js shot "拼多多推广" --group "睡衣+睡裤"    # 只截图
-# 通用开关：--workspace <名称|ID>（默认当前启用） --out <截图目录>（默认 ECOMPLAN_REPORT_DIR 或 D:/wokrbudd/ecomplan-reports）
+# 通用开关：--workspace <名称|ID>（默认当前启用） --out <截图目录>（默认见脚本 CFG / ECOMPLAN_REPORT_DIR）
 ```
 
-- 截图默认存 `D:/wokrbudd/ecomplan-reports/report-<方案名>-<时间戳>.png`（全页）。
+- 截图默认存 `<截图目录>/report-<方案名>-<时间戳>.png`（全页；目录用 `--out` 或 ECOMPLAN_REPORT_DIR 指定）。
 - `json` 输出结构：`metrics: [{label,value}×13]`、`tables: [{title,head,rows}]`、`charts: {waterfall,costStructure,refundCostStructure}`、`breadcrumb`。
 - 所有命令只读、不改数据；截图是唯一落盘产物。
 

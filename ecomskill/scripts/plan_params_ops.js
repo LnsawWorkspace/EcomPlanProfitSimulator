@@ -26,8 +26,8 @@
  *   - 保存成功 toast 为「方案参数保存成功！」（与方案组的「方案组创建成功」、方案的「方案更新成功」都不同）。
  *
  * 运行（Windows / Git Bash）：
- *   NODE_PATH="C:/Users/wamzm/.workbuddy/binaries/node/workspace/node_modules" \
- *   "C:/Users/wamzm/.workbuddy/binaries/node/versions/22.22.2/node.exe" plan_params_ops.js <命令> [参数]
+ *   NODE_PATH="<托管 node workspace>/node_modules"  # 托管 node 路径见运行环境 \
+ *   "<托管 node 可执行文件>" plan_params_ops.js <命令> [参数]
  *
  * 命令：
  *   list                               列出工作区全部参数记录（含孤儿标记）
@@ -52,8 +52,8 @@ const { chromium } = require('playwright');
 
 // ───────────────────────────── 配置 ─────────────────────────────
 const CFG = {
-	browserDir: process.env.ECOMPLAN_BROWSER_DIR || 'C:/Users/wamzm/AppData/Local/Microsoft/Edge SXS/User Data',
-	browserExe: process.env.ECOMPLAN_BROWSER_EXE || 'C:/Users/wamzm/AppData/Local/Microsoft/Edge SXS/Application/msedge.exe',
+	browserDir: process.env.ECOMPLAN_BROWSER_DIR || '',
+	browserExe: process.env.ECOMPLAN_BROWSER_EXE || '',
 	site: process.env.ECOMPLAN_SITE || 'https://ecomplanprofitsimulator.lnsaw.com',
 	headless: process.env.ECOMPLAN_HEADLESS === '1',
 	cdpPort: Number(process.env.ECOMPLAN_CDP_PORT || 9222),
@@ -181,6 +181,7 @@ function cdpAlive() {
 // 确保有可用的浏览器：已有(CDP)则复用，否则 spawn 一个独立常驻实例
 async function ensureBrowser() {
 	if (await cdpAlive()) return; // 已有浏览器在跑（无论是本脚本之前拉起还是用户手动带端口启动的）
+	if (!CFG.browserExe) fail('未配置浏览器可执行文件：请设置环境变量 ECOMPLAN_BROWSER_EXE（本技能为通用发布版，不内置本机路径）');
 	if (!fs.existsSync(CFG.browserExe)) fail('浏览器可执行文件不存在：' + CFG.browserExe);
 	const child = spawn(CFG.browserExe, [
 		`--remote-debugging-port=${CFG.cdpPort}`,
