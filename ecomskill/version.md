@@ -4,12 +4,13 @@
 
 ## 当前版本
 
-**v1.1.0**（2026-08-20）— 6 个敏感性分析图全接入 + 分析沉淀（拟上架技能中心）
+**v1.1.1**（2026-08-20）— 上架准备 + 图例交互 + checklists 重定义（拟上架技能中心）
 
 ## 版本历史
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v1.1.1 | 2026-08-20 | 上架材料（manifest.yaml + 512×512 图标 icon-ecomskill.png + beta 标注）；图例交互（--show-series 只看指定曲线，避开量程压制）；渠道 checklists 库重定义（按渠道 XX-XX-checklist.md）；SKILL.md/version.md/manifest.yaml 版本三处同步 |
 | v1.1.0 | 2026-08-20 | 6 个敏感性分析图全部接入（roi/sale/volume 折线 + salevolume/roisale/roivolume 热力图）；报告与各图"读法→结论→洞察→动作"分析模板沉淀；调优完整流程（报告+6图→改参→验证）；SKILL.md 介绍/description 面向 AI 优化 |
 | v1.0.0 | 2026-08-20 | 功能基线（见下） |
 

@@ -674,6 +674,13 @@ export class SimulationCore {
             refundIngRate: new Percentage(0),
             refundAftRate: new Percentage(0),
         });
+        // 太绕了，想来想去想不明白到底要不要也改成0，理论上应该也改成0，但好像不需要，这个地方的逻辑和其他地方的逻辑好像不太一样。
+        // 加上和没加上的结果都差不多，区别是一个是正常支付出去的，一个是损失出去的。
+       entity.modelPlanParamsExpenseMNPerOrder?.forEach((item) => {
+            item.refundBefRate = new Percentage(0);
+            item.refundIngRate = new Percentage(0);
+            item.refundAftRate = new Percentage(0);
+        });
         // console.log('%c  + start Simulation:', "color: green", performance.now());
         entity.modelPlanParamsSale.quantityPattern = 'real';
         const report = new Entity_PlanReport({ id: crypto.randomUUID(), planParams: entity });

@@ -5,7 +5,7 @@
 slug: ecomplan-profit-simulator
 name: ecomskill
 displayName: 全场景单品推演助手
-version: "1.1.0"
+version: "1.1.1"
 icon: assets/icon-ecomskill.png
 releaseStatus: beta   # 当前为测试阶段（β），功能仍在迭代，正式版发布后移除
 author: "Lnsaw"

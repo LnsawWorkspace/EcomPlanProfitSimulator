@@ -35,6 +35,7 @@
  *       打开对应分析图，输出摘要（序列首/中/尾 + 保本点 + markArea）+ 保存截图
  *       通用：--zoom-start 0 --zoom-end 40  主动缩放 ECharts dataZoom 滑条（百分比 0-100），
  *             先缩放再截图 —— 双变量图点位密集时用来放大看局部（只影响显示/截图，不改数据）
+ *             --show-series "利润,利润率"  只显示指定图例曲线（等价于人类点图例切换），先选再截图
  *   shot roi|sale|volume <方案名|ID> [...]   只截图不输出摘要
  *
  * 通用开关：--workspace <名称|ID>（默认当前启用工作区）  --out <截图目录>（默认 ECOMPLAN_REPORT_DIR 或相对目录）
@@ -129,7 +130,7 @@ const GRAPHS = {
 const rawArgs = process.argv.slice(2);
 const flags = {};
 const args = [];
-const VALUE_FLAGS = new Set(['name', 'group', 'workspace', 'out', 'site', 'start', 'end', 'step', 'sale-price', 'order-quantity', 'roi', 'zoom-start', 'zoom-end', 'sale-start', 'sale-end', 'sale-step', 'vol-start', 'vol-end', 'vol-step', 'roi-start', 'roi-end', 'roi-step', 'min-profit', 'max-profit']);
+const VALUE_FLAGS = new Set(['name', 'group', 'workspace', 'out', 'site', 'start', 'end', 'step', 'sale-price', 'order-quantity', 'roi', 'zoom-start', 'zoom-end', 'sale-start', 'sale-end', 'sale-step', 'vol-start', 'vol-end', 'vol-step', 'roi-start', 'roi-end', 'roi-step', 'min-profit', 'max-profit', 'show-series']);
 for (let i = 0; i < rawArgs.length; i++) {
 	const a = rawArgs[i];
 	if (!a.startsWith('--')) { args.push(a); continue; }
@@ -413,6 +414,9 @@ async function readGraphOption(page, type) {
 		const vm = o.visualMap && o.visualMap[0];
 		// range = 当前过滤区间（「显示选择的利润范围」按钮改的就是它，范围外的格子无色）
 		const visualMap = vm ? { min: vm.min, max: vm.max, range: Array.isArray(vm.range) ? vm.range : null } : null;
+		// legend：图例选中状态（人类看图可点图例切换显示/隐藏曲线）
+		const lg = o.legend && o.legend[0];
+		const legend = lg ? { selected: lg.selected || {} } : null;
 
 		// heatmap 双变量：series[0].data = [[x, y, value]...]，找极值与盈利占比
 		if (Array.isArray(yArr) && yArr.length > 0 && o.series && o.series[0] && o.series[0].data && Array.isArray(o.series[0].data) && (o.series[0].data[0] || []).length >= 3) {
@@ -436,7 +440,7 @@ async function readGraphOption(page, type) {
 				xAxis: { name: o.xAxis[0].name || 'X', count: xArr.length, first: xArr[0], last: xArr[xArr.length - 1] },
 				yAxis: { name: o.yAxis[0].name || 'Y', count: yArr.length, first: yArr[0], last: yArr[yArr.length - 1] },
 				points: arr.length,
-				visualMap, markAreas, dataZoom,
+				visualMap, markAreas, dataZoom, legend,
 				max: { x: maxP[0], y: maxP[1], profit: maxP[2] },
 				min: { x: minP[0], y: minP[1], profit: minP[2] },
 				positiveCount: posCount, total: arr.length, positiveRatio: +(posCount / arr.length).toFixed(4),
@@ -460,7 +464,7 @@ async function readGraphOption(page, type) {
 			}
 			return { name: s.name, type: s.type, count: arr.length, first: arr[0], middle: arr[Math.floor(arr.length / 2)], last: arr[arr.length - 1], breakEven };
 		});
-		return { kind: 'line', xAxis: { count: xArr.length, first: xArr[0], last: xArr[xArr.length - 1] }, series, markAreas, dataZoom, visualMap };
+		return { kind: 'line', xAxis: { count: xArr.length, first: xArr[0], last: xArr[xArr.length - 1] }, series, markAreas, dataZoom, visualMap, legend };
 	}, g.container);
 }
 
@@ -482,6 +486,37 @@ async function applyDataZoom(page, type) {
 	}, { container: g.container, start, end });
 	await page.waitForTimeout(800);
 	if (!ok) log('  ⚠ 本图无 dataZoom 组件，--zoom-start/--zoom-end 跳过（可用 --min-profit/--max-profit 缩利润显示范围）');
+}
+
+// 图例选择（--show-series "利润,利润率"）——只影响显示/截图，不改数据；等价于人类点图例切换曲线
+async function applyLegend(page, type) {
+	const g = GRAPHS[type];
+	const v = flags['show-series'];
+	if (v === undefined || v === true) return;
+	const keep = String(v).split(/[,，]/).map(s => s.trim()).filter(Boolean);
+	if (keep.length === 0) return;
+	await page.evaluate(({ container, keep }) => {
+		const inst = window.echarts.getInstanceByDom(document.getElementById(container));
+		if (!inst) return;
+		const names = (inst.getOption().series || []).map(s => s.name);
+		// 一次性 setOption legend.selected（dispatchAction 连续调用会被页面 legendselectchanged 监听干扰，不可靠）
+		const selected = {};
+		names.forEach(n => { selected[n] = keep.includes(n); });
+		inst.setOption({ legend: { selected } });
+	}, { container: g.container, keep });
+	await page.waitForTimeout(600);
+}
+
+// 读当前图例选中状态（applyLegend 之后调用，反映最终显示）
+async function readLegend(page, type) {
+	const g = GRAPHS[type];
+	return await page.evaluate((containerId) => {
+		const inst = window.echarts ? window.echarts.getInstanceByDom(document.getElementById(containerId)) : null;
+		if (!inst) return null;
+		const o = inst.getOption();
+		const lg = o.legend && o.legend[0];
+		return lg ? { selected: lg.selected || {} } : null;
+	}, g.container);
 }
 
 async function saveShot(page, planName, kind) {
@@ -515,6 +550,10 @@ async function cmdGraph(page, type) {
 	const opt = await readGraphOption(page, type);
 	// 主动缩放 dataZoom（可选）：先缩放再截图
 	await applyDataZoom(page, type);
+	// 图例选择（可选，--show-series）：只看指定曲线再截图
+	await applyLegend(page, type);
+	// 读取最终图例状态（applyLegend 之后，反映截图里实际显示的曲线）
+	const legendState = await readLegend(page, type);
 	const shot = await saveShot(page, plan.name, type);
 
 	if (SHOT_TYPE === null) {
@@ -560,6 +599,9 @@ async function cmdGraph(page, type) {
 			log('【dataZoom】');
 			if (opt.dataZoom) log(`  ${opt.dataZoom.type}：${fmtNum(opt.dataZoom.start)}%~${fmtNum(opt.dataZoom.end)}%`);
 			else log('  (本图无 dataZoom 组件；调 min-profit/max-profit 缩利润显示范围)');
+			log('【图例】');
+			const hmSel = Object.entries(legendState ? legendState.selected : {}).filter(([, v]) => v).map(([k]) => k);
+			log(`  当前显示：${hmSel.length ? hmSel.join('、') : '(无)'}（人类可点图例切换；--show-series "利润" 只看指定曲线）`);
 		} else {
 			// 单变量折线
 			const points = Math.round((parseFloat(inputs.end) - parseFloat(inputs.start)) / parseFloat(inputs.step) + 1);
@@ -583,6 +625,9 @@ async function cmdGraph(page, type) {
 			log('【dataZoom 缩放条】');
 			if (opt.dataZoom) log(`  ${opt.dataZoom.type}：显示 ${fmtNum(opt.dataZoom.start)}% ~ ${fmtNum(opt.dataZoom.end)}%（图上有滑条可拖动看局部区间）`);
 			else log('  (无 dataZoom)');
+			log('【图例】');
+			const lineSel = Object.entries(legendState ? legendState.selected : {}).filter(([, v]) => v).map(([k]) => k);
+			log(`  当前显示：${lineSel.length ? lineSel.join('、') : '(无)'}（人类可点图例切换曲线；--show-series "利润,利润率" 只看指定；默认仅显示 利润+利润增长率）`);
 		}
 	}
 
@@ -592,7 +637,7 @@ async function cmdGraph(page, type) {
 		points: opt.kind === 'heatmap'
 			? g.dims.reduce((acc, d) => acc * ((parseFloat(inputs[d.end]) - parseFloat(inputs[d.start])) / parseFloat(inputs[d.step]) + 1), 1)
 			: Math.round((parseFloat(inputs.end) - parseFloat(inputs.start)) / parseFloat(inputs.step) + 1),
-		xAxis: opt.xAxis, yAxis: opt.yAxis, kind: opt.kind, series: opt.series, max: opt.max, min: opt.min, positiveRatio: opt.positiveRatio, markAreas: opt.markAreas, dataZoom: opt.dataZoom, visualMap: opt.visualMap, screenshot: shot,
+		xAxis: opt.xAxis, yAxis: opt.yAxis, kind: opt.kind, series: opt.series, max: opt.max, min: opt.min, positiveRatio: opt.positiveRatio, markAreas: opt.markAreas, dataZoom: opt.dataZoom, visualMap: opt.visualMap, legend: legendState || opt.legend, screenshot: shot,
 	});
 }
 
