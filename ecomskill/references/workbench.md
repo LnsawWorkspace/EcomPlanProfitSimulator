@@ -41,17 +41,17 @@
 > 涉及方案的"非常规"操作（批量改名、清理孤儿参数、跨方案组迁移）前，先读 `references/planMetas.md`。
 
 ## 参数维护（重要）
-参数是 `planParams` store 中与方案**一对一**的记录（keyPath=方案 id），由独立参数页（`/page/planParams/planParams.html`）填写。**参数页必须带 URL 三参数** `?workspaceId=&groupId=&planId=` 才能加载，缺一页面隐藏。数值一律 `{value, options}` 包装、百分比存 0-1 小数（页面输入 %）；目标单量避开 3/33/333 等全 3 数（除法 bug，报告页会卡死）。
+参数是 `planParams` store 中与方案**一对一**的记录（keyPath=方案 id），由独立参数页（`/page/planParams/planParams.html`）填写。**参数页必须带 URL 三参数** `?workspaceId=&groupId=&planId=` 才能加载，缺一页面隐藏。数值一律 `{value, options}` 包装、百分比存 0-1 小数（页面输入 %）；目标单量建议 ≥10 且 10 的倍数。
 
-- **机制与 SOP 详见：** `references/planParams.md`（含 list/get/raw/check/set 命令示例、8 条源码级坑——尤其"URL 三参数依赖""百分比 0-1 换算""{value,options} 包装""广告 name 空为 null""除法 bug"、红线）。
+- **机制与 SOP 详见：** `references/planParams.md`（含 list/get/raw/check/set 命令示例、源码级坑——尤其"URL 三参数依赖""百分比 0-1 换算""{value,options} 包装""广告 name 空为 null"、红线）。
 - **自动化脚本：** `scripts/plan_params_ops.js`（读/体检直连 IndexedDB，写走参数页 UI 复用站点校验）。常用：
   - 清单：`node scripts/plan_params_ops.js list`
   - 查看：`node scripts/plan_params_ops.js get "方案名|ID" --group "组名|ID"`
-  - 体检：`node scripts/plan_params_ops.js check "方案名|ID"`（除法 bug 风险等）
+  - 体检：`node scripts/plan_params_ops.js check "方案名|ID"`
   - 写参数：`node scripts/plan_params_ops.js set "方案名|ID" --sale-price 159 --quantity 3000 --group "组名|ID"`
   - 原始 JSON：`node scripts/plan_params_ops.js raw "方案名|ID"`
 
-> 填/改参数前先读 `references/planParams.md`，尤其百分比方向（页面 % → 存储 0-1）与除法 bug 单量。
+> 填/改参数前先读 `references/planParams.md`，尤其百分比方向（页面 % → 存储 0-1）。
 
 ## 使用流程
 1. 确认需要的数据空间正确，否则选择正确的数据空间，若需要的数据空间不存在，创建数据空间。

@@ -431,6 +431,7 @@ class PlanReportSaleGraphManager {
                             return new Percentage(value).toPercentString(2);
                         },
                     },
+                    yAxisIndex: 1, // 使用右侧的Y轴
                 },
                 {
                     name: '资本回报率',
@@ -442,6 +443,7 @@ class PlanReportSaleGraphManager {
                             return new Percentage(value).toPercentString(2);
                         },
                     },
+                    yAxisIndex: 1, // 使用右侧的Y轴
                 },
                 {
                     name: '推广回报率',
@@ -453,6 +455,7 @@ class PlanReportSaleGraphManager {
                             return new Percentage(value).toPercentString(2);
                         },
                     },
+                    yAxisIndex: 1, // 使用右侧的Y轴
                 },
                 {
                     name: '利润增长率',
@@ -478,6 +481,7 @@ class PlanReportSaleGraphManager {
                             return v.toLocaleFixed(2) + v.options.suffix;
                         },
                     },
+                    yAxisIndex: 1, // 使用右侧的Y轴
                 },
                 // {
                 //     name: '运费',

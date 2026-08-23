@@ -63,7 +63,7 @@
 | 删除一次确认 | `#remove-workspace-confirm-modal` → `#remove-workspace-confirm-btn` | 文案含空间名 |
 | 删除二次确认 | `#remove-workspace-confirm-modal-agin` → `#remove-workspace-confirm-btn-agin` | **点这个才真正执行删除** |
 | 存储信息 | `#storage-quota` / `#storage-used` / `#persistence` | 打开面板时调 `navigator.storage.persist()` + `estimate()` 现算 |
-| 提示 toast | `.toast-container .toast.text-bg-{success,danger} .toast-body` | autohide **2s**，轮询会漏，要用 MutationObserver |
+| 提示 toast | `.toast-container .toast.text-bg-{success,danger} .toast-body` | autohide **2s**，读取要快，别等它消失 |
 
 关键 toast 文案（判断成败的依据）：`工作区保存成功` / `工作区名称已存在` / `工作区启用成功` / `删除工作区成功` / `无法删除当前启用的工作区，请先切换到其他工作区再删！` / `数据库删除被阻塞，请关闭所有连接后重试！`
 

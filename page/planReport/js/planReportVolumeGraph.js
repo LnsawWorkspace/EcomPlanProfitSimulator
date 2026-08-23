@@ -332,6 +332,7 @@ class PlanReportSaleGraphManager {
                             return new Percentage(value).toPercentString(2);
                         },
                     },
+                    yAxisIndex: 1, // 使用右侧的Y轴
                 },
                 {
                     name: '资本回报率',
@@ -343,6 +344,7 @@ class PlanReportSaleGraphManager {
                             return new Percentage(value).toPercentString(2);
                         },
                     },
+                    yAxisIndex: 1, // 使用右侧的Y轴
                 },
                 // {
                 //     name: '运费',
@@ -417,10 +419,17 @@ class PlanReportSaleGraphManager {
                     type: 'category',
                     data: data.map(item => item.planParams.modelPlanParamsSale.payOrderQuantity.toNumber()),
                 },
-                yAxis: {
-                    type: 'value',
-                    scale: true,
-                },
+                yAxis:[
+                    {
+                        type: 'value',
+                        scale: true,
+                        position: 'left',
+                    }, {
+                        type: 'value',
+                        scale: true,
+                        position: 'right',
+                    }
+                ],
                 series: this.series(data),
             };
 

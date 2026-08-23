@@ -21,7 +21,6 @@
  *   - 参数页强依赖 URL 三参数：workspaceId / groupId / planId 缺一不可，否则整页隐藏为"方案不存在"。
  *   - 百分比方向：页面输入 %（13），存储 0.13（div(100)）。读写方向搞反报告数据全错。
  *   - 数值是 {value, options} 包装：直接读 IDB 见 salePrice:{value:"99",options:{...}} 属正常，取 .value。
- *   - 除法 bug：目标单量 = 3/33/333/3333 等时报告页计算卡死；写单量建议 ≥10 且 10 的倍数（check 会提示）。
  *   - 商品/赠品/费用是数组（表格多行），个别历史数据可能是单对象，读写都要兼容。
  *   - 保存成功 toast 为「方案参数保存成功！」（与方案组的「方案组创建成功」、方案的「方案更新成功」都不同）。
  *
@@ -33,7 +32,7 @@
  *   list                               列出工作区全部参数记录（含孤儿标记）
  *   get   <方案名|ID> [--group <名称|ID>]  查看某方案参数（简化可读值，百分比×100 展示）
  *   raw   <方案名|ID> [--group <名称|ID>]  查看某方案参数原始 JSON（含 options 包装）
- *   check <方案名|ID> [--group <名称|ID>]  体检：参数存在性 / 单量除法风险 / 广告 / 商品行数
+ *   check <方案名|ID> [--group <名称|ID>]  体检：参数存在性 / 广告 / 商品行数
  *   set   <方案名|ID> --sale-price 99 --quantity 1000 [--method cost|fair] [--refund-bef 1 --refund-ing 1 --refund-aft 3] [--group <名称|ID>]  写参数（走参数页 UI）
  *
  * 通用开关：--workspace <名称|ID>  指定目标工作区（默认当前启用；非当前先切换）
@@ -272,6 +271,16 @@ async function rowIndex(page, name) {
 	}, name);
 }
 
+// 等待支出类 modal 的"基于"（来源字段）select 选项填充完成（站点在 shown.bs.modal 后才 initSelectOptions 填充选项，
+// 若脚本用 .show 就 selectOption 会抢在选项填充前 → 选不中）。等待目标选项存在后再 selectOption。
+async function selectExpenseBase(page, selectId, value = '售价') {
+	await page.waitForFunction(args => {
+		const el = document.querySelector(args.sel);
+		return el && Array.from(el.options).some(o => o.value === args.val);
+	}, { sel: selectId, val: value }, { timeout: 8000 });
+	await page.selectOption(selectId, value);
+}
+
 // ────────────────────────── 工作区定位 / 切换 ──────────────────────────
 async function ensureWorkspace(page, nameOrId) {
 	const ws = await page.evaluate(async ({ db, store }) => {
@@ -419,7 +428,7 @@ function summarizeParams(p) {
 	};
 }
 
-// 检查单量是否有除法 bug 风险（3/33/333/3333 等全 3 组成的数）
+// 检查单量是否有除法风险（3/33/333/3333 等全 3 组成的数，报告页曾出现计算异常；2026-08-22 保留检测便于观察）
 function quantityRisk(q) {
 	if (q == null) return false;
 	const s = String(q).trim();
@@ -494,7 +503,7 @@ async function cmdGet(page, wsId, wsName) {
 	if (!p) fail(`方案"${plan.name}"还没有参数记录（去参数页填写保存后才有）`, { planId: plan.id, groupId: plan.groupId });
 	const s = summarizeParams(p);
 	log(`\n方案参数（工作区：${wsName}，方案：${plan.name}，方案组：${plan.groupId}）：`);
-	log(`   售价：¥${s.sale.price}  目标单量：${s.sale.quantity}${quantityRisk(s.sale.quantity) ? '  ⚠️除法bug风险(全3数)' : ''}  分摊：${s.sale.method}`);
+	log(`   售价：¥${s.sale.price}  目标单量：${s.sale.quantity}${quantityRisk(s.sale.quantity) ? '  ⚠️全3数风险' : ''}  分摊：${s.sale.method}`);
 	log(`   退款%：售前 ${s.refund.befPer} / 售中 ${s.refund.ingPer} / 售后 ${s.refund.aftPer}`);
 	log(`   广告：${s.advertising ? `${s.advertising.name}（ROI=${s.advertising.roi}，税率%=${s.advertising.inputRate}）` : '未启用'}`);
 	log(`   行数：商品 ${s.goodsCount} / 赠品 ${s.giftCount} / 每单费用 ${s.expensePerOrderCount} / M→N单费用 ${s.expenseMNPerOrderCount} / 固定费用 ${s.expenseFixedCount}`);
@@ -524,7 +533,7 @@ async function cmdCheck(page, wsId, wsName) {
 	const issues = [];
 	if (!p) issues.push({ level: 'warn', code: 'no-params', msg: '该方案还没有参数记录' });
 	const s = p ? summarizeParams(p) : { sale: { quantity: null } };
-	if (s.sale.quantity != null && quantityRisk(s.sale.quantity)) issues.push({ level: 'warn', code: 'div-bug-risk', msg: `目标单量 ${s.sale.quantity} 由全3组成，报告页可能卡死（除法bug），建议改为≥10的倍数` });
+	if (s.sale.quantity != null && quantityRisk(s.sale.quantity)) issues.push({ level: 'warn', code: 'div-bug-risk', msg: `目标单量 ${s.sale.quantity} 由全3组成，报告页可能异常（历史除法问题），建议改为≥10的倍数` });
 	if (s.sale.price == null) issues.push({ level: 'warn', code: 'no-sale-price', msg: '未设置售价' });
 	if (s.sale.quantity == null) issues.push({ level: 'warn', code: 'no-quantity', msg: '未设置目标单量' });
 	log(`\n参数体检（工作区：${wsName}，方案：${plan.name}）：`);
@@ -537,14 +546,14 @@ async function cmdCheck(page, wsId, wsName) {
 // 写参数：导航到参数页 → 填表单 → 点保存 → 读回校验
 async function cmdSet(page, wsId, wsName) {
 	const key = args[0];
-	if (!key) fail('用法：set <方案名|ID> --sale-price <售价> --quantity <单量> [--method cost|fair] [--refund-bef <售前%> --refund-ing <售中%> --refund-aft <售后%>] [--ad-name <推广名> --ad-roi <ROI> --ad-rate <税率%>] [--goods "名称,件数,含税,公允,进%销%,前回收%,中回收%,后回收%"] [--gift "名称,...,视同销售|销售费用"] [--expense "名称,金额,num|per,进%[,回收%]"] [--expense-mn "名称,金额,num|per,订单%,进%,前退%,中退%,后退%[,回收%]"] [--expense-fixed "名称,金额,num|per,进%"] [--*-del "名称"] [--group <名称|ID>]');
+	if (!key) fail('用法：set <方案名|ID> --sale-price <售价> --quantity <单量> [--method cost|fair] [--refund-bef <售前%> --refund-ing <售中%> --refund-aft <售后%>] [--ad-name <推广名> --ad-roi <ROI> --ad-rate <税率%>] [--goods "名称,件数,含税,公允,进%销%,前回收%,中回收%,后回收%"] [--gift "名称,...,视同销售|销售费用"] [--expense "名称,金额,num|per,进%[,回收%]"] [--expense-mn "名称,金额,num|per,订单%,进%,前退%,中退%,后退%[,回收%]"] [--expense-fixed "名称,金额,num|per,进%[,基于(默认利润,可选利润/收入/付款金额/销售金额)]"] [--*-del "名称"] [--group <名称|ID>]');
 	const plan = await resolvePlan(page, wsId, key, flags.group);
 	const salePrice = flags['sale-price'];
 	const quantity = flags.quantity;
 	if (salePrice === undefined || quantity === undefined) fail('set 至少需要 --sale-price <售价> 和 --quantity <单量>');
 	if (!(Number(salePrice) > 0)) fail('售价必须是正数');
 	if (!(Number.isInteger(Number(quantity)) && Number(quantity) > 0)) fail('单量必须是正整数');
-	if (quantityRisk(quantity)) log('⚠️ 注意：单量由全3组成（除法bug风险），报告页可能卡死；建议 ≥10 的倍数');
+	if (quantityRisk(quantity)) log('⚠️ 注意：单量由全3组成（历史除法风险），报告页可能异常；建议 ≥10 的倍数');
 	const method = flags.method || 'cost';
 	if (!['cost', 'fair'].includes(method)) fail('--method 只能是 cost 或 fair');
 	// 退款比例（页面输入 %，站点内部 div(100) 存 0-1）
@@ -814,8 +823,8 @@ async function cmdSet(page, wsId, wsName) {
 		}
 		if (eInRate !== undefined && eInRate !== '') await page.fill('#expensePerOrder-input_rate', eInRate);
 		if (eType === 'per') {
-			// 百分比必须选来源：base 选"售价"，来源类型按 eTax 或默认含税
-			await page.selectOption('#expensePerOrder-base', '售价');
+			// 百分比必须选来源：base 选"售价"，来源类型按 eTax 或默认含税（等选项填充好再选，见 selectExpenseBase）
+			await selectExpenseBase(page, '#expensePerOrder-base');
 			const tax = eTax !== undefined && eTax !== '' ? eTax : '含税';
 			await page.evaluate(t => {
 				document.getElementById(t === '不含税' ? 'expensePerOrder-no_tax' : 'expensePerOrder-with_tax').click();
@@ -882,7 +891,7 @@ async function cmdSet(page, wsId, wsName) {
 		if (eRecI !== undefined && eRecI !== '') await page.fill('#expenseMNPerOrder-refund_ing_rec', eRecI);
 		if (eRecA !== undefined && eRecA !== '') await page.fill('#expenseMNPerOrder-refund_aft_rec', eRecA);
 		if (eType === 'per') {
-			await page.selectOption('#expenseMNPerOrder-base', '售价');
+			await selectExpenseBase(page, '#expenseMNPerOrder-base');
 			const tax = eTax !== undefined && eTax !== '' ? eTax : '含税';
 			await page.evaluate(t => {
 				document.getElementById(t === '不含税' ? 'expenseMNPerOrder-no_tax' : 'expenseMNPerOrder-with_tax').click();
@@ -892,12 +901,14 @@ async function cmdSet(page, wsId, wsName) {
 		await page.waitForTimeout(500);
 	}
 
-	// 固定支出（--expense-fixed "名称,金额,成本类型,进项税率%" 可多条；成本类型 num|per）
-	// 固定支出无退款、无回收率、无含税/不含税来源类型（只有 base 来源字段，per 时选"售价"）。
+	// 固定支出（--expense-fixed "名称,金额,成本类型,进项税率%[,基于]" 可多条；成本类型 num|per）
+	// 固定支出无退款、无回收率、无含税/不含税来源类型（只有 base 来源字段）。注意：Fixed 的 base 选项是
+	// ["-", "付款金额", "销售金额", "收入", "利润"]（无"售价"！与 PerOrder/MN 不同）；per 类型默认选"利润"，
+	// 可用第 5 项覆盖（如 ,利润 / ,付款金额 / ,收入 / ,销售金额）。
 	const fixedList = flags['expense-fixed'] || [];
 	for (const g of fixedList) {
 		const parts = String(g).split(',').map(x => x.trim());
-		if (parts.length < 4) fail('--expense-fixed 格式：名称,金额,成本类型(num|per),进项税率%（最少 4 项）');
+		if (parts.length < 4) fail('--expense-fixed 格式：名称,金额,成本类型(num|per),进项税率%[,基于]（最少 4 项）');
 		let matchKey = parts[0];
 		let newName = parts[0];
 		if (parts[0].includes('>')) {
@@ -905,9 +916,10 @@ async function cmdSet(page, wsId, wsName) {
 			matchKey = oldN; newName = newN;
 			if (!oldN || !newN) fail('改名语法：--expense-fixed "旧名>新名,..."');
 		}
-		const [eName, eValue, eType, eInRate] = parts;
+		const [eName, eValue, eType, eInRate, eBase] = parts;
 		if (!eName) fail('支出名称不能为空');
 		if (!['num', 'per'].includes(eType)) fail('成本类型只能是 num（金额）或 per（百分比）');
+		if (eBase && !['利润', '收入', '付款金额', '销售金额'].includes(eBase)) fail(`--expense-fixed 第5项基于只能是 利润/收入/付款金额/销售金额（当前：${eBase}）`);
 		const rowInfo = await page.evaluate(name => {
 			const rows = Array.from(document.querySelectorAll('#expenseFixedContainer tr'));
 			for (let i = 0; i < rows.length; i++) {
@@ -937,7 +949,7 @@ async function cmdSet(page, wsId, wsName) {
 			await page.evaluate(() => document.getElementById('expenseFixed-cost_type_percent').click());
 		}
 		if (eInRate !== undefined && eInRate !== '') await page.fill('#expenseFixed-input_rate', eInRate);
-		if (eType === 'per') await page.selectOption('#expenseFixed-base', '售价');
+		if (eType === 'per') await selectExpenseBase(page, '#expenseFixed-base', eBase || '利润');
 		await page.click('#paramsModal_ExpenseFixed .modal-footer #addexpenseFixedBtn');
 		await page.waitForTimeout(500);
 	}

@@ -503,6 +503,7 @@ class PlanReportRoiGraphManager {
                             return new Percentage(value).toPercentString(2);
                         },
                     },
+                    yAxisIndex: 1, // 利润增长率使用第二个y轴
                 },
                 {
                     name: '资本回报率',
@@ -514,6 +515,7 @@ class PlanReportRoiGraphManager {
                             return new Percentage(value).toPercentString(2);
                         },
                     },
+                    yAxisIndex: 1, // 利润增长率使用第二个y轴
                 },
                 {
                     name: '推广回报率',
@@ -525,6 +527,7 @@ class PlanReportRoiGraphManager {
                             return new Percentage(value).toPercentString(2);
                         },
                     },
+                    yAxisIndex: 1, // 利润增长率使用第二个y轴
                 },
                 {
                     name: '利润增长金额',
@@ -538,7 +541,7 @@ class PlanReportRoiGraphManager {
                             return v.toLocaleFixed(2) + v.options.suffix;
                         },
                     },
-                    yAxisIndex: 0, // 利润增长金额使用第二个y轴
+                    yAxisIndex: 1, // 利润增长金额使用第二个y轴，这样还可以同时搭配利润看。但如果同时看其他的率，率的还是会被量程压制。
                 },
                 {
                     name: '利润增长率',
