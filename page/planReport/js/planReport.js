@@ -227,7 +227,7 @@ class PlanReportManager {
 
         document.getElementById("totalAdvertisingMoney").textContent = this.#reportData.modelReportAdvertising.广告费用_有效成本.toLocaleFixed(4) || "--";
 
-        if (this.#reportData.planParams.modelPlanParamsAdvertising?.广告名称) {
+        if (this.#reportData.planParams.modelPlanParamsAdvertising?.name) {
             document.getElementById("ext_roi").textContent = this.#reportData.planParams.modelPlanParamsAdvertising.roi || "--";
             document.getElementById("ext_jroi").textContent = this.#reportData.modelReportExt.净ROI.toLocaleFixed(4) || "--";
             document.getElementById("ext_proi").textContent = this.#reportData.modelReportExt.广告花费占收入百分比.toPercentString(4) || "--";
