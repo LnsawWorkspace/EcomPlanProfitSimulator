@@ -93,21 +93,25 @@ export class Model_PlanParams_Advertising {
          * 设置税率（仅接受小数形式 0-1，例如 0.06 表示 6%；不会自动把 6 转为 0.06）
          * @param {number|string|Decimal} rate 小数形式的税率，范围 [0,1]
          */
-        this.#inputRate = ValidateUtils.decimalRange(rate, { min: 0, max: 1, decimal: true });
+        // this.#inputRate = ValidateUtils.decimalRange(rate, { min: 0, max: 1, decimal: true });
+        this.#inputRate = new Percentage(rate || 0, { min: 0, max: 1 });
     }
 
     set refundBefRec(value) {
         /** 设置售前退款回收比例（0-1） */
-        this.#refundBefRec = ValidateUtils.decimalRange(value, { min: 0, max: 1, decimal: true });
+        // this.#refundBefRec = ValidateUtils.decimalRange(value, { min: 0, max: 1, decimal: true });
+        this.#refundBefRec = new Percentage(dto.value || 0, { min: 0, max: 1 });
     }
 
     set refundIngRec(value) {
         /** 设置售中退款回收比例（0-1） */
-        this.#refundIngRec = ValidateUtils.decimalRange(value, { min: 0, max: 1, decimal: true });
+        // this.#refundIngRec = ValidateUtils.decimalRange(value, { min: 0, max: 1, decimal: true });
+        this.#refundIngRec = new Percentage(dto.value || 0, { min: 0, max: 1 });
     }
 
     set refundAftRec(value) {
         /** 设置售后退款回收比例（0-1） */
-        this.#refundAftRec = ValidateUtils.decimalRange(value, { min: 0, max: 1, decimal: true });
+        // this.#refundAftRec = ValidateUtils.decimalRange(value, { min: 0, max: 1, decimal: true });
+        this.#refundAftRec = new Percentage(dto.value || 0, { min: 0, max: 1 });
     }
 }

@@ -226,6 +226,15 @@ class PlanReportManager {
         document.getElementById("totalRefundProfit").textContent = this.#reportData.modelReportExt.因退款造成的利润损失.toLocaleFixed(4) || "--";
 
         document.getElementById("totalAdvertisingMoney").textContent = this.#reportData.modelReportAdvertising.广告费用_有效成本.toLocaleFixed(4) || "--";
+
+        if (this.#reportData.planParams.modelPlanParamsAdvertising?.广告名称) {
+            document.getElementById("ext_roi").textContent = this.#reportData.planParams.modelPlanParamsAdvertising.roi || "--";
+            document.getElementById("ext_jroi").textContent = this.#reportData.modelReportExt.净ROI.toLocaleFixed(4) || "--";
+            document.getElementById("ext_proi").textContent = this.#reportData.modelReportExt.广告花费占收入百分比.toPercentString(4) || "--";
+
+            document.getElementById("ext_roi_15").textContent = this.#reportData.modelReportExt.广告抵扣调增金额_15.toLocaleFixed(4) || "--";
+            document.getElementById("ext_roi_30").textContent = this.#reportData.modelReportExt.广告抵扣调增金额_30.toLocaleFixed(4) || "--";
+        }
     }
     #showEcharts() {
         this.Echarts.showCostStructureChart(this.Echarts.getCostStructureData(this.#reportData));

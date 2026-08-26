@@ -631,6 +631,21 @@ export class SimulationCore {
             report.因退款造成的利润损失 = entity_report_0refund.modelReportExt.利润.minus(report.利润, 4);
         }
 
+        // 真正的额外扩展
+
+        // 广告花费占收入的百分比，同时计算纳税调增的金额
+        if (entity_report.modelReportAdvertising.广告费用_有效成本.greaterThan(new Money(0, 4))) {
+            report.净ROI = entity_report.modelReportSalesRevenue.销售金额_退款后.dividedBy(entity_report.modelReportAdvertising.广告费用_有效成本.times(entity_report.planParams.modelPlanParamsAdvertising.inputRate.plus(Percentage.ONE_HUNDRED_PERCENT), 4), 8);
+            report.广告花费占收入百分比 = new Percentage(entity_report.modelReportAdvertising.广告费用_有效成本.dividedBy(entity_report.modelReportSalesRevenue.收入_退款后, 8).value);
+            report.广告抵扣上限_15 = entity_report.modelReportSalesRevenue.收入_退款后.times(0.15, 4);
+            report.广告抵扣上限_30 = entity_report.modelReportSalesRevenue.收入_退款后.times(0.3, 4);
+
+            report.广告抵扣调增金额_15 = new Money(Math.max(new Money(0, 4), entity_report.modelReportAdvertising.广告费用_有效成本.minus(report.广告抵扣上限_15, 4)), 4);
+            report.广告抵扣调增金额_30 = new Money(Math.max(new Money(0, 4), entity_report.modelReportAdvertising.广告费用_有效成本.minus(report.广告抵扣上限_30, 4)), 4);
+
+        }
+
+
     }
 
 
@@ -676,7 +691,7 @@ export class SimulationCore {
         });
         // 太绕了，想来想去想不明白到底要不要也改成0，理论上应该也改成0，但好像不需要，这个地方的逻辑和其他地方的逻辑好像不太一样。
         // 加上和没加上的结果都差不多，区别是一个是正常支付出去的，一个是损失出去的。
-       entity.modelPlanParamsExpenseMNPerOrder?.forEach((item) => {
+        entity.modelPlanParamsExpenseMNPerOrder?.forEach((item) => {
             item.refundBefRate = new Percentage(0);
             item.refundIngRate = new Percentage(0);
             item.refundAftRate = new Percentage(0);
